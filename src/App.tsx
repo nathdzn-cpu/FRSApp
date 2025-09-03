@@ -5,6 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import JobDetail from "./pages/JobDetail";
+import Drivers from "./pages/Drivers";
+import AdminChecklists from "./pages/AdminChecklists";
+import AdminUsers from "./pages/AdminUsers";
+import { UserRoleProvider } from "./context/UserRoleContext";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +19,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <UserRoleProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/drivers" element={<Drivers />} />
+            <Route path="/admin/checklists" element={<AdminChecklists />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </UserRoleProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
