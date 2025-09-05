@@ -11,19 +11,19 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoadingAuth, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please enter both email and password.");
+    if (!userIdOrEmail || !password) {
+      toast.error("Please enter both User ID/Email and password.");
       return;
     }
 
-    const { success, error } = await login(email, password);
+    const { success, error } = await login(userIdOrEmail, password);
     if (success) {
       // Redirection is handled by AuthContext's useEffect
     } else {
@@ -52,13 +52,13 @@ const LoginPage: React.FC = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="userIdOrEmail">User ID / Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="userIdOrEmail"
+                type="text" // Changed to text to allow both user ID and email
+                placeholder="e.g., admin@example.com or 1234"
+                value={userIdOrEmail}
+                onChange={(e) => setUserIdOrEmail(e.target.value)}
                 required
                 disabled={isLoadingAuth}
               />

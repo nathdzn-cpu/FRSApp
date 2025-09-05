@@ -16,7 +16,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole;
   isLoadingAuth: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -100,9 +100,16 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isLoadingAuth, user, userRole, navigate, location.pathname]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (userIdOrEmail: string, password: string) => {
     setIsLoadingAuth(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    let emailToLogin = userIdOrEmail;
+
+    // Check if the input contains '@' to determine if it's an email or user ID
+    if (!userIdOrEmail.includes('@')) {
+      emailToLogin = `${userIdOrEmail}@login.local`;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
     setIsLoadingAuth(false);
 
     if (error) {
