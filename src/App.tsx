@@ -14,8 +14,9 @@ import CreateDriver from "./pages/admin/users/CreateDriver";
 import CreateOffice from "./pages/admin/users/CreateOffice";
 import EditUser from "./pages/admin/users/EditUser";
 import CreateJob from "./pages/CreateJob";
-import AdminDailyChecks from "./pages/admin/DailyChecks"; // New import
-import DriverDailyCheck from "./pages/driver/DailyCheck"; // New import
+import AdminDailyChecks from "./pages/admin/DailyChecks";
+import DriverDailyCheck from "./pages/driver/DailyCheck";
+import EnvDebug from './pages/EnvDebug'; // New import
 import { UserRoleProvider } from "./context/UserRoleContext";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Link to="/drivers" className="hover:text-gray-300">Drivers List</Link>
             <Link to="/admin/users" className="hover:text-gray-300">Admin Users</Link>
             <Link to="/admin/checklists" className="hover:text-gray-300">Admin Checklists (Old)</Link>
+            <Link to="/env-debug" className="hover:text-gray-300">Env Debug</Link> {/* New link */}
           </nav>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -46,8 +48,9 @@ const App = () => (
             <Route path="/admin/users/new/driver" element={<CreateDriver />} />
             <Route path="/admin/users/new/office" element={<CreateOffice />} />
             <Route path="/admin/users/:id/edit" element={<EditUser />} />
-            <Route path="/admin/daily-checks" element={<AdminDailyChecks />} /> {/* New route */}
-            <Route path="/driver/daily-check" element={<DriverDailyCheck />} /> {/* New route */}
+            <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
+            <Route path="/driver/daily-check" element={<DriverDailyCheck />} />
+            <Route path="/env-debug" element={<EnvDebug />} /> {/* New route */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
