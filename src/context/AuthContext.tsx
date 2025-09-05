@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
+export const AuthContextProvider = ({ children }: { ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,14 +38,20 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user || null);
 
+      console.log("Auth Session:", session); // Log session
+
       if (session?.user) {
-        // Fetch profile using the new function
         const fetchedProfile = await getProfileByAuthId(session.user.id);
         setProfile(fetchedProfile || null);
         setUserRole(fetchedProfile?.role || undefined);
+        console.log("User Profile:", fetchedProfile); // Log profile
+        if (!fetchedProfile) {
+          console.log("No profile found for authenticated user.");
+        }
       } else {
         setProfile(null);
         setUserRole(undefined);
+        console.log("No active session, profile reset.");
       }
     } catch (error) {
       console.error("Error fetching session or profile:", error);
@@ -65,12 +71,10 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
-        // Re-fetch profile on auth state change
-        fetchSessionAndProfile();
+        fetchSessionAndProfile(); // Re-fetch profile on auth state change
       } else {
         setProfile(null);
         setUserRole(undefined);
-        // Redirect to login if not on login page
         if (location.pathname !== '/login') {
           navigate('/login');
         }
@@ -87,13 +91,13 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       if (!user && location.pathname !== '/login') {
         navigate('/login');
       } else if (user && location.pathname === '/login') {
-        // Redirect logged-in users from login page to their dashboard
         if (userRole === 'admin') {
           navigate('/admin/users');
         } else if (userRole === 'office' || userRole === 'driver') {
           navigate('/');
         } else {
-          // Fallback for users with no specific role or unhandled roles
+          // If user is logged in but has no assigned role, redirect to home
+          // Index.tsx will then display "No role assigned"
           navigate('/');
         }
       }
@@ -104,7 +108,6 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     setIsLoadingAuth(true);
     let emailToLogin = userIdOrEmail;
 
-    // Check if the input contains '@' to determine if it's an email or user ID
     if (!userIdOrEmail.includes('@')) {
       emailToLogin = `${userIdOrEmail}@login.local`;
     }
@@ -116,7 +119,6 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message);
       return { success: false, error: error.message };
     } else {
-      // Session and user will be updated by the auth state change listener
       toast.success("Logged in successfully!");
       return { success: true };
     }

@@ -112,9 +112,21 @@ const Index = () => {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     // This case should ideally be handled by PrivateRoute or AuthContext redirect
     return null;
+  }
+
+  // If user is logged in but no profile/role is found
+  if (!profile || userRole === undefined) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+        <p className="text-red-500 text-lg mb-4">No role assigned to your user account. Please contact an administrator.</p>
+        <Button onClick={() => navigate('/login')} variant="outline">
+          Log In Again
+        </Button>
+      </div>
+    );
   }
 
   return (
