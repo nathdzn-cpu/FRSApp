@@ -13,6 +13,7 @@ import CreateUserChoice from "./pages/admin/users/CreateUserChoice"; // New impo
 import CreateDriver from "./pages/admin/users/CreateDriver"; // New import
 import CreateOffice from "./pages/admin/users/CreateOffice"; // New import
 import EditUser from "./pages/admin/users/EditUser"; // New import
+import AdminUsersDebug from "./pages/admin/users/Debug"; // New import
 import CreateJob from "./pages/CreateJob";
 import { UserRoleProvider } from "./context/UserRoleContext";
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/admin/users/new/driver" element={<CreateDriver />} /> {/* New route */}
             <Route path="/admin/users/new/office" element={<CreateOffice />} /> {/* New route */}
             <Route path="/admin/users/:id/edit" element={<EditUser />} /> {/* New route */}
+            <Route path="/admin/users/debug" element={<AdminUsersDebug />} /> {/* New route */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
