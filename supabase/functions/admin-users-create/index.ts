@@ -3,14 +3,14 @@ import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function adminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  return createClient(url, key, { auth: { persistSession: false } });
+  const url = Deno.env.get("URL");
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) throw new Error("Missing URL or SERVICE_ROLE_KEY");
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 function userClient(authHeader: string | null) {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const url = Deno.env.get("URL")!;
+  const anon = Deno.env.get("ANON_KEY")!;
   const token = (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : "") || "";
   return createClient(url, anon, {
     global: { headers: { Authorization: token ? `Bearer ${token}` : "" } },
