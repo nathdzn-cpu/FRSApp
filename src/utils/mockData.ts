@@ -32,6 +32,30 @@ export interface DailyChecklist {
   created_at: string;
 }
 
+// New interfaces for Daily HGV Checks
+export interface DailyCheckItem {
+  id: string;
+  tenant_id: string;
+  title: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface DailyCheckResponse {
+  id: string;
+  tenant_id: string;
+  driver_id: string;
+  truck_reg: string;
+  trailer_no?: string;
+  started_at: string;
+  finished_at: string;
+  duration_seconds: number;
+  signature?: string; // Base64 string or file reference
+  items: Array<{ item_id: string; ok: boolean; notes?: string; photo_url?: string }>;
+  created_at: string;
+}
+
 export interface DailyCheck {
   id: string;
   tenant_id: string;
@@ -127,7 +151,7 @@ export interface AuditLog {
 // Seed Data
 const demoTenantId = uuidv4();
 const aliceAdminId = uuidv4();
-// Removed Owen Office, Dave Driver, Eve Driver from initial seed
+const daveDriverId = uuidv4(); // New driver ID
 
 const job1Id = uuidv4();
 const stop1Id = uuidv4();
@@ -149,7 +173,19 @@ export let mockProfiles: Profile[] = [ // Made mutable
     created_at: new Date().toISOString(),
     is_demo: true, // Marked as demo
   },
-  // Removed other profiles from initial seed
+  {
+    id: daveDriverId,
+    tenant_id: demoTenantId,
+    full_name: 'Dave Driver',
+    role: 'driver',
+    user_id: 'auth_user_dave',
+    truck_reg: 'DA66 VED',
+    trailer_no: 'TRL-007',
+    created_at: new Date().toISOString(),
+    last_location: { lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() },
+    last_job_status: 'delivered',
+    is_demo: true,
+  },
 ];
 
 export const mockDailyChecklists: DailyChecklist[] = [
@@ -169,6 +205,45 @@ export const mockDailyChecklists: DailyChecklist[] = [
     created_at: new Date().toISOString(),
   },
 ];
+
+// New mock data arrays for Daily HGV Checks
+export const mockDailyCheckItems: DailyCheckItem[] = [
+  {
+    id: uuidv4(),
+    tenant_id: demoTenantId,
+    title: "Brakes",
+    description: "Check brake fluid, pads, and general function.",
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    tenant_id: demoTenantId,
+    title: "Lights",
+    description: "Check all exterior lights (headlights, tail lights, indicators, brake lights).",
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    tenant_id: demoTenantId,
+    title: "Tires",
+    description: "Check tire pressure, tread depth, and for any damage.",
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    tenant_id: demoTenantId,
+    title: "Windscreen Wipers",
+    description: "Check wiper blades for wear and washer fluid level.",
+    is_active: false,
+    created_at: new Date().toISOString(),
+  },
+];
+
+export const mockDailyCheckResponses: DailyCheckResponse[] = [];
+
 
 const today = new Date();
 const tomorrow = new Date(today);

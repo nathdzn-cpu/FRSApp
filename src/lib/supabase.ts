@@ -5,4 +5,6 @@ export * from './api/jobs';
 export * from './api/dailyChecklists';
 export * from './api/driverApp';
 export * from './api/edgeFunctions';
-export * from './api/tenantCounters'; // Export new tenantCounters API
+export * from './api/tenantCounters';
+export * from './api/dailyCheckItems'; // New export
+export * from './api/dailyCheckResponses'; // New export
