@@ -4,6 +4,7 @@ import { callFn } from "@/lib/callFunction";
 
 export default function UsersDebug() {
   const [me, setMe] = useState<any>(null);
+  const [profiles, setProfiles] = useState<any[] | null>(null); // Changed to array
   const [err, setErr] = useState<string | null>(null);
   const [log, setLog] = useState<string>("");
 
@@ -11,9 +12,16 @@ export default function UsersDebug() {
     (async () => {
       setErr(null);
       const { data: auth } = await supabase.auth.getUser();
-      const { data: profile, error } = await supabase.from("profiles").select("id, role, tenant_id, full_name").single();
-      if (error) setErr(error.message);
-      setMe({ authUser: auth.user, profile });
+      const { data: fetchedProfiles, error } = await supabase.from("profiles").select("id, role, tenant_id, full_name"); // Removed .single()
+      if (error) {
+        setErr(error.message);
+        setProfiles(null); // Ensure profiles is null on error
+      } else {
+        setProfiles(fetchedProfiles || []); // Set to empty array if no data
+        // Find the current user's profile from the fetched list
+        const myProfile = fetchedProfiles?.find((p: any) => p.id === auth.user?.id);
+        setMe({ authUser: auth.user, profile: myProfile });
+      }
     })();
   }, []);
 
@@ -33,6 +41,13 @@ export default function UsersDebug() {
 
       const res: any = await callFn("admin-users-create", payload);
       setLog(JSON.stringify(res, null, 2));
+      // After creating, refresh the profiles list
+      const { data: updatedProfiles, error: updateError } = await supabase.from("profiles").select("id, role, tenant_id, full_name");
+      if (updateError) {
+        console.error("Error refreshing profiles after creation:", updateError);
+      } else {
+        setProfiles(updatedProfiles || []);
+      }
     } catch (e: any) {
       setErr(e.message || String(e));
       setLog("");
@@ -47,6 +62,13 @@ export default function UsersDebug() {
         <h3>Me</h3>
         <pre style={{ background: "#f7f7f7", padding: 12 }}>
 {JSON.stringify(me, null, 2)}
+        </pre>
+      </section>
+
+      <section style={{ marginTop: 12 }}>
+        <h3>All Profiles</h3>
+        <pre style={{ background: "#f7f7f7", padding: 12, minHeight: 120 }}>
+          {profiles === null ? "Loading profiles..." : profiles.length === 0 ? "No profiles found" : JSON.stringify(profiles, null, 2)}
         </pre>
       </section>
 
