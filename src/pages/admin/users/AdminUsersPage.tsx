@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/context/UserRoleContext';
-import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers } from '@/lib/supabase';
+import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers, purgeAllNonAdminUsers } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw, Eraser } from 'lucide-react'; // Added Eraser icon
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
+import { Checkbox } from '@/components/ui/checkbox';
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,10 +33,11 @@ const AdminUsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
-  const [showDemo, setShowDemo] = useState(false); // New state for toggling demo users
-  const [profiles, setProfiles] = useState<Profile[]>([]); // For currentProfile
-  const [busyId, setBusyId] = useState<string | null>(null); // To disable buttons during action
-  const [purging, setPurging] = useState(false); // State for purge button
+  const [showDemo, setShowDemo] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [purging, setPurging] = useState(false);
+  const [purgingAll, setPurgingAll] = useState(false); // New state for purging all non-admin users
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
@@ -51,7 +52,7 @@ const AdminUsersPage: React.FC = () => {
 
       if (defaultTenantId) {
         const fetchedProfiles = await getProfiles(defaultTenantId);
-        setProfiles(fetchedProfiles); // Set all profiles for currentProfile lookup
+        setProfiles(fetchedProfiles);
         const fetchedUsers = await getUsersForAdmin(defaultTenantId);
         setUsers(fetchedUsers);
       }
@@ -147,9 +148,35 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handlePurgeAllNonAdminUsers = async () => {
+    if (!currentProfile) {
+      toast.error("Admin profile not found. Cannot purge non-admin users.");
+      return;
+    }
+    if (!window.confirm("This will permanently delete ALL non-admin users (Auth + profiles) in this tenant. This action cannot be undone. Continue?")) {
+      return;
+    }
+
+    setPurgingAll(true);
+    try {
+      const result = await purgeAllNonAdminUsers(currentTenantId, currentProfile.id);
+      if (result.ok) {
+        toast.success(`Removed ${result.removed} non-admin user(s).`);
+        fetchUsers(); // Refresh the list after purge
+      } else {
+        toast.error("Failed to purge non-admin users.");
+      }
+    } catch (err: any) {
+      console.error("Error purging non-admin users:", err);
+      toast.error("An unexpected error occurred while purging non-admin users.");
+    } finally {
+      setPurgingAll(false);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     let r = users;
-    if (!showDemo) r = r.filter(x => !x.is_demo); // Filter out demo users if showDemo is false
+    if (!showDemo) r = r.filter(x => !x.is_demo);
     if (filterRole !== "all") r = r.filter(x => x.role === filterRole);
     if (searchTerm.trim()) {
       const t = searchTerm.toLowerCase();
@@ -161,7 +188,7 @@ const AdminUsersPage: React.FC = () => {
       );
     }
     return r;
-  }, [users, searchTerm, filterRole, showDemo]); // Add showDemo to dependencies
+  }, [users, searchTerm, filterRole, showDemo]);
 
   if (loading) {
     return (
@@ -246,7 +273,15 @@ const AdminUsersPage: React.FC = () => {
                 disabled={purging}
                 className="w-full sm:w-auto"
               >
-                {purging ? "Purging..." : "Purge Demo Users"}
+                {purging ? "Purging Demo..." : "Purge Demo Users"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handlePurgeAllNonAdminUsers}
+                disabled={purgingAll}
+                className="w-full sm:w-auto"
+              >
+                <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
               </Button>
             </div>
 
@@ -263,7 +298,7 @@ const AdminUsersPage: React.FC = () => {
                       <TableHead>User ID (Auth)</TableHead>
                       <TableHead>Truck Reg</TableHead>
                       <TableHead>Trailer No</TableHead>
-                      <TableHead>Flags</TableHead> {/* New column for flags */}
+                      <TableHead>Flags</TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -278,7 +313,7 @@ const AdminUsersPage: React.FC = () => {
                         <TableCell className="text-sm text-gray-600 dark:text-gray-400">{user.user_id}</TableCell>
                         <TableCell>{user.truck_reg || '-'}</TableCell>
                         <TableCell>{user.trailer_no || '-'}</TableCell>
-                        <TableCell>{user.is_demo ? <Badge variant="outline">Demo</Badge> : '-'}</TableCell> {/* Display demo flag */}
+                        <TableCell>{user.is_demo ? <Badge variant="outline">Demo</Badge> : '-'}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">
                             <Button variant="outline" size="sm" onClick={() => navigate(`/admin/users/${user.id}/edit`)}>

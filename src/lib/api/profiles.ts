@@ -184,3 +184,43 @@ export const purgeDemoUsers = async (tenantId: string, actorId: string): Promise
 
   return { ok: true, removed: removedCount };
 };
+
+export const purgeAllNonAdminUsers = async (tenantId: string, actorId: string): Promise<{ ok: boolean; removed: number }> => {
+  await delay(1000); // Simulate API call delay
+
+  const removedProfiles: Profile[] = [];
+
+  // Filter out all non-admin users for the given tenant
+  const updatedProfiles = mockProfiles.filter(p => {
+    if (p.tenant_id === tenantId && p.role !== 'admin') {
+      removedProfiles.push(p);
+      return false; // Remove this profile
+    }
+    return true; // Keep this profile
+  });
+
+  // Update the mockProfiles array
+  mockProfiles.splice(0, mockProfiles.length, ...updatedProfiles);
+
+  const removedCount = removedProfiles.length;
+
+  if (removedCount > 0) {
+    console.log(`Simulating Supabase Auth: Deleting ${removedCount} non-admin users.`);
+    // In a real app, you'd iterate removedProfiles and call supabase.auth.admin.deleteUser(p.user_id)
+
+    mockAuditLogs.push({
+      id: uuidv4(),
+      tenant_id: tenantId,
+      actor_id: actorId,
+      entity: 'profiles',
+      entity_id: actorId, // Actor is performing the purge
+      action: 'delete',
+      notes: `Purged ${removedCount} non-admin user(s).`,
+      before: { count: removedCount, ids: removedProfiles.map(p => p.id) },
+      after: null,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  return { ok: true, removed: removedCount };
+};
