@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Added Card import
 
 const EditUser: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Profile ID
@@ -132,8 +133,8 @@ const EditUser: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
-        <Button onClick={() => navigate('/admin/users')} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
+        <Button onClick={() => navigate('/')} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
     );
