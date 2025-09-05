@@ -2,8 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { Job, Profile } from '@/utils/mockData';
-import { useUserRole } from '@/context/UserRoleContext';
 import { format } from 'date-fns';
 import { formatGBP } from '@/lib/money'; // Import the new currency formatter
 
@@ -13,7 +13,7 @@ interface JobsTableProps {
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
-  const { userRole } = useUserRole();
+  const { userRole } = useAuth(); // Use useAuth hook
   const canSeePrice = userRole === 'admin' || userRole === 'office';
 
   const getDriverName = (driverId?: string) => {
