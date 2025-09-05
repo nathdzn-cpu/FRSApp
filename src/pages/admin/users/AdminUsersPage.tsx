@@ -34,16 +34,16 @@ const AdminUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [showDemo, setShowDemo] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]); // Still needed for currentProfile context
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [purging, setPurging] = useState(false);
-  const [purgingAll, setPurgingAll] = useState(false); // New state for purging all non-admin users
+  const [purgingDemo, setPurgingDemo] = useState(false); // Renamed from 'purging'
+  const [purgingAll, setPurgingAll] = useState(false);
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
   const currentProfile = profiles.find(p => p.user_id === currentUserId);
 
-  const fetchUsers = async () => {
+  const fetchUsersData = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -51,9 +51,10 @@ const AdminUsersPage: React.FC = () => {
       const defaultTenantId = fetchedTenants[0]?.id;
 
       if (defaultTenantId) {
-        const fetchedProfiles = await getProfiles(defaultTenantId);
+        const fetchedProfiles = await getProfiles(defaultTenantId); // Fetch all profiles for currentProfile context
         setProfiles(fetchedProfiles);
-        const fetchedUsers = await getUsersForAdmin(defaultTenantId);
+
+        const fetchedUsers = await getUsersForAdmin(defaultTenantId); // Use admin-specific getter
         setUsers(fetchedUsers);
       }
     } catch (err: any) {
@@ -70,7 +71,7 @@ const AdminUsersPage: React.FC = () => {
       navigate('/');
       return;
     }
-    fetchUsers();
+    fetchUsersData();
   }, [userRole, navigate]);
 
   const handleResetPassword = async (user: Profile) => {
@@ -80,7 +81,7 @@ const AdminUsersPage: React.FC = () => {
     }
     try {
       setBusyId(user.id);
-      const promise = resetUserPassword(currentTenantId, user.user_id, currentProfile.id);
+      const promise = resetUserPassword(currentTenantId, user.id, currentProfile.id); // Pass user.id (auth ID)
       toast.promise(promise, {
         loading: `Sending password reset to ${user.full_name}...`,
         success: `Password reset email sent to ${user.full_name}! (Simulated)`,
@@ -110,7 +111,7 @@ const AdminUsersPage: React.FC = () => {
       });
       const result = await promise;
       if (result) {
-        fetchUsers(); // Refresh the list after successful deletion
+        fetchUsersData(); // Refresh the list after successful deletion
       } else {
         toast.error(`Failed to delete ${user.full_name}: User not found or could not be deleted.`);
       }
@@ -131,12 +132,12 @@ const AdminUsersPage: React.FC = () => {
       return;
     }
 
-    setPurging(true);
+    setPurgingDemo(true);
     try {
       const result = await purgeDemoUsers(currentTenantId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} demo user(s).`);
-        fetchUsers(); // Refresh the list after purge
+        fetchUsersData(); // Refresh the list after purge
       } else {
         toast.error("Failed to purge demo users.");
       }
@@ -144,7 +145,7 @@ const AdminUsersPage: React.FC = () => {
       console.error("Error purging demo users:", err);
       toast.error("An unexpected error occurred while purging demo users.");
     } finally {
-      setPurging(false);
+      setPurgingDemo(false);
     }
   };
 
@@ -162,7 +163,7 @@ const AdminUsersPage: React.FC = () => {
       const result = await purgeAllNonAdminUsers(currentTenantId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} non-admin user(s).`);
-        fetchUsers(); // Refresh the list after purge
+        fetchUsersData(); // Refresh the list after purge
       } else {
         toast.error("Failed to purge non-admin users.");
       }
@@ -232,7 +233,7 @@ const AdminUsersPage: React.FC = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-2xl font-bold">Admin: User Management</CardTitle>
             <div className="flex space-x-2">
-              <Button onClick={fetchUsers} variant="outline">
+              <Button onClick={fetchUsersData} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
               <Button onClick={() => navigate('/admin/users/new')}>
@@ -270,10 +271,10 @@ const AdminUsersPage: React.FC = () => {
               <Button
                 variant="destructive"
                 onClick={handlePurgeDemoUsers}
-                disabled={purging}
+                disabled={purgingDemo}
                 className="w-full sm:w-auto"
               >
-                {purging ? "Purging Demo..." : "Purge Demo Users"}
+                {purgingDemo ? "Purging Demo..." : "Purge Demo Users"}
               </Button>
               <Button
                 variant="destructive"

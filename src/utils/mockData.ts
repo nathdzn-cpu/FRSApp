@@ -133,7 +133,7 @@ export const mockTenants: Tenant[] = [
 
 // mockProfiles, mockAuditLogs, mockDailyChecks, mockProfileDevices are now managed by Supabase
 // We'll keep a minimal initial admin profile for the demo to function
-export let mockProfiles: Profile[] = [
+export const mockProfiles: Profile[] = [ // Changed to const, as it's now just initial data
   {
     id: 'auth_user_alice', // This ID should match a real Supabase Auth user ID for the admin
     tenant_id: demoTenantId,
@@ -141,7 +141,7 @@ export let mockProfiles: Profile[] = [
     role: 'admin',
     user_id: 'auth_user_alice',
     created_at: new Date().toISOString(),
-    is_demo: true,
+    is_demo: true, // Mark as demo
   },
 ];
 
@@ -187,4 +187,4 @@ export const mockProfileDevices: ProfileDevice[] = []; // Now empty, will be man
 
 export const mockDailyChecks: DailyCheck[] = []; // Now empty, will be managed by Supabase
 
-export let mockAuditLogs: AuditLog[] = []; // Now empty, will be managed by Supabase
+export const mockAuditLogs: AuditLog[] = []; // Now empty, will be managed by Supabase

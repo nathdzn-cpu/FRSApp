@@ -101,11 +101,9 @@ const EditUser: React.FC = () => {
       toast.error("User to edit or admin profile not found. Cannot reset password.");
       return;
     }
-    // In a real app, you'd need the user's email to send a reset link.
-    // For this mock, we'll just simulate the action.
     try {
       setIsResetPasswordBusy(true);
-      const promise = resetUserPassword(currentTenantId, userToEdit.user_id, currentProfile.id);
+      const promise = resetUserPassword(currentTenantId, userToEdit.id, currentProfile.id); // Pass userToEdit.id (auth ID)
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
         success: `Password reset email sent to ${userToEdit.full_name}! (Simulated)`,
