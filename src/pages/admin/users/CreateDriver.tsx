@@ -57,7 +57,6 @@ const CreateDriver: React.FC = () => {
         dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
         phone: values.phone,
         role: 'driver' as const,
-        user_id: values.user_id,
         email: values.email,
         password: values.password, // This would be handled by Supabase Auth Admin API
       };

@@ -56,7 +56,6 @@ const CreateOffice: React.FC = () => {
         full_name: values.full_name,
         phone: values.phone,
         role: 'office' as const,
-        user_id: values.user_id || undefined, // Optional for office
         email: values.email,
         password: values.password, // This would be handled by Supabase Auth Admin API
       };

@@ -17,7 +17,7 @@ interface CreateUserData {
   dob?: string;
   phone?: string;
   role: 'driver' | 'office' | 'admin';
-  user_id: string; // Corresponds to auth.users.id
+  user_id?: string; // Corresponds to auth.users.id - now optional
   truck_reg?: string;
   trailer_no?: string;
   email: string; // For Supabase Auth Admin API
