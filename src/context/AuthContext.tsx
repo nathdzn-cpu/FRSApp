@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode, useCa
 import { supabase } from '@/lib/supabaseClient';
 import { Session, User } from '@supabase/supabase-js';
 import { Profile } from '@/utils/mockData'; // Assuming Profile is still used
-import { getProfileByAuthId } from '@/lib/supabase'; // New function to fetch profile by auth ID
+// Removed: import { getProfileByAuthId } from '@/lib/supabase'; // No longer using mock function for auth profile fetch
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthContextProvider = ({ children }: { ReactNode }) => {
+export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,20 +38,39 @@ export const AuthContextProvider = ({ children }: { ReactNode }) => {
       setSession(session);
       setUser(session?.user || null);
 
-      console.log("Auth Session:", session); // Log session
+      console.log("Auth Session:", session?.user?.id || "no session"); // Log session.user.id or "no session"
 
       if (session?.user) {
-        const fetchedProfile = await getProfileByAuthId(session.user.id);
-        setProfile(fetchedProfile || null);
-        setUserRole(fetchedProfile?.role || undefined);
-        console.log("User Profile:", fetchedProfile); // Log profile
-        if (!fetchedProfile) {
-          console.log("No profile found for authenticated user.");
+        // Query profiles table directly using supabase client and the correct 'id' field
+        const { data: fetchedProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+
+        console.log("After querying profiles - Data:", fetchedProfile, "Error:", profileError); // Log data and error
+
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 is "No rows found"
+          console.error("Error fetching profile from DB:", profileError);
+          setProfile(null);
+          setUserRole(undefined);
+          console.log("No profile row for this user (DB error).");
+        } else if (fetchedProfile) {
+          setProfile(fetchedProfile as Profile);
+          setUserRole((fetchedProfile as Profile).role || undefined);
+          console.log("Loaded profile:", fetchedProfile); // Log the returned profile
+          console.log("Setting role to:", (fetchedProfile as Profile).role); // Log role setting
+        } else {
+          setProfile(null);
+          setUserRole(undefined);
+          console.log("No profile row for this user."); // Log if profile is null
+          console.log("Setting role to: null"); // Log role setting to null
         }
       } else {
         setProfile(null);
         setUserRole(undefined);
         console.log("No active session, profile reset.");
+        console.log("Setting role to: null"); // Log role setting to null
       }
     } catch (error) {
       console.error("Error fetching session or profile:", error);
@@ -59,8 +78,10 @@ export const AuthContextProvider = ({ children }: { ReactNode }) => {
       setUser(null);
       setProfile(null);
       setUserRole(undefined);
+      console.log("Setting role to: null"); // Log role setting to null
     } finally {
       setIsLoadingAuth(false);
+      console.log("Finished loading"); // Log finished loading
     }
   }, []);
 
