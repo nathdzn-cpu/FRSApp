@@ -8,7 +8,12 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sb:login": "supabase login",
+    "sb:link": "supabase link --project-ref hrastslmlkkfwsdsbbcn",
+    "sb:secrets": "supabase secrets set SUPABASE_URL=https://hrastslmlkkfwsdsbbcn.supabase.co SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY",
+    "sb:deploy:daily": "supabase functions deploy admin-daily-check-items --project-ref hrastslmlkkfwsdsbbcn && supabase functions deploy driver-daily-check-submit --project-ref hrastslmlkkfwsdsbbcn",
+    "sb:list": "supabase functions list --project-ref hrastslmlkkfwsdsbbcn"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
