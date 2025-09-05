@@ -19,8 +19,8 @@ const driverFormSchema = z.object({
   dob: z.date({ required_error: 'Date of Birth is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
   user_id: z.string().min(1, { message: 'Internal User ID is required.' }),
-  truck_reg: z.string().min(1, { message: 'Initial Truck Registration is required.' }),
-  trailer_no: z.string().min(1, { message: 'Initial Trailer Number is required.' }),
+  truck_reg: z.string().optional().or(z.literal('')), // Made optional
+  trailer_no: z.string().optional().or(z.literal('')), // Made optional
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
@@ -136,7 +136,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="truck_reg"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Truck Registration</FormLabel>
+                  <FormLabel>Initial Truck Registration (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., AB12 CDE" {...field} />
                   </FormControl>
@@ -149,7 +149,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="trailer_no"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Trailer Number</FormLabel>
+                  <FormLabel>Initial Trailer Number (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., TRL-001" {...field} />
                   </FormControl>

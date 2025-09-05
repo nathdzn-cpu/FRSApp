@@ -52,17 +52,23 @@ const CreateDriver: React.FC = () => {
     }
 
     try {
-      const newDriverData = {
+      const newDriverData: any = {
         full_name: values.full_name,
         dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
         phone: values.phone,
         role: 'driver' as const,
         user_id: values.user_id,
-        truck_reg: values.truck_reg,
-        trailer_no: values.trailer_no,
         email: values.email,
         password: values.password, // This would be handled by Supabase Auth Admin API
       };
+
+      // Conditionally add optional fields
+      if (values.truck_reg) {
+        newDriverData.truck_reg = values.truck_reg;
+      }
+      if (values.trailer_no) {
+        newDriverData.trailer_no = values.trailer_no;
+      }
 
       const promise = createUser(currentTenantId, newDriverData, currentProfile.id);
       toast.promise(promise, {

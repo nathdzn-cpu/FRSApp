@@ -3,7 +3,7 @@ import { mockJobs, mockJobStops, mockJobEvents, mockDocuments, mockAuditLogs, Jo
 import { delay } from '../utils/apiUtils';
 import { allocateJobRef } from './tenantCounters'; // Import the new function
 
-export const getJobs = async (tenantId: string, role: 'admin' | 'office' | 'driver', driverId?: string): Promise<Job[]> => {
+export const getJobs = async (tenantId: string, role: 'admin' | 'office' | 'driver', driverId?: string, startDate?: string, endDate?: string): Promise<Job[]> => {
   await delay(300);
   let jobs = mockJobs.filter(job => job.tenant_id === tenantId);
 
@@ -12,6 +12,15 @@ export const getJobs = async (tenantId: string, role: 'admin' | 'office' | 'driv
     // Simulate RLS: remove price for drivers
     return jobs.map(({ price, ...rest }) => rest as Job);
   }
+
+  // Apply date filters
+  if (startDate) {
+    jobs = jobs.filter(job => new Date(job.scheduled_date) >= new Date(startDate));
+  }
+  if (endDate) {
+    jobs = jobs.filter(job => new Date(job.scheduled_date) <= new Date(endDate));
+  }
+
   return jobs;
 };
 

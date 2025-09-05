@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Added Card import
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const EditUser: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Profile ID
@@ -71,11 +71,11 @@ const EditUser: React.FC = () => {
       const updates: Partial<Profile> = {
         full_name: values.full_name,
         dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
-        phone: values.phone,
+        phone: values.phone || undefined, // Ensure empty string becomes undefined
         role: values.role,
-        user_id: values.user_id,
-        truck_reg: values.truck_reg,
-        trailer_no: values.trailer_no,
+        user_id: values.user_id || undefined, // Ensure empty string becomes undefined
+        truck_reg: values.truck_reg || undefined, // Ensure empty string becomes undefined
+        trailer_no: values.trailer_no || undefined, // Ensure empty string becomes undefined
       };
 
       const promise = updateUser(currentTenantId, userToEdit.id, updates, currentProfile.id);
