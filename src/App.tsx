@@ -9,6 +9,7 @@ import JobDetail from "./pages/JobDetail";
 import Drivers from "./pages/Drivers";
 import AdminChecklists from "./pages/AdminChecklists";
 import AdminUsers from "./pages/AdminUsers";
+import CreateJob from "./pages/CreateJob"; // Import the new page
 import { UserRoleProvider } from "./context/UserRoleContext";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <UserRoleProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/jobs/new" element={<CreateJob />} /> {/* New route */}
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/admin/checklists" element={<AdminChecklists />} />
