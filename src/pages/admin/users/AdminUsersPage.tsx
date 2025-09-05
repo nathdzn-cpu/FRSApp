@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers, purgeAllNonAdminUsers } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw, Eraser } from 'lucide-react'; // Added Eraser icon
+import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw, Eraser } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,32 +27,36 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [users, setUsers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [showDemo, setShowDemo] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]); // This seems redundant with `users` and `profile` from AuthContext
   const [busyId, setBusyId] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
-  const [purgingAll, setPurgingAll] = useState(false); // New state for purging all non-admin users
+  const [purgingAll, setPurgingAll] = useState(false);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
 
   const fetchUsers = async () => {
-    setLoading(true);
+    if (!user || userRole !== 'admin' || !currentTenantId) {
+      setLoadingData(false);
+      return;
+    }
+
+    setLoadingData(true);
     setError(null);
     try {
       const fetchedTenants = await getTenants();
-      const defaultTenantId = fetchedTenants[0]?.id;
+      const defaultTenantId = currentProfile?.tenant_id || fetchedTenants[0]?.id;
 
       if (defaultTenantId) {
-        const fetchedProfiles = await getProfiles(defaultTenantId);
-        setProfiles(fetchedProfiles);
+        const fetchedProfiles = await getProfiles(defaultTenantId); // This fetches all profiles, including the current admin's
+        setProfiles(fetchedProfiles); // Keep this for general profile lookup if needed
         const fetchedUsers = await getUsersForAdmin(defaultTenantId);
         setUsers(fetchedUsers);
       }
@@ -60,31 +64,33 @@ const AdminUsersPage: React.FC = () => {
       console.error("Failed to fetch users:", err);
       setError(err.message || "Failed to load users. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
       navigate('/');
       return;
     }
     fetchUsers();
-  }, [userRole, navigate]);
+  }, [user, userRole, currentTenantId, isLoadingAuth, navigate]);
 
-  const handleResetPassword = async (user: Profile) => {
+  const handleResetPassword = async (userToReset: Profile) => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot reset password.");
       return;
     }
     try {
-      setBusyId(user.id);
-      const promise = resetUserPassword(currentTenantId, user.user_id, currentProfile.id);
+      setBusyId(userToReset.id);
+      const promise = resetUserPassword(currentTenantId, userToReset.user_id, currentProfile.id);
       toast.promise(promise, {
-        loading: `Sending password reset to ${user.full_name}...`,
-        success: `Password reset email sent to ${user.full_name}! (Simulated)`,
-        error: `Failed to send password reset to ${user.full_name}.`,
+        loading: `Sending password reset to ${userToReset.full_name}...`,
+        success: `Password reset email sent to ${userToReset.full_name}! (Simulated)`,
+        error: `Failed to send password reset to ${userToReset.full_name}.`,
       });
       await promise;
     } catch (err: any) {
@@ -95,24 +101,24 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (user: Profile) => {
+  const handleDeleteUser = async (userToDelete: Profile) => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot delete user.");
       return;
     }
     try {
-      setBusyId(user.id);
-      const promise = deleteUser(currentTenantId, user.id, currentProfile.id);
+      setBusyId(userToDelete.id);
+      const promise = deleteUser(currentTenantId, userToDelete.id, currentProfile.id);
       toast.promise(promise, {
-        loading: `Deleting ${user.full_name}...`,
-        success: `${user.full_name} deleted successfully! (Simulated)`,
-        error: `Failed to delete ${user.full_name}.`,
+        loading: `Deleting ${userToDelete.full_name}...`,
+        success: `${userToDelete.full_name} deleted successfully! (Simulated)`,
+        error: `Failed to delete ${userToDelete.full_name}.`,
       });
       const result = await promise;
       if (result) {
         fetchUsers(); // Refresh the list after successful deletion
       } else {
-        toast.error(`Failed to delete ${user.full_name}: User not found or could not be deleted.`);
+        toast.error(`Failed to delete ${userToDelete.full_name}: User not found or could not be deleted.`);
       }
     } catch (err: any) {
       console.error("Error deleting user:", err);
@@ -190,7 +196,7 @@ const AdminUsersPage: React.FC = () => {
     return r;
   }, [users, searchTerm, filterRole, showDemo]);
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -210,7 +216,7 @@ const AdminUsersPage: React.FC = () => {
     );
   }
 
-  if (userRole !== 'admin') {
+  if (!user || userRole !== 'admin') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>

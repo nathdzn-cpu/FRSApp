@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
-import { Profile } from '@/utils/mockData'; // Assuming Profile is still needed for currentProfile
+import { Profile } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Camera, CheckCircle2, XCircle } from 'lucide-react';
@@ -36,58 +36,49 @@ interface CheckItemState {
 
 const DriverDailyCheck: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [activeItems, setActiveItems] = useState<DailyCheckItem[]>([]);
   const [checkStates, setCheckStates] = useState<CheckItemState[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [truckReg, setTruckReg] = useState('');
   const [trailerNo, setTrailerNo] = useState('');
   const [signature, setSignature] = useState('');
-  const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined); // To get currentProfile for actor_id
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploadItemId, setPhotoUploadItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userRole !== 'driver') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'driver') {
       toast.error("You do not have permission to access this page. Only drivers can perform daily checks.");
       navigate('/');
       return;
     }
 
     const fetchItemsAndProfile = async () => {
-      setLoading(true);
+      setLoadingData(true);
       setError(null);
       try {
-        // Fetch current user's profile
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, tenant_id, truck_reg, trailer_no, user_id")
-          .eq("user_id", currentUserId)
-          .single();
-
-        if (profileError) {
-          throw new Error(profileError.message || "Failed to fetch driver profile.");
-        }
-        if (!profileData) {
+        if (!currentProfile) {
           throw new Error("Driver profile not found.");
         }
-        setCurrentProfile(profileData as Profile);
-        setTruckReg(profileData.truck_reg || '');
-        setTrailerNo(profileData.trailer_no || '');
+        
+        setTruckReg(currentProfile.truck_reg || '');
+        setTrailerNo(currentProfile.trailer_no || '');
 
         // Fetch active daily check items
         const { data: itemsData, error: itemsError } = await supabase
           .from("daily_check_items")
           .select("id, title, description, is_active")
-          .eq("tenant_id", profileData.tenant_id)
+          .eq("tenant_id", currentTenantId)
           .eq("is_active", true)
           .order("created_at", { ascending: true });
 
@@ -111,11 +102,11 @@ const DriverDailyCheck: React.FC = () => {
         console.error("Failed to fetch daily check items or profile:", err);
         setError(err.message || "Failed to load daily check items. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
     fetchItemsAndProfile();
-  }, [userRole, navigate, currentUserId]);
+  }, [user, profile, userRole, currentTenantId, isLoadingAuth, navigate]);
 
   const handleCheckChange = (itemId: string, field: keyof CheckItemState, value: any) => {
     setCheckStates(prevStates =>
@@ -224,7 +215,7 @@ const DriverDailyCheck: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -244,7 +235,7 @@ const DriverDailyCheck: React.FC = () => {
     );
   }
 
-  if (userRole !== 'driver') {
+  if (!user || userRole !== 'driver') {
     return null; // Should be redirected by useEffect
   }
 

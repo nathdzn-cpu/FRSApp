@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, PlusCircle, Edit, Trash2, Check, X, RefreshCw } from 'lucide-react';
@@ -30,10 +30,10 @@ type DailyCheckItem = { id: string; title: string; description: string | null; i
 
 const AdminDailyChecks: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [items, setItems] = useState<DailyCheckItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
@@ -46,10 +46,15 @@ const AdminDailyChecks: React.FC = () => {
   // State for editing item dialog
   const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data, in a real app this would come from user session
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
 
   const loadItems = async () => {
-    setLoading(true);
+    if (!user || userRole !== 'admin' || !currentTenantId) {
+      setLoadingData(false);
+      return;
+    }
+
+    setLoadingData(true);
     setError(null);
     try {
       // Try reading via SQL directly (requires RLS to allow admin read)
@@ -68,18 +73,20 @@ const AdminDailyChecks: React.FC = () => {
       console.error("Failed to fetch daily check items:", err);
       setError(err.message || "Failed to load daily check items. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
       navigate('/');
       return;
     }
     loadItems();
-  }, [userRole, navigate]);
+  }, [user, userRole, currentTenantId, isLoadingAuth, navigate]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
@@ -207,7 +214,7 @@ const AdminDailyChecks: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -227,7 +234,7 @@ const AdminDailyChecks: React.FC = () => {
     );
   }
 
-  if (userRole !== 'admin') {
+  if (!user || userRole !== 'admin') {
     return null; // Should be redirected by useEffect
   }
 

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import JobDetail from "./pages/JobDetail";
@@ -17,10 +17,87 @@ import CreateJob from "./pages/CreateJob";
 import AdminDailyChecks from "./pages/admin/DailyChecks";
 import DriverDailyCheck from "./pages/driver/DailyCheck";
 import EnvDebug from './pages/EnvDebug';
-import UsersDebug from "@/pages/admin/UsersDebug"; // New import
-import { UserRoleProvider } from "./context/UserRoleContext";
+import UsersDebug from "@/pages/admin/UsersDebug";
+import LoginPage from "./pages/Login"; // New import
+import { AuthContextProvider, useAuth } from "./context/AuthContext"; // New import and context
 
 const queryClient = new QueryClient();
+
+// PrivateRoute component to protect routes
+const PrivateRoute = ({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: ('admin' | 'office' | 'driver')[] }) => {
+  const { user, userRole, isLoadingAuth } = useAuth();
+
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading authentication...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/" replace />; // Redirect to home or a permission denied page
+  }
+
+  return children;
+};
+
+const AppContent = () => {
+  const { user, userRole, logout } = useAuth();
+
+  return (
+    <>
+      <nav className="p-4 bg-gray-800 text-white flex flex-wrap gap-4 items-center">
+        {user ? (
+          <>
+            <Link to="/" className="font-bold text-lg hover:text-gray-300">Home</Link>
+            {userRole === 'admin' && (
+              <>
+                <Link to="/admin/daily-checks" className="hover:text-gray-300">Admin Daily Checks</Link>
+                <Link to="/admin/users" className="hover:text-gray-300">Admin Users</Link>
+                <Link to="/admin/checklists" className="hover:text-gray-300">Admin Checklists (Old)</Link>
+                <Link to="/admin/users-debug" className="hover:text-gray-300">Users Debug</Link>
+              </>
+            )}
+            {userRole === 'driver' && (
+              <Link to="/driver/daily-check" className="hover:text-gray-300">Driver Daily Check</Link>
+            )}
+            {(userRole === 'admin' || userRole === 'office') && (
+              <Link to="/drivers" className="hover:text-gray-300">Drivers List</Link>
+            )}
+            <button onClick={logout} className="ml-auto px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white">Log Out</button>
+          </>
+        ) : (
+          <Link to="/login" className="font-bold text-lg hover:text-gray-300">Log In</Link>
+        )}
+        <Link to="/env-debug" className="hover:text-gray-300">Env Debug</Link>
+      </nav>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
+        <Route path="/jobs/new" element={<PrivateRoute allowedRoles={['admin', 'office']}><CreateJob /></PrivateRoute>} />
+        <Route path="/jobs/:id" element={<PrivateRoute><JobDetail /></PrivateRoute>} />
+        <Route path="/drivers" element={<PrivateRoute allowedRoles={['admin', 'office']}><Drivers /></PrivateRoute>} />
+        <Route path="/admin/checklists" element={<PrivateRoute allowedRoles={['admin']}><AdminChecklists /></PrivateRoute>} />
+        <Route path="/admin/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsersPage /></PrivateRoute>} />
+        <Route path="/admin/users/new" element={<PrivateRoute allowedRoles={['admin']}><CreateUserChoice /></PrivateRoute>} />
+        <Route path="/admin/users/new/driver" element={<PrivateRoute allowedRoles={['admin']}><CreateDriver /></PrivateRoute>} />
+        <Route path="/admin/users/new/office" element={<PrivateRoute allowedRoles={['admin']}><CreateOffice /></PrivateRoute>} />
+        <Route path="/admin/users/:id/edit" element={<PrivateRoute allowedRoles={['admin']}><EditUser /></PrivateRoute>} />
+        <Route path="/admin/daily-checks" element={<PrivateRoute allowedRoles={['admin']}><AdminDailyChecks /></PrivateRoute>} />
+        <Route path="/driver/daily-check" element={<PrivateRoute allowedRoles={['driver']}><DriverDailyCheck /></PrivateRoute>} />
+        <Route path="/env-debug" element={<EnvDebug />} />
+        <Route path="/admin/users-debug" element={<PrivateRoute allowedRoles={['admin']}><UsersDebug /></PrivateRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -28,36 +105,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <UserRoleProvider>
-          <nav className="p-4 bg-gray-800 text-white flex flex-wrap gap-4 items-center">
-            <Link to="/" className="font-bold text-lg hover:text-gray-300">Home</Link>
-            <Link to="/admin/daily-checks" className="hover:text-gray-300">Admin Daily Checks</Link>
-            <Link to="/driver/daily-check" className="hover:text-gray-300">Driver Daily Check</Link>
-            <Link to="/drivers" className="hover:text-gray-300">Drivers List</Link>
-            <Link to="/admin/users" className="hover:text-gray-300">Admin Users</Link>
-            <Link to="/admin/checklists" className="hover:text-gray-300">Admin Checklists (Old)</Link>
-            <Link to="/env-debug" className="hover:text-gray-300">Env Debug</Link>
-            <Link to="/admin/users-debug" className="hover:text-gray-300">Users Debug</Link> {/* New link */}
-          </nav>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/jobs/new" element={<CreateJob />} />
-            <Route path="/jobs/:id" element={<JobDetail />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/admin/checklists" element={<AdminChecklists />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/users/new" element={<CreateUserChoice />} />
-            <Route path="/admin/users/new/driver" element={<CreateDriver />} />
-            <Route path="/admin/users/new/office" element={<CreateOffice />} />
-            <Route path="/admin/users/:id/edit" element={<EditUser />} />
-            <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
-            <Route path="/driver/daily-check" element={<DriverDailyCheck />} />
-            <Route path="/env-debug" element={<EnvDebug />} />
-            <Route path="/admin/users-debug" element={<UsersDebug />} /> {/* New route */}
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </UserRoleProvider>
+        <AuthContextProvider>
+          <AppContent />
+        </AuthContextProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

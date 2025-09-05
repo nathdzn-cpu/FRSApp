@@ -7,6 +7,11 @@ export const getProfiles = async (tenantId: string): Promise<Profile[]> => {
   return mockProfiles.filter(p => p.tenant_id === tenantId);
 };
 
+export const getProfileByAuthId = async (authUserId: string): Promise<Profile | undefined> => {
+  await delay(100); // Simulate quick fetch
+  return mockProfiles.find(p => p.user_id === authUserId);
+};
+
 export const getUsersForAdmin = async (tenantId: string): Promise<Profile[]> => {
   await delay(200);
   return mockProfiles.filter(p => p.tenant_id === tenantId);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getDailyChecklists, updateDailyChecklist, getProfiles, getTenants } from '@/lib/supabase';
 import { DailyChecklist, Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,31 +15,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const AdminChecklists: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [checklists, setChecklists] = useState<DailyChecklist[]>([]);
   const [selectedChecklist, setSelectedChecklist] = useState<DailyChecklist | undefined>(undefined);
   const [editingItems, setEditingItems] = useState<DailyChecklist['items']>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
       navigate('/');
       return;
     }
 
     const fetchChecklists = async () => {
-      setLoading(true);
+      setLoadingData(true);
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = fetchedTenants[0]?.id;
+        const defaultTenantId = currentProfile?.tenant_id || fetchedTenants[0]?.id;
 
         if (defaultTenantId) {
           const fetchedProfiles = await getProfiles(defaultTenantId);
@@ -56,11 +57,11 @@ const AdminChecklists: React.FC = () => {
         console.error("Failed to fetch checklists:", err);
         setError("Failed to load checklists. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
     fetchChecklists();
-  }, [userRole, navigate]);
+  }, [user, profile, userRole, isLoadingAuth, navigate]);
 
   const handleChecklistSelect = (checklistId: string) => {
     const checklist = checklists.find(cl => cl.id === checklistId);
@@ -104,7 +105,7 @@ const AdminChecklists: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -122,6 +123,10 @@ const AdminChecklists: React.FC = () => {
         </Button>
       </div>
     );
+  }
+
+  if (!user || userRole !== 'admin') {
+    return null; // Should be redirected by useEffect
   }
 
   return (

@@ -1,23 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Truck, Briefcase } from 'lucide-react';
+import { ArrowLeft, Truck, Briefcase, Loader2 } from 'lucide-react'; // Added Loader2
 import { toast } from 'sonner';
 
 const CreateUserChoice: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, userRole, isLoadingAuth } = useAuth(); // Use useAuth
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
       navigate('/');
     }
-  }, [userRole, navigate]);
+  }, [user, userRole, isLoadingAuth, navigate]);
 
-  if (userRole !== 'admin') {
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading authentication...</p>
+      </div>
+    );
+  }
+
+  if (!user || userRole !== 'admin') {
     return null; // Render nothing if access is denied, as a redirect will happen
   }
 

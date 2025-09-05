@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getProfiles, createJob } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
@@ -42,28 +42,28 @@ interface JobFormValues {
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
   const canAccess = userRole === 'admin' || userRole === 'office';
   const canSeePrice = canAccess; // Price visibility is tied to access for this page
 
   useEffect(() => {
-    if (!canAccess) {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || !canAccess) {
       toast.error("You do not have permission to access this page.");
       navigate('/');
     }
-  }, [canAccess, navigate]);
+  }, [user, canAccess, navigate, isLoadingAuth]);
 
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentTenantId],
     queryFn: () => getProfiles(currentTenantId),
     staleTime: 5 * 60 * 1000,
-    enabled: canAccess, // Only fetch if user has access
+    enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth, // Only fetch if user has access and auth is loaded
   });
-
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
 
   const handleSubmit = async (values: JobFormValues) => {
     if (!currentProfile) {
@@ -102,11 +102,7 @@ const CreateJob: React.FC = () => {
     }
   };
 
-  if (!canAccess) {
-    return null; // Render nothing if access is denied, as a redirect will happen
-  }
-
-  if (isLoadingProfiles) {
+  if (isLoadingAuth || isLoadingProfiles) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -124,6 +120,10 @@ const CreateJob: React.FC = () => {
         </Button>
       </div>
     );
+  }
+
+  if (!user || !canAccess) {
+    return null; // Render nothing if access is denied, as a redirect will happen
   }
 
   return (

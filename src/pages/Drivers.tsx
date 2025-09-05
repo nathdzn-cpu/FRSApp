@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getProfiles, getTenants } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,20 +11,26 @@ import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [drivers, setDrivers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
 
   useEffect(() => {
+    if (!user || !profile) {
+      setLoadingData(false);
+      return;
+    }
+
     const fetchDrivers = async () => {
-      setLoading(true);
+      setLoadingData(true);
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = fetchedTenants[0]?.id;
+        // Ensure selectedTenantId is set, ideally from user's profile or a default
+        const defaultTenantId = profile.tenant_id || fetchedTenants[0]?.id;
 
         if (defaultTenantId) {
           const fetchedProfiles = await getProfiles(defaultTenantId);
@@ -34,13 +40,13 @@ const Drivers: React.FC = () => {
         console.error("Failed to fetch drivers:", err);
         setError("Failed to load drivers. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
     fetchDrivers();
-  }, [userRole]);
+  }, [user, profile, isLoadingAuth]);
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

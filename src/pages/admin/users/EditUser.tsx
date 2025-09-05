@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getTenants, getProfiles, updateUser, resetUserPassword } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
@@ -23,46 +23,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const EditUser: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Profile ID
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
-  const [loading, setLoading] = useState(true);
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [userToEdit, setUserToEdit] = useState<Profile | undefined>(undefined);
-  const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined);
+  const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined); // This will be the admin's profile
   const [isResetPasswordBusy, setIsResetPasswordBusy] = useState(false);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (isLoadingAuth) return; // Wait for auth to load
+
+    if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
       navigate('/');
       return;
     }
 
     const fetchData = async () => {
-      setLoading(true);
+      setLoadingData(true);
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = fetchedTenants[0]?.id;
-        if (defaultTenantId) {
-          const profiles = await getProfiles(defaultTenantId);
-          setCurrentProfile(profiles.find(p => p.user_id === currentUserId));
-          setUserToEdit(profiles.find(p => p.id === id));
+        const defaultTenantId = profile?.tenant_id || fetchedTenants[0]?.id;
+        if (defaultTenantId && user) {
+          const allProfiles = await getProfiles(defaultTenantId);
+          setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id)); // Set the admin's profile
+          setUserToEdit(allProfiles.find(p => p.id === id));
         }
       } catch (err: any) {
         console.error("Failed to fetch data:", err);
         setError(err.message || "Failed to load user data. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
     fetchData();
-  }, [userRole, navigate, currentUserId, id]);
+  }, [user, profile, userRole, isLoadingAuth, navigate, id]);
 
   const handleSubmit = async (values: any) => {
-    if (!userToEdit || !currentProfile) {
+    if (!userToEdit || !currentAdminProfile) {
       toast.error("User to edit or admin profile not found. Cannot update user.");
       return;
     }
@@ -78,7 +79,7 @@ const EditUser: React.FC = () => {
         trailer_no: values.trailer_no || undefined, // Ensure empty string becomes undefined
       };
 
-      const promise = updateUser(currentTenantId, userToEdit.id, updates, currentProfile.id);
+      const promise = updateUser(currentTenantId, userToEdit.id, updates, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Updating ${userToEdit.full_name}...`,
         success: 'User updated successfully!',
@@ -97,7 +98,7 @@ const EditUser: React.FC = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!userToEdit || !currentProfile) {
+    if (!userToEdit || !currentAdminProfile) {
       toast.error("User to edit or admin profile not found. Cannot reset password.");
       return;
     }
@@ -105,7 +106,7 @@ const EditUser: React.FC = () => {
     // For this mock, we'll just simulate the action.
     try {
       setIsResetPasswordBusy(true);
-      const promise = resetUserPassword(currentTenantId, userToEdit.user_id, currentProfile.id);
+      const promise = resetUserPassword(currentTenantId, userToEdit.user_id, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
         success: `Password reset email sent to ${userToEdit.full_name}! (Simulated)`,
@@ -120,7 +121,7 @@ const EditUser: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -140,7 +141,7 @@ const EditUser: React.FC = () => {
     );
   }
 
-  if (userRole !== 'admin') {
+  if (!user || userRole !== 'admin') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>

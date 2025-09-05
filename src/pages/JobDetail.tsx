@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, assignDriverToJob } from '@/lib/supabase';
 import { Job, JobStop, JobEvent, Document, Profile } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,28 +31,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { formatGBP } from '@/lib/money'; // Import the new currency formatter
+import { useQuery } from '@tanstack/react-query';
+import { formatGBP } from '@/lib/money';
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { userRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>(undefined);
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
   const canSeePrice = userRole === 'admin' || userRole === 'office';
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
-  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
+  const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentTenantId],
     queryFn: () => getProfiles(currentTenantId),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!user && !!currentProfile, // Only fetch if user and profile are loaded
   });
-
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
 
   // Use useQuery for job details, stops, events, and documents
   const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
@@ -63,8 +62,8 @@ const JobDetail: React.FC = () => {
   }, Error>({
     queryKey: ['jobDetail', id, userRole, currentProfile?.id],
     queryFn: async () => {
-      if (!id || !currentTenantId || !currentProfile) {
-        throw new Error("Missing job ID, tenant ID, or current profile.");
+      if (!id || !currentTenantId || !currentProfile || !userRole) {
+        throw new Error("Missing job ID, tenant ID, current profile, or user role.");
       }
 
       const fetchedJob = await getJobById(currentTenantId, id, userRole, currentProfile.id);
@@ -83,7 +82,7 @@ const JobDetail: React.FC = () => {
         documents: fetchedDocuments,
       };
     },
-    enabled: !!id && !!currentTenantId && !!currentProfile, // Only run query if these are available
+    enabled: !!id && !!currentTenantId && !!currentProfile && !!userRole && !isLoadingAuth, // Only run query if these are available and not loading auth
     retry: false, // Do not retry on failure, show error immediately
   });
 
@@ -92,11 +91,11 @@ const JobDetail: React.FC = () => {
   const events = jobData?.events || [];
   const documents = jobData?.documents || [];
 
-  const isLoading = isLoadingProfiles || isLoadingJob;
-  const error = profilesError || jobError;
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
+  const error = allProfilesError || jobError;
 
   const getProfileName = (profileId?: string) => {
-    const profile = profiles.find(p => p.id === profileId);
+    const profile = allProfiles.find(p => p.id === profileId);
     return profile ? profile.full_name : 'N/A';
   };
 
@@ -201,7 +200,7 @@ const JobDetail: React.FC = () => {
   }
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-  const drivers = profiles.filter(p => p.role === 'driver');
+  const drivers = allProfiles.filter(p => p.role === 'driver');
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -309,7 +308,7 @@ const JobDetail: React.FC = () => {
                 <CardTitle>Job Timeline</CardTitle>
               </CardHeader>
               <CardContent>
-                <JobTimeline events={events} profiles={profiles} />
+                <JobTimeline events={events} profiles={allProfiles} />
               </CardContent>
             </Card>
           </TabsContent>

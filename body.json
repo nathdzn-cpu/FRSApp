@@ -1,0 +1,7 @@
+{
+  "kind": "driver",
+  "full_name": "Test Driver",
+  "email": "driver.test@example.com",
+  "tempPassword": "TempPass123!",
+  "phone": "07000000000"
+}

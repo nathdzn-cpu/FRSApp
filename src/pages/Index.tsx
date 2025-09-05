@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { useUserRole } from '@/context/UserRoleContext';
+import { useAuth } from '@/context/AuthContext'; // Updated import
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
@@ -13,35 +13,41 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Label } from '@/components/ui/label'; // Added import for Label
+import { Label } from '@/components/ui/label';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const Index = () => {
-  const { userRole, setUserRole } = useUserRole();
+  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
   const [jobs, setJobs] = useState<Job[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
 
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentProfile = profile; // Use profile from AuthContext
   const canCreateJob = userRole === 'admin' || userRole === 'office';
   const canAccessAdminUsers = userRole === 'admin';
 
   const fetchData = async () => {
-    setLoading(true);
+    if (!user || !currentProfile) {
+      setLoadingData(false);
+      return;
+    }
+
+    setLoadingData(true);
     setError(null);
     try {
       const fetchedTenants = await getTenants();
       setTenants(fetchedTenants);
-      const defaultTenantId = fetchedTenants[0]?.id;
+      // Ensure selectedTenantId is set, ideally from user's profile or a default
+      const defaultTenantId = currentProfile.tenant_id || fetchedTenants[0]?.id;
       setSelectedTenantId(defaultTenantId);
 
       if (defaultTenantId) {
@@ -69,26 +75,27 @@ const Index = () => {
           endDate = dayjs(customEndDate).endOf('day').toISOString();
         }
 
-        const fetchedJobs = await getJobs(defaultTenantId, userRole, currentProfile?.id, startDate, endDate);
+        const fetchedJobs = await getJobs(defaultTenantId, userRole!, currentProfile?.id, startDate, endDate); // userRole is guaranteed here
         setJobs(fetchedJobs);
       }
     } catch (err) {
       console.error("Failed to fetch data:", err);
       setError("Failed to load data. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [userRole, currentProfile?.id, filterRange, customStartDate, customEndDate]); // Re-fetch if role, profile, or filter changes
+    if (user && profile) { // Only fetch data if user and profile are loaded
+      fetchData();
+    } else if (!isLoadingAuth && !user) {
+      // If not loading auth and no user, it means we're not logged in, AuthContext will redirect
+      setLoadingData(false);
+    }
+  }, [user, profile, userRole, filterRange, customStartDate, customEndDate, isLoadingAuth]);
 
-  const handleRoleChange = (newRole: string) => {
-    setUserRole(newRole as 'admin' | 'office' | 'driver');
-  };
-
-  if (loading) {
+  if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -103,6 +110,11 @@ const Index = () => {
         <p className="text-red-500">{error}</p>
       </div>
     );
+  }
+
+  if (!user || !profile) {
+    // This case should ideally be handled by PrivateRoute or AuthContext redirect
+    return null;
   }
 
   return (
@@ -121,17 +133,7 @@ const Index = () => {
                 <PlusCircle className="h-4 w-4 mr-2" /> Create New Job
               </Button>
             )}
-            <span className="text-gray-700 dark:text-gray-300">View as:</span>
-            <Select value={userRole} onValueChange={handleRoleChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="office">Office</SelectItem>
-                <SelectItem value="driver">Driver</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Role switcher removed */}
           </div>
         </div>
 
