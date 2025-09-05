@@ -20,6 +20,7 @@ import EnvDebug from './pages/EnvDebug';
 import UsersDebug from "@/pages/admin/UsersDebug";
 import LoginPage from "./pages/Login"; // New import
 import { AuthContextProvider, useAuth } from "./context/AuthContext"; // New import and context
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 const queryClient = new QueryClient();
 
