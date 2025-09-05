@@ -126,35 +126,28 @@ export interface AuditLog {
 
 // Seed Data
 const demoTenantId = uuidv4();
-const aliceAdminId = uuidv4();
-// Removed Owen Office, Dave Driver, Eve Driver from initial seed
-
-const job1Id = uuidv4();
-const stop1Id = uuidv4();
-const stop2Id = uuidv4();
-const stop3Id = uuidv4();
-const checklist1Id = uuidv4();
 
 export const mockTenants: Tenant[] = [
   { id: demoTenantId, name: 'Demo Haulage', created_at: new Date().toISOString() },
 ];
 
-export let mockProfiles: Profile[] = [ // Made mutable
+// mockProfiles, mockAuditLogs, mockDailyChecks, mockProfileDevices are now managed by Supabase
+// We'll keep a minimal initial admin profile for the demo to function
+export let mockProfiles: Profile[] = [
   {
-    id: aliceAdminId,
+    id: 'auth_user_alice', // This ID should match a real Supabase Auth user ID for the admin
     tenant_id: demoTenantId,
     full_name: 'Alice Admin',
     role: 'admin',
-    user_id: 'auth_user_alice', // Placeholder for Supabase auth.users.id
+    user_id: 'auth_user_alice',
     created_at: new Date().toISOString(),
-    is_demo: true, // Marked as demo
+    is_demo: true,
   },
-  // Removed other profiles from initial seed
 ];
 
 export const mockDailyChecklists: DailyChecklist[] = [
   {
-    id: checklist1Id,
+    id: uuidv4(),
     tenant_id: demoTenantId,
     name: 'Pre-shift Vehicle Check',
     items: [
@@ -190,8 +183,8 @@ export const mockDocuments: Document[] = [
   // Documents will be created dynamically
 ];
 
-export const mockProfileDevices: ProfileDevice[] = []; // Initially empty
+export const mockProfileDevices: ProfileDevice[] = []; // Now empty, will be managed by Supabase
 
-export const mockDailyChecks: DailyCheck[] = []; // Initially empty
+export const mockDailyChecks: DailyCheck[] = []; // Now empty, will be managed by Supabase
 
-export let mockAuditLogs: AuditLog[] = []; // Made mutable for purgeDemoUsers
+export let mockAuditLogs: AuditLog[] = []; // Now empty, will be managed by Supabase

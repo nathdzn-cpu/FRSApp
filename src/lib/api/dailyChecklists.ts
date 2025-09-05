@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { mockDailyChecklists, mockAuditLogs, DailyChecklist } from '@/utils/mockData';
+import { mockDailyChecklists, DailyChecklist } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
+import { supabase } from '../supabaseClient'; // Import supabase client
 
 export const getDailyChecklists = async (tenantId: string): Promise<DailyChecklist[]> => {
   await delay(200);
@@ -13,7 +14,9 @@ export const updateDailyChecklist = async (tenantId: string, checklistId: string
   if (checklistIndex > -1) {
     const oldChecklist = { ...mockDailyChecklists[checklistIndex] };
     mockDailyChecklists[checklistIndex] = { ...oldChecklist, items, created_at: new Date().toISOString() }; // Update created_at for simplicity
-    mockAuditLogs.push({
+    
+    // Insert into real audit_logs table
+    await supabase.from('audit_logs').insert({
       id: uuidv4(),
       tenant_id: tenantId,
       actor_id: actorId,
