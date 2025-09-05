@@ -1,4 +1,5 @@
-import { supabase, callFn } from './supabaseClient'; // Import callFn
+import { supabase } from './supabaseClient';
+import { callFn } from './callFunction'; // Corrected import for callFn
 export * from './api/tenants';
 export * from './api/jobs';
 export * from './api/dailyChecklists';
