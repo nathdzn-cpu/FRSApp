@@ -166,6 +166,18 @@ export const mockProfiles: Profile[] = [
     last_location: { lat: 51.5074, lon: -0.1278, timestamp: new Date().toISOString() }, // London
     last_job_status: 'in_progress',
   },
+  {
+    id: uuidv4(),
+    tenant_id: demoTenantId,
+    full_name: 'Eve Driver',
+    role: 'driver',
+    user_id: 'auth_user_eve',
+    truck_reg: 'EV77 EVE',
+    trailer_no: 'TRL-002',
+    created_at: new Date().toISOString(),
+    last_location: { lat: 52.4862, lon: -1.8904, timestamp: new Date().toISOString() }, // Birmingham
+    last_job_status: 'planned',
+  },
 ];
 
 export const mockDailyChecklists: DailyChecklist[] = [
@@ -350,5 +362,9 @@ export const mockDocuments: Document[] = [
     created_at: new Date(Date.now() - 3600 * 1000 * 0.8).toISOString(),
   },
 ];
+
+export const mockProfileDevices: ProfileDevice[] = []; // Initially empty
+
+export const mockDailyChecks: DailyCheck[] = []; // Initially empty
 
 export const mockAuditLogs: AuditLog[] = []; // Initially empty
