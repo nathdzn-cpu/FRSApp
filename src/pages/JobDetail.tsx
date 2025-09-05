@@ -31,62 +31,69 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { formatGBP } from '@/lib/money'; // Import the new currency formatter
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userRole } = useUserRole();
-  const [job, setJob] = useState<Job | undefined>(undefined);
-  const [stops, setStops] = useState<JobStop[]>([]);
-  const [events, setEvents] = useState<JobEvent[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>(undefined);
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
+  const canSeePrice = userRole === 'admin' || userRole === 'office';
+
+  // Fetch profiles separately as they are needed for multiple queries and UI elements
+  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
+    queryKey: ['profiles', currentTenantId],
+    queryFn: () => getProfiles(currentTenantId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   const currentProfile = profiles.find(p => p.user_id === currentUserId);
 
-  const fetchJobData = async () => {
-    if (!id || !currentTenantId || !currentProfile) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const fetchedProfiles = await getProfiles(currentTenantId);
-      setProfiles(fetchedProfiles);
+  // Use useQuery for job details, stops, events, and documents
+  const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
+    job: Job | undefined;
+    stops: JobStop[];
+    events: JobEvent[];
+    documents: Document[];
+  }, Error>({
+    queryKey: ['jobDetail', id, userRole, currentProfile?.id],
+    queryFn: async () => {
+      if (!id || !currentTenantId || !currentProfile) {
+        throw new Error("Missing job ID, tenant ID, or current profile.");
+      }
 
       const fetchedJob = await getJobById(currentTenantId, id, userRole, currentProfile.id);
       if (!fetchedJob) {
-        setError("Job not found or you don't have permission to view it.");
-        setLoading(false);
-        return;
+        throw new Error("Job not found or you don't have permission to view it.");
       }
-      setJob(fetchedJob);
 
       const fetchedStops = await getJobStops(currentTenantId, id);
-      setStops(fetchedStops);
-
       const fetchedEvents = await getJobEvents(currentTenantId, id);
-      setEvents(fetchedEvents);
-
       const fetchedDocuments = await getJobDocuments(currentTenantId, id);
-      setDocuments(fetchedDocuments);
 
-    } catch (err) {
-      console.error("Failed to fetch job data:", err);
-      setError("Failed to load job details. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        job: fetchedJob,
+        stops: fetchedStops,
+        events: fetchedEvents,
+        documents: fetchedDocuments,
+      };
+    },
+    enabled: !!id && !!currentTenantId && !!currentProfile, // Only run query if these are available
+    retry: false, // Do not retry on failure, show error immediately
+  });
 
-  useEffect(() => {
-    fetchJobData();
-  }, [id, userRole, currentProfile?.id]);
+  const job = jobData?.job;
+  const stops = jobData?.stops || [];
+  const events = jobData?.events || [];
+  const documents = jobData?.documents || [];
+
+  const isLoading = isLoadingProfiles || isLoadingJob;
+  const error = profilesError || jobError;
 
   const getProfileName = (profileId?: string) => {
     const profile = profiles.find(p => p.id === profileId);
@@ -102,7 +109,7 @@ const JobDetail: React.FC = () => {
       error: 'Failed to request POD.',
     });
     await promise;
-    fetchJobData(); // Refresh events
+    refetchJobData(); // Refresh events
   };
 
   const handleExportPdf = async () => {
@@ -146,7 +153,7 @@ const JobDetail: React.FC = () => {
       error: 'Failed to cancel job.',
     });
     await promise;
-    fetchJobData(); // Refresh job status
+    refetchJobData(); // Refresh job status
   };
 
   const handleAssignDriver = async () => {
@@ -159,10 +166,10 @@ const JobDetail: React.FC = () => {
     });
     await promise;
     setIsAssignDriverDialogOpen(false);
-    fetchJobData(); // Refresh job details
+    refetchJobData(); // Refresh job details
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -174,7 +181,7 @@ const JobDetail: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <p className="text-red-500 text-lg mb-4">{error}</p>
+        <p className="text-red-500 text-lg mb-4">Error: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
@@ -185,7 +192,7 @@ const JobDetail: React.FC = () => {
   if (!job) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <p className="text-gray-700 dark:text-gray-300 text-lg mb-4">Job data could not be loaded.</p>
+        <p className="text-gray-700 dark:text-gray-300 text-lg mb-4">No job found.</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
@@ -270,10 +277,10 @@ const JobDetail: React.FC = () => {
                 <p className="font-medium">Assigned Driver:</p>
                 <p>{getProfileName(job.assigned_driver_id)}</p>
               </div>
-              {isOfficeOrAdmin && (
+              {canSeePrice && (
                 <div>
                   <p className="font-medium">Price:</p>
-                  <p>${job.price?.toFixed(2) || 'N/A'}</p>
+                  <p>{formatGBP(job.price)}</p>
                 </div>
               )}
               <div>

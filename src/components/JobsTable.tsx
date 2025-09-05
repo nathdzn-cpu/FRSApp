@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Job, Profile } from '@/utils/mockData';
 import { useUserRole } from '@/context/UserRoleContext';
 import { format } from 'date-fns';
+import { formatGBP } from '@/lib/money'; // Import the new currency formatter
 
 interface JobsTableProps {
   jobs: Job[];
@@ -13,6 +14,7 @@ interface JobsTableProps {
 
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
   const { userRole } = useUserRole();
+  const canSeePrice = userRole === 'admin' || userRole === 'office';
 
   const getDriverName = (driverId?: string) => {
     const driver = profiles.find(p => p.id === driverId);
@@ -44,7 +46,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
             <TableHead>Date</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Assigned Driver</TableHead>
-            {userRole !== 'driver' && <TableHead className="text-right">Price</TableHead>}
+            {canSeePrice && <TableHead className="text-right">Price</TableHead>}
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -69,9 +71,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                 </Badge>
               </TableCell>
               <TableCell>{getDriverName(job.assigned_driver_id)}</TableCell>
-              {userRole !== 'driver' && (
+              {canSeePrice && (
                 <TableCell className="text-right">
-                  {job.price ? `$${job.price.toFixed(2)}` : 'N/A'}
+                  {formatGBP(job.price)}
                 </TableCell>
               )}
               <TableCell className="text-center">
