@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const officeFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
-  user_id: z.string().optional(), // Optional for office
+  // user_id: z.string().optional(), // Removed
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
@@ -29,7 +29,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
     defaultValues: {
       full_name: '',
       phone: '',
-      user_id: '',
+      // user_id: '', // Removed
       email: '',
       password: '',
     },
@@ -69,19 +69,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="user_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Internal User ID (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., office_jane_456" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Removed user_id field */}
             <FormField
               control={form.control}
               name="email"

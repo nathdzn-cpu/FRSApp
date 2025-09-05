@@ -18,7 +18,7 @@ const driverFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
   dob: z.date({ required_error: 'Date of Birth is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
-  user_id: z.string().min(1, { message: 'Internal User ID is required.' }),
+  // user_id: z.string().min(1, { message: 'Internal User ID is required.' }), // Removed
   truck_reg: z.string().min(1, { message: 'Initial Truck Registration is required.' }),
   trailer_no: z.string().min(1, { message: 'Initial Trailer Number is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -38,7 +38,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
       full_name: '',
       dob: undefined,
       phone: '',
-      user_id: '',
+      // user_id: '', // Removed
       truck_reg: '',
       trailer_no: '',
       email: '',
@@ -118,19 +118,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="user_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Internal User ID</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., driver_john_123" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Removed user_id field */}
             <FormField
               control={form.control}
               name="truck_reg"

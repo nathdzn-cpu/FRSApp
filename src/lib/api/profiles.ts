@@ -2,6 +2,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { mockProfiles, mockAuditLogs, Profile } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 
+function slugifyName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .substring(0, 64);
+}
+
 export const getProfiles = async (tenantId: string): Promise<Profile[]> => {
   await delay(200);
   return mockProfiles.filter(p => p.tenant_id === tenantId);
@@ -17,7 +25,7 @@ interface CreateUserData {
   dob?: string;
   phone?: string;
   role: 'driver' | 'office' | 'admin';
-  user_id: string; // Corresponds to auth.users.id
+  user_id?: string; // Made optional for auto-generation
   truck_reg?: string;
   trailer_no?: string;
   email: string; // For Supabase Auth Admin API
@@ -40,7 +48,9 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
   // const newAuthUserId = authUser.user.id;
 
   // For mock, ensure user_id is unique or generated if not provided for office
-  const newAuthUserId = userData.user_id || `auth_user_${userData.role}_${uuidv4().substring(0, 4)}`;
+  const generatedUserId = `${userData.role}_${slugifyName(userData.full_name)}`;
+  const newAuthUserId = userData.user_id && userData.user_id.trim().length > 0 ? userData.user_id : generatedUserId;
+
   if (mockProfiles.some(p => p.user_id === newAuthUserId)) {
     throw new Error(`User with ID ${newAuthUserId} already exists.`);
   }
@@ -66,7 +76,7 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
     entity: 'profiles',
     entity_id: newUser.id,
     action: 'create',
-    after: { ...newUser, email: userData.email }, // Include email for audit context, but not in profile table
+    after: { role: userData.role, full_name: userData.full_name, user_id: newAuthUserId }, // Include email for audit context, but not in profile table
     created_at: new Date().toISOString(),
   });
   return newUser;
@@ -77,7 +87,13 @@ export const updateUser = async (tenantId: string, profileId: string, updates: P
   const profileIndex = mockProfiles.findIndex(p => p.id === profileId && p.tenant_id === tenantId);
   if (profileIndex > -1) {
     const oldProfile = { ...mockProfiles[profileIndex] };
-    mockProfiles[profileIndex] = { ...oldProfile, ...updates };
+    // Ensure user_id is not updated if it's empty or not provided
+    const safeUpdates = { ...updates };
+    if ("user_id" in safeUpdates && (safeUpdates.user_id ?? "").trim().length === 0) {
+      delete safeUpdates.user_id;
+    }
+
+    mockProfiles[profileIndex] = { ...oldProfile, ...safeUpdates };
     mockAuditLogs.push({
       id: uuidv4(),
       tenant_id: tenantId,
@@ -147,7 +163,6 @@ export const deleteUser = async (tenantId: string, profileId: string, actorId: s
 export const purgeDemoUsers = async (tenantId: string, actorId: string): Promise<{ ok: boolean; removed: number }> => {
   await delay(1000); // Simulate API call delay
 
-  const initialLength = mockProfiles.length;
   const removedProfiles: Profile[] = [];
 
   // Filter out demo users for the given tenant
