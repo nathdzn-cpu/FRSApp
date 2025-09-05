@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/context/UserRoleContext';
-import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword } from '@/lib/supabase';
+import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw } from 'lucide-react'; // Added RefreshCw icon
+import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,8 +33,10 @@ const AdminUsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
+  const [showDemo, setShowDemo] = useState(false); // New state for toggling demo users
   const [profiles, setProfiles] = useState<Profile[]>([]); // For currentProfile
   const [busyId, setBusyId] = useState<string | null>(null); // To disable buttons during action
+  const [purging, setPurging] = useState(false); // State for purge button
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
@@ -118,8 +121,35 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handlePurgeDemoUsers = async () => {
+    if (!currentProfile) {
+      toast.error("Admin profile not found. Cannot purge demo users.");
+      return;
+    }
+    if (!window.confirm("Are you sure you want to permanently delete ALL demo users in this tenant (Auth + profiles)? This action cannot be undone.")) {
+      return;
+    }
+
+    setPurging(true);
+    try {
+      const result = await purgeDemoUsers(currentTenantId, currentProfile.id);
+      if (result.ok) {
+        toast.success(`Removed ${result.removed} demo user(s).`);
+        fetchUsers(); // Refresh the list after purge
+      } else {
+        toast.error("Failed to purge demo users.");
+      }
+    } catch (err: any) {
+      console.error("Error purging demo users:", err);
+      toast.error("An unexpected error occurred while purging demo users.");
+    } finally {
+      setPurging(false);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     let r = users;
+    if (!showDemo) r = r.filter(x => !x.is_demo); // Filter out demo users if showDemo is false
     if (filterRole !== "all") r = r.filter(x => x.role === filterRole);
     if (searchTerm.trim()) {
       const t = searchTerm.toLowerCase();
@@ -131,7 +161,7 @@ const AdminUsersPage: React.FC = () => {
       );
     }
     return r;
-  }, [users, searchTerm, filterRole]);
+  }, [users, searchTerm, filterRole, showDemo]); // Add showDemo to dependencies
 
   if (loading) {
     return (
@@ -184,7 +214,7 @@ const AdminUsersPage: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
               <Input
                 placeholder="Search by name, user id, reg..."
                 value={searchTerm}
@@ -202,6 +232,22 @@ const AdminUsersPage: React.FC = () => {
                   <SelectItem value="driver">Driver</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show-demo"
+                  checked={showDemo}
+                  onCheckedChange={(checked: boolean) => setShowDemo(checked)}
+                />
+                <Label htmlFor="show-demo">Show demo users</Label>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={handlePurgeDemoUsers}
+                disabled={purging}
+                className="w-full sm:w-auto"
+              >
+                {purging ? "Purging..." : "Purge Demo Users"}
+              </Button>
             </div>
 
             {filteredUsers.length === 0 ? (
@@ -217,6 +263,7 @@ const AdminUsersPage: React.FC = () => {
                       <TableHead>User ID (Auth)</TableHead>
                       <TableHead>Truck Reg</TableHead>
                       <TableHead>Trailer No</TableHead>
+                      <TableHead>Flags</TableHead> {/* New column for flags */}
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -231,6 +278,7 @@ const AdminUsersPage: React.FC = () => {
                         <TableCell className="text-sm text-gray-600 dark:text-gray-400">{user.user_id}</TableCell>
                         <TableCell>{user.truck_reg || '-'}</TableCell>
                         <TableCell>{user.trailer_no || '-'}</TableCell>
+                        <TableCell>{user.is_demo ? <Badge variant="outline">Demo</Badge> : '-'}</TableCell> {/* Display demo flag */}
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">
                             <Button variant="outline" size="sm" onClick={() => navigate(`/admin/users/${user.id}/edit`)}>

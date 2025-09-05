@@ -20,6 +20,7 @@ export interface Profile {
   created_at: string;
   last_location?: { lat: number; lon: number; timestamp: string };
   last_job_status?: string;
+  is_demo: boolean; // New field
 }
 
 export interface DailyChecklist {
@@ -116,9 +117,10 @@ export interface AuditLog {
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
-  action: 'create' | 'update' | 'delete' | 'cancel';
+  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password';
   before?: Record<string, any>;
   after?: Record<string, any>;
+  notes?: string;
   created_at: string;
 }
 
@@ -145,6 +147,7 @@ export const mockProfiles: Profile[] = [
     role: 'admin',
     user_id: 'auth_user_alice', // Placeholder for Supabase auth.users.id
     created_at: new Date().toISOString(),
+    is_demo: true, // Marked as demo
   },
   {
     id: owenOfficeId,
@@ -153,6 +156,7 @@ export const mockProfiles: Profile[] = [
     role: 'office',
     user_id: 'auth_user_owen', // Placeholder
     created_at: new Date().toISOString(),
+    is_demo: true, // Marked as demo
   },
   {
     id: daveDriverId,
@@ -165,6 +169,7 @@ export const mockProfiles: Profile[] = [
     created_at: new Date().toISOString(),
     last_location: { lat: 51.5074, lon: -0.1278, timestamp: new Date().toISOString() }, // London
     last_job_status: 'in_progress',
+    is_demo: true, // Marked as demo
   },
   {
     id: uuidv4(),
@@ -177,6 +182,7 @@ export const mockProfiles: Profile[] = [
     created_at: new Date().toISOString(),
     last_location: { lat: 52.4862, lon: -1.8904, timestamp: new Date().toISOString() }, // Birmingham
     last_job_status: 'planned',
+    is_demo: false, // Not a demo user
   },
 ];
 
@@ -301,7 +307,7 @@ export const mockJobEvents: JobEvent[] = [
     tenant_id: demoTenantId,
     job_id: job1Id,
     actor_id: daveDriverId,
-    event_type: 'assigned',
+    event_type: 'status_changed', // Changed from 'assigned' to 'status_changed' for consistency
     notes: 'Assigned to Dave Driver.',
     created_at: new Date(Date.now() - 3600 * 1000 * 23).toISOString(),
   },
@@ -367,4 +373,4 @@ export const mockProfileDevices: ProfileDevice[] = []; // Initially empty
 
 export const mockDailyChecks: DailyCheck[] = []; // Initially empty
 
-export const mockAuditLogs: AuditLog[] = []; // Initially empty
+export let mockAuditLogs: AuditLog[] = []; // Made mutable for purgeDemoUsers

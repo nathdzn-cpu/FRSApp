@@ -22,6 +22,7 @@ interface CreateUserData {
   trailer_no?: string;
   email: string; // For Supabase Auth Admin API
   password?: string; // For Supabase Auth Admin API
+  is_demo?: boolean; // Allow setting is_demo on creation
 }
 
 export const createUser = async (tenantId: string, userData: CreateUserData, actorId: string): Promise<Profile> => {
@@ -55,6 +56,7 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
     user_id: newAuthUserId,
     truck_reg: userData.truck_reg,
     trailer_no: userData.trailer_no,
+    is_demo: userData.is_demo ?? false, // Default to false if not provided
   };
   mockProfiles.push(newUser);
   mockAuditLogs.push({
@@ -140,4 +142,45 @@ export const deleteUser = async (tenantId: string, profileId: string, actorId: s
     return true;
   }
   return false;
+};
+
+export const purgeDemoUsers = async (tenantId: string, actorId: string): Promise<{ ok: boolean; removed: number }> => {
+  await delay(1000); // Simulate API call delay
+
+  const initialLength = mockProfiles.length;
+  const removedProfiles: Profile[] = [];
+
+  // Filter out demo users for the given tenant
+  const updatedProfiles = mockProfiles.filter(p => {
+    if (p.tenant_id === tenantId && p.is_demo) {
+      removedProfiles.push(p);
+      return false; // Remove this profile
+    }
+    return true; // Keep this profile
+  });
+
+  // Update the mockProfiles array
+  mockProfiles.splice(0, mockProfiles.length, ...updatedProfiles);
+
+  const removedCount = removedProfiles.length;
+
+  if (removedCount > 0) {
+    console.log(`Simulating Supabase Auth: Deleting ${removedCount} demo users.`);
+    // In a real app, you'd iterate removedProfiles and call supabase.auth.admin.deleteUser(p.user_id)
+
+    mockAuditLogs.push({
+      id: uuidv4(),
+      tenant_id: tenantId,
+      actor_id: actorId,
+      entity: 'profiles',
+      entity_id: actorId, // Actor is performing the purge
+      action: 'delete',
+      notes: `Purged ${removedCount} demo user(s).`,
+      before: { count: removedCount, ids: removedProfiles.map(p => p.id) },
+      after: null,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  return { ok: true, removed: removedCount };
 };
