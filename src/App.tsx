@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import JobDetail from "./pages/JobDetail";
@@ -27,6 +27,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <UserRoleProvider>
+          <nav className="p-4 bg-gray-800 text-white flex flex-wrap gap-4 items-center">
+            <Link to="/" className="font-bold text-lg hover:text-gray-300">Home</Link>
+            <Link to="/admin/daily-checks" className="hover:text-gray-300">Admin Daily Checks</Link>
+            <Link to="/driver/daily-check" className="hover:text-gray-300">Driver Daily Check</Link>
+            <Link to="/drivers" className="hover:text-gray-300">Drivers List</Link>
+            <Link to="/admin/users" className="hover:text-gray-300">Admin Users</Link>
+            <Link to="/admin/checklists" className="hover:text-gray-300">Admin Checklists (Old)</Link>
+          </nav>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/jobs/new" element={<CreateJob />} />

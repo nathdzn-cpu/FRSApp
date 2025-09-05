@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/lib/supabaseClient";
+import { callFn } from "@/lib/callFunction";
 import { useUserRole } from '@/context/UserRoleContext';
-import { getDailyCheckItems, createDailyCheckItem, updateDailyCheckItem, deleteDailyCheckItem, getProfiles } from '@/lib/supabase';
-import { DailyCheckItem, Profile } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, PlusCircle, Edit, Trash2, Check, X } from 'lucide-react';
+import { Loader2, ArrowLeft, PlusCircle, Edit, Trash2, Check, X, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,32 +26,44 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+type DailyCheckItem = { id: string; title: string; description: string | null; is_active: boolean };
+
 const AdminDailyChecks: React.FC = () => {
   const navigate = useNavigate();
   const { userRole } = useUserRole();
   const [items, setItems] = useState<DailyCheckItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [fnError, setFnError] = useState<string | null>(null);
+
+  // State for new item form
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemIsActive, setNewItemIsActive] = useState(true);
-  const [profiles, setProfiles] = useState<Profile[]>([]); // To get currentProfile for actor_id
 
-  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
+  // State for editing item dialog
+  const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
 
-  const fetchItems = async () => {
+  const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data, in a real app this would come from user session
+
+  const loadItems = async () => {
     setLoading(true);
     setError(null);
     try {
-      // In a real app, you'd fetch profiles to get the current user's profile ID
-      const fetchedProfiles = await getProfiles(currentTenantId);
-      setProfiles(fetchedProfiles);
+      // Try reading via SQL directly (requires RLS to allow admin read)
+      const { data, error: dbError } = await supabase
+        .from("daily_check_items")
+        .select("id, title, description, is_active")
+        .eq("tenant_id", currentTenantId) // Filter by tenant_id
+        .order("created_at", { ascending: false });
 
-      const fetchedItems = await getDailyCheckItems();
-      setItems(fetchedItems);
+      if (dbError) {
+        setError(dbError.message);
+      } else {
+        setItems((data as DailyCheckItem[]) || []);
+      }
     } catch (err: any) {
       console.error("Failed to fetch daily check items:", err);
       setError(err.message || "Failed to load daily check items. Please try again.");
@@ -66,37 +78,71 @@ const AdminDailyChecks: React.FC = () => {
       navigate('/');
       return;
     }
-    fetchItems();
+    loadItems();
   }, [userRole, navigate]);
+
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items;
+    const t = searchTerm.toLowerCase();
+    return items.filter(i => i.title.toLowerCase().includes(t) || (i.description || "").toLowerCase().includes(t));
+  }, [searchTerm, items]);
 
   const handleCreateItem = async () => {
     if (!newItemTitle.trim()) {
       toast.error("Item title cannot be empty.");
       return;
     }
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot create item.");
-      return;
-    }
-
+    setBusy(true);
+    setFnError(null);
     try {
-      const promise = createDailyCheckItem({
-        title: newItemTitle,
-        description: newItemDescription.trim() || undefined,
-        is_active: newItemIsActive,
-      });
-      toast.promise(promise, {
-        loading: 'Creating item...',
-        success: 'Item created successfully!',
-        error: (err) => `Failed to create item: ${err.message}`,
-      });
-      await promise;
+      const payload = { op: "create", title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive, tenant_id: currentTenantId };
+      try {
+        await callFn("admin-daily-check-items", payload);
+      } catch (e: any) {
+        if (/404|not configured|Failed/i.test(e.message)) {
+          const { error: dbError } = await supabase.from("daily_check_items").insert({ ...payload, tenant_id: currentTenantId });
+          if (dbError) throw dbError;
+        } else {
+          throw e;
+        }
+      }
+      toast.success("Item created successfully!");
       setNewItemTitle('');
       setNewItemDescription('');
       setNewItemIsActive(true);
-      fetchItems();
-    } catch (err: any) {
-      console.error("Error creating item:", err);
+      await loadItems();
+    } catch (e: any) {
+      console.error("Error creating item:", e);
+      setFnError(e.message || String(e));
+      toast.error(`Failed to create item: ${e.message || String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleToggleActive = async (id: string, is_active: boolean) => {
+    setBusy(true);
+    setFnError(null);
+    try {
+      const payload = { op: "update", id, changes: { is_active: !is_active }, tenant_id: currentTenantId };
+      try {
+        await callFn("admin-daily-check-items", payload);
+      } catch (e: any) {
+        if (/404|not configured|Failed/i.test(e.message)) {
+          const { error: dbError } = await supabase.from("daily_check_items").update({ is_active: !is_active }).eq("id", id).eq("tenant_id", currentTenantId);
+          if (dbError) throw dbError;
+        } else {
+          throw e;
+        }
+      }
+      toast.success(`Item ${!is_active ? 'activated' : 'deactivated'} successfully!`);
+      await loadItems();
+    } catch (e: any) {
+      console.error("Error toggling item active status:", e);
+      setFnError(e.message || String(e));
+      toast.error(`Failed to toggle item status: ${e.message || String(e)}`);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -109,47 +155,55 @@ const AdminDailyChecks: React.FC = () => {
       toast.error("Item title cannot be empty.");
       return;
     }
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot update item.");
-      return;
-    }
-
+    setBusy(true);
+    setFnError(null);
     try {
-      const promise = updateDailyCheckItem(editingItem.id, {
-        title: editingItem.title,
-        description: editingItem.description?.trim() || undefined,
-        is_active: editingItem.is_active,
-      });
-      toast.promise(promise, {
-        loading: 'Updating item...',
-        success: 'Item updated successfully!',
-        error: (err) => `Failed to update item: ${err.message}`,
-      });
-      await promise;
+      const payload = { op: "update", id: editingItem.id, changes: { title: editingItem.title, description: editingItem.description?.trim() || null }, tenant_id: currentTenantId };
+      try {
+        await callFn("admin-daily-check-items", payload);
+      } catch (e: any) {
+        if (/404|not configured|Failed/i.test(e.message)) {
+          const { error: dbError } = await supabase.from("daily_check_items").update({ title: editingItem.title, description: editingItem.description?.trim() || null }).eq("id", editingItem.id).eq("tenant_id", currentTenantId);
+          if (dbError) throw dbError;
+        } else {
+          throw e;
+        }
+      }
+      toast.success("Item updated successfully!");
       setEditingItem(null);
-      fetchItems();
-    } catch (err: any) {
-      console.error("Error updating item:", err);
+      await loadItems();
+    } catch (e: any) {
+      console.error("Error updating item:", e);
+      setFnError(e.message || String(e));
+      toast.error(`Failed to update item: ${e.message || String(e)}`);
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot delete item.");
-      return;
-    }
-
+  const handleDeleteItem = async (id: string) => {
+    setBusy(true);
+    setFnError(null);
     try {
-      const promise = deleteDailyCheckItem(itemId);
-      toast.promise(promise, {
-        loading: 'Deleting item...',
-        success: 'Item deleted successfully!',
-        error: (err) => `Failed to delete item: ${err.message}`,
-      });
-      await promise;
-      fetchItems();
-    } catch (err: any) {
-      console.error("Error deleting item:", err);
+      const payload = { op: "delete", id, tenant_id: currentTenantId };
+      try {
+        await callFn("admin-daily-check-items", payload);
+      } catch (e: any) {
+        if (/404|not configured|Failed/i.test(e.message)) {
+          const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("tenant_id", currentTenantId);
+          if (dbError) throw dbError;
+        } else {
+          throw e;
+        }
+      }
+      toast.success("Item deleted successfully!");
+      await loadItems();
+    } catch (e: any) {
+      console.error("Error deleting item:", e);
+      setFnError(e.message || String(e));
+      toast.error(`Failed to delete item: ${e.message || String(e)}`);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -171,6 +225,10 @@ const AdminDailyChecks: React.FC = () => {
         </Button>
       </div>
     );
+  }
+
+  if (userRole !== 'admin') {
+    return null; // Should be redirected by useEffect
   }
 
   return (
@@ -195,6 +253,7 @@ const AdminDailyChecks: React.FC = () => {
                     value={newItemTitle}
                     onChange={(e) => setNewItemTitle(e.target.value)}
                     placeholder="e.g., Brakes"
+                    disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
@@ -204,6 +263,7 @@ const AdminDailyChecks: React.FC = () => {
                     value={newItemDescription}
                     onChange={(e) => setNewItemDescription(e.target.value)}
                     placeholder="e.g., Check brake fluid, pads, and general function."
+                    disabled={busy}
                   />
                 </div>
                 <div className="flex items-center space-x-2 md:col-span-2">
@@ -211,19 +271,33 @@ const AdminDailyChecks: React.FC = () => {
                     id="newItemIsActive"
                     checked={newItemIsActive}
                     onCheckedChange={setNewItemIsActive}
+                    disabled={busy}
                   />
                   <Label htmlFor="newItemIsActive">Is Active</Label>
                 </div>
               </div>
-              <Button onClick={handleCreateItem} className="w-full">
+              <Button onClick={handleCreateItem} className="w-full" disabled={busy}>
                 <PlusCircle className="h-4 w-4 mr-2" /> Add Item
               </Button>
             </div>
 
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4">Existing Items</h3>
-              {items.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400">No daily check items defined yet.</p>
+              <div className="flex gap-4 mb-4">
+                <Input
+                  placeholder="Search items..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-grow"
+                  disabled={busy}
+                />
+                <Button onClick={loadItems} disabled={busy} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                </Button>
+              </div>
+              {fnError && <p className="text-red-500 text-sm mb-2">Function error: {fnError}</p>}
+              {filteredItems.length === 0 ? (
+                <p className="text-gray-600 dark:text-gray-400">No daily check items found.</p>
               ) : (
                 <div className="rounded-md border overflow-hidden">
                   <Table>
@@ -236,7 +310,7 @@ const AdminDailyChecks: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map(item => (
+                      {filteredItems.map(item => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.title}</TableCell>
                           <TableCell className="text-sm text-gray-600 dark:text-gray-400">{item.description || '-'}</TableCell>
@@ -245,12 +319,15 @@ const AdminDailyChecks: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">
-                              <Button variant="outline" size="sm" onClick={() => handleEditItem(item)}>
+                              <Button variant="outline" size="sm" onClick={() => handleToggleActive(item.id, item.is_active)} disabled={busy}>
+                                {item.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleEditItem(item)} disabled={busy}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" size="sm">
+                                  <Button variant="destructive" size="sm" disabled={busy}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -263,7 +340,7 @@ const AdminDailyChecks: React.FC = () => {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy}>Delete</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
@@ -297,6 +374,7 @@ const AdminDailyChecks: React.FC = () => {
                   id="editItemTitle"
                   value={editingItem.title}
                   onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                  disabled={busy}
                 />
               </div>
               <div className="space-y-2">
@@ -305,6 +383,7 @@ const AdminDailyChecks: React.FC = () => {
                   id="editItemDescription"
                   value={editingItem.description || ''}
                   onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                  disabled={busy}
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -312,13 +391,17 @@ const AdminDailyChecks: React.FC = () => {
                   id="editItemIsActive"
                   checked={editingItem.is_active}
                   onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
+                  disabled={busy}
                 />
                 <Label htmlFor="editItemIsActive">Is Active</Label>
               </div>
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleUpdateItem}>Save Changes</AlertDialogAction>
+              <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleUpdateItem} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

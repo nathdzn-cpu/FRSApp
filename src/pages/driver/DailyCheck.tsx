@@ -3,8 +3,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/context/UserRoleContext';
-import { getDailyCheckItems, submitDailyCheckResponse, getProfiles } from '@/lib/supabase';
-import { DailyCheckItem, Profile } from '@/utils/mockData';
+import { supabase } from "@/lib/supabaseClient";
+import { callFn } from "@/lib/callFunction";
+import { Profile } from '@/utils/mockData'; // Assuming Profile is still needed for currentProfile
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Camera, CheckCircle2, XCircle } from 'lucide-react';
@@ -16,13 +17,21 @@ import SignaturePad from '@/components/SignaturePad';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-interface CheckItemState {
-  item_id: string;
+interface DailyCheckItem {
+  id: string;
   title: string;
   description?: string;
-  ok: boolean;
+  is_active: boolean;
+}
+
+interface CheckItemState {
+  item_id: string;
+  title: string; // Keep title for display
+  description?: string; // Keep description for display
+  ok: boolean | null;
   notes?: string;
-  photo_base64?: string; // For temporary storage before upload
+  file?: File | null; // For temporary storage before upload
+  photo_url?: string | null; // For uploaded photo URL
 }
 
 const DriverDailyCheck: React.FC = () => {
@@ -36,12 +45,12 @@ const DriverDailyCheck: React.FC = () => {
   const [truckReg, setTruckReg] = useState('');
   const [trailerNo, setTrailerNo] = useState('');
   const [signature, setSignature] = useState('');
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined); // To get currentProfile for actor_id
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fnError, setFnError] = useState<string | null>(null);
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
-  const currentProfile = profiles.find(p => p.user_id === currentUserId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploadItemId, setPhotoUploadItemId] = useState<string | null>(null);
@@ -57,25 +66,45 @@ const DriverDailyCheck: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const fetchedProfiles = await getProfiles(currentTenantId);
-        setProfiles(fetchedProfiles);
-        const driverProfile = fetchedProfiles.find(p => p.user_id === currentUserId);
+        // Fetch current user's profile
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, tenant_id, truck_reg, trailer_no, user_id")
+          .eq("user_id", currentUserId)
+          .single();
 
-        if (driverProfile) {
-          setTruckReg(driverProfile.truck_reg || '');
-          setTrailerNo(driverProfile.trailer_no || '');
+        if (profileError) {
+          throw new Error(profileError.message || "Failed to fetch driver profile.");
+        }
+        if (!profileData) {
+          throw new Error("Driver profile not found.");
+        }
+        setCurrentProfile(profileData as Profile);
+        setTruckReg(profileData.truck_reg || '');
+        setTrailerNo(profileData.trailer_no || '');
+
+        // Fetch active daily check items
+        const { data: itemsData, error: itemsError } = await supabase
+          .from("daily_check_items")
+          .select("id, title, description, is_active")
+          .eq("tenant_id", profileData.tenant_id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true });
+
+        if (itemsError) {
+          throw new Error(itemsError.message || "Failed to fetch daily check items.");
         }
 
-        const fetchedItems = await getDailyCheckItems();
-        const active = fetchedItems.filter(item => item.is_active);
+        const active = (itemsData as DailyCheckItem[]) || [];
         setActiveItems(active);
         setCheckStates(active.map(item => ({
           item_id: item.id,
           title: item.title,
           description: item.description,
-          ok: true, // Default to pass
+          ok: null, // Default to null (unanswered)
           notes: '',
-          photo_base64: undefined,
+          file: null,
+          photo_url: null,
         })));
         setStartTime(new Date()); // Start timer
       } catch (err: any) {
@@ -86,7 +115,7 @@ const DriverDailyCheck: React.FC = () => {
       }
     };
     fetchItemsAndProfile();
-  }, [userRole, navigate]);
+  }, [userRole, navigate, currentUserId]);
 
   const handleCheckChange = (itemId: string, field: keyof CheckItemState, value: any) => {
     setCheckStates(prevStates =>
@@ -104,13 +133,10 @@ const DriverDailyCheck: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && photoUploadItemId) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleCheckChange(photoUploadItemId, 'photo_base64', reader.result as string);
-        toast.success(`Photo added for item: ${activeItems.find(i => i.id === photoUploadItemId)?.title}`);
-        setPhotoUploadItemId(null); // Reset
-      };
-      reader.readAsDataURL(file);
+      handleCheckChange(photoUploadItemId, 'file', file);
+      toast.success(`Photo selected for item: ${activeItems.find(i => i.id === photoUploadItemId)?.title}`);
+      setPhotoUploadItemId(null); // Reset
+      event.target.value = ''; // Clear the input so same file can be selected again
     }
   };
 
@@ -131,31 +157,67 @@ const DriverDailyCheck: React.FC = () => {
       toast.error("Signature is required.");
       return;
     }
+    if (checkStates.some(check => check.ok === null)) {
+      toast.error("Please answer all checklist items (Pass/Fail).");
+      return;
+    }
 
     setIsSubmitting(true);
+    setFnError(null);
     const finishedAt = new Date();
-    const durationSeconds = Math.floor((finishedAt.getTime() - startTime.getTime()) / 1000);
+    const duration_seconds = Math.round((finishedAt.getTime() - startTime.getTime()) / 1000);
 
     try {
+      // 1. Upload photos first (if any)
+      const itemsPayload: Array<{ item_id: string; ok: boolean; notes?: string | null; photo_url?: string | null }> = [];
+      for (const check of checkStates) {
+        let photo_url: string | null = null;
+        if (check.file) {
+          const fileName = `daily-checks/${currentProfile.id}/${crypto.randomUUID()}-${check.file.name}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage.from("daily-checks").upload(fileName, check.file, { upsert: false });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage.from("daily-checks").getPublicUrl(fileName);
+          photo_url = urlData?.publicUrl || null;
+        }
+        itemsPayload.push({
+          item_id: check.item_id,
+          ok: check.ok === true, // Ensure boolean
+          notes: check.notes?.trim() || null,
+          photo_url: photo_url,
+        });
+      }
+
+      // 2. Prepare payload for Edge Function or direct insert
       const payload = {
         truck_reg: truckReg,
-        trailer_no: trailerNo.trim() || undefined,
+        trailer_no: trailerNo.trim() || null,
         started_at: startTime.toISOString(),
         finished_at: finishedAt.toISOString(),
+        duration_seconds: duration_seconds,
         signature: signature,
-        items: checkStates.map(({ title, description, ...rest }) => rest), // Remove title/description from payload
+        items: itemsPayload,
+        tenant_id: currentTenantId, // Include tenant_id for direct insert fallback
+        driver_id: currentProfile.id, // Include driver_id for direct insert fallback
       };
 
-      const promise = submitDailyCheckResponse(payload);
-      toast.promise(promise, {
-        loading: 'Submitting daily check...',
-        success: 'Daily check submitted successfully!',
-        error: (err) => `Failed to submit daily check: ${err.message}`,
-      });
-      await promise;
-      navigate('/'); // Navigate back to dashboard or a success page
-    } catch (err: any) {
-      console.error("Error submitting daily check:", err);
+      // 3. Prefer Edge Function (driver-daily-check-submit)
+      try {
+        await callFn("driver-daily-check-submit", payload);
+      } catch (e: any) {
+        if (/404|not configured|Failed/i.test(e.message)) {
+          // Fallback: insert directly (requires RLS allowing driver insert)
+          const { error: dbError } = await supabase.from("daily_check_responses").insert(payload);
+          if (dbError) throw dbError;
+        } else {
+          throw e;
+        }
+      }
+
+      toast.success("Daily check submitted successfully!");
+      navigate('/'); // Navigate back to dashboard
+    } catch (e: any) {
+      console.error("Error submitting daily check:", e);
+      setFnError(e.message || String(e));
       toast.error("An unexpected error occurred while submitting the daily check.");
     } finally {
       setIsSubmitting(false);
@@ -180,6 +242,10 @@ const DriverDailyCheck: React.FC = () => {
         </Button>
       </div>
     );
+  }
+
+  if (userRole !== 'driver') {
+    return null; // Should be redirected by useEffect
   }
 
   return (
@@ -207,6 +273,7 @@ const DriverDailyCheck: React.FC = () => {
                   onChange={(e) => setTruckReg(e.target.value)}
                   placeholder="e.g., AB12 CDE"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -216,6 +283,7 @@ const DriverDailyCheck: React.FC = () => {
                   value={trailerNo}
                   onChange={(e) => setTrailerNo(e.target.value)}
                   placeholder="e.g., TRL-001"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -234,11 +302,12 @@ const DriverDailyCheck: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Switch
                           id={`check-${check.item_id}`}
-                          checked={check.ok}
+                          checked={check.ok === true}
                           onCheckedChange={(checked) => handleCheckChange(check.item_id, 'ok', checked)}
+                          disabled={isSubmitting}
                         />
-                        <span className={`font-semibold ${check.ok ? 'text-green-600' : 'text-red-600'}`}>
-                          {check.ok ? 'Pass' : 'Fail'}
+                        <span className={`font-semibold ${check.ok === true ? 'text-green-600' : check.ok === false ? 'text-red-600' : 'text-gray-500'}`}>
+                          {check.ok === true ? 'Pass' : check.ok === false ? 'Fail' : 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -252,6 +321,7 @@ const DriverDailyCheck: React.FC = () => {
                         value={check.notes || ''}
                         onChange={(e) => handleCheckChange(check.item_id, 'notes', e.target.value)}
                         placeholder="Add any relevant notes..."
+                        disabled={isSubmitting}
                       />
                     </div>
                     <div className="mt-3 flex items-center gap-2">
@@ -260,12 +330,13 @@ const DriverDailyCheck: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handlePhotoClick(check.item_id)}
+                        disabled={isSubmitting}
                       >
                         <Camera className="h-4 w-4 mr-2" /> Add Photo
                       </Button>
-                      {check.photo_base64 && (
+                      {check.file && (
                         <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" /> Photo Added
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" /> Photo Selected ({check.file.name})
                         </span>
                       )}
                     </div>
@@ -284,6 +355,7 @@ const DriverDailyCheck: React.FC = () => {
 
             <h3 className="text-xl font-semibold mt-6 mb-4">Signature</h3>
             <SignaturePad onSave={setSignature} initialSignature={signature} />
+            {fnError && <p className="text-red-500 text-sm mt-4">Function error: {fnError}</p>}
 
             <Button onClick={handleSubmit} className="w-full mt-6" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
