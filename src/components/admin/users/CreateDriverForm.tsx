@@ -96,6 +96,9 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                         selected={field.value}
                         onSelect={field.onChange}
                         initialFocus
+                        captionLayout="dropdown" // Added for year/month dropdowns
+                        fromYear={1900} // Start year for DOB
+                        toYear={new Date().getFullYear()} // End year for DOB
                       />
                     </PopoverContent>
                   </Popover>

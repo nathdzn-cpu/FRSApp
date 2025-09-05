@@ -13,9 +13,11 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
 interface JobFormValues {
-  ref: string;
+  ref?: string; // Now optional
+  override_ref?: boolean; // New field
+  manual_ref?: string; // New field
   scheduled_date: Date;
-  price?: number;
+  price?: number | null; // Allow null
   notes?: string;
   assigned_driver_id?: string;
   collections: Array<{
@@ -73,7 +75,7 @@ const CreateJob: React.FC = () => {
 
     try {
       const newJobData = {
-        ref: values.ref,
+        ref: values.override_ref ? values.manual_ref : undefined, // Use manual_ref if override is checked, otherwise undefined for auto-generation
         scheduled_date: format(values.scheduled_date, 'yyyy-MM-dd'),
         price: canSeePrice ? values.price : undefined, // Only include price if user can see it
         notes: values.notes,

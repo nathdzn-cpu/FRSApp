@@ -121,6 +121,9 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                         selected={field.value || undefined}
                         onSelect={field.onChange}
                         initialFocus
+                        captionLayout="dropdown" // Added for year/month dropdowns
+                        fromYear={1900} // Start year for DOB
+                        toYear={new Date().getFullYear()} // End year for DOB
                       />
                     </PopoverContent>
                   </Popover>

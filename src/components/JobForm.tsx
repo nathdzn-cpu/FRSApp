@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { formatGBP } from '@/lib/money';
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -30,9 +31,11 @@ const stopSchema = z.object({
 });
 
 const formSchema = z.object({
-  ref: z.string().optional(), // Now optional as it's auto-generated
+  ref: z.string().optional(), // Now optional as it's auto-generated or overridden
+  override_ref: z.boolean().optional(), // New field for override checkbox
+  manual_ref: z.string().optional(), // New field for manual ref input
   scheduled_date: z.date({ required_error: 'Scheduled date is required.' }),
-  price: z.number().min(0, { message: 'Price must be a positive number.' }).optional(),
+  price: z.number().min(0, { message: 'Price must be a positive number.' }).optional().nullable(), // Allow null for optional
   notes: z.string().optional(),
   assigned_driver_id: z.string().optional(),
   collections: z.array(stopSchema).min(0),
@@ -53,7 +56,9 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ref: '', // Still keep default for form, but it will be overwritten/ignored
+      ref: '',
+      override_ref: false,
+      manual_ref: '',
       scheduled_date: new Date(),
       price: undefined,
       notes: '',
@@ -76,12 +81,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
 
   const drivers = profiles.filter(p => p.role === 'driver');
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Remove non-numeric characters for internal storage
-    const numericValue = parseFloat(value.replace(/[^0-9.]/g, ''));
-    form.setValue('price', isNaN(numericValue) ? undefined : numericValue, { shouldValidate: true });
-  };
+  const overrideOrderNumber = form.watch('override_ref');
 
   return (
     <Form {...form}>
@@ -91,13 +91,40 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
             <CardTitle>Job Details</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormItem>
-              <FormLabel>Order Number</FormLabel>
-              <FormControl>
-                <Input value={generatedRef || 'Generated on submit'} readOnly disabled />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <div>
+              <FormItem>
+                <FormLabel>Order Number</FormLabel>
+                <FormControl>
+                  <Input
+                    value={overrideOrderNumber ? form.watch('manual_ref') : (generatedRef || 'Generated on submit')}
+                    readOnly={!overrideOrderNumber}
+                    disabled={!overrideOrderNumber}
+                    onChange={(e) => form.setValue('manual_ref', e.target.value, { shouldValidate: true })}
+                    placeholder="e.g., FRS-001"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+              <FormField
+                control={form.control}
+                name="override_ref"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Override order number
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -147,14 +174,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     <FormLabel>Price (GBP)</FormLabel>
                     <FormControl>
                       <Input
-                        type="text" // Use text to allow custom formatting
+                        type="number" // Changed to number type
                         placeholder="e.g., 250.00"
-                        value={field.value !== undefined ? formatGBP(field.value).replace('£', '') : ''} // Display formatted, remove £ for input
-                        onChange={handlePriceChange}
-                        onBlur={() => {
-                          // Re-format on blur to ensure consistent display
-                          const numericValue = parseFloat(form.getValues('price')?.toString() || '');
-                          form.setValue('price', isNaN(numericValue) ? undefined : numericValue, { shouldValidate: true });
+                        {...field}
+                        value={field.value === null || field.value === undefined ? '' : field.value} // Handle null/undefined for number input
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          field.onChange(isNaN(value) ? undefined : value); // Set to undefined if not a valid number
                         }}
                       />
                     </FormControl>

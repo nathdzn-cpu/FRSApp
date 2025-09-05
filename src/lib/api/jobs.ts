@@ -57,14 +57,14 @@ export const getJobDocuments = async (tenantId: string, jobId: string): Promise<
 
 export const createJob = async (
   tenantId: string,
-  jobData: Omit<Job, 'id' | 'tenant_id' | 'created_at' | 'status' | 'created_by' | 'ref'> & { status?: Job['status']; created_by: string; },
+  jobData: Omit<Job, 'id' | 'tenant_id' | 'created_at' | 'status' | 'created_by' | 'ref'> & { status?: Job['status']; created_by: string; ref?: string; }, // 'ref' is now optional
   stopsData: Omit<JobStop, 'id' | 'tenant_id' | 'job_id'>[],
   actorId: string
 ): Promise<Job> => {
   await delay(1000); // Simulate API call delay
 
-  // Allocate job reference
-  const newJobRef = await allocateJobRef(tenantId, actorId);
+  // Allocate job reference if not provided
+  const newJobRef = jobData.ref || await allocateJobRef(tenantId, actorId);
 
   const newJobId = uuidv4();
   const newJob: Job = {
@@ -72,7 +72,7 @@ export const createJob = async (
     tenant_id: tenantId,
     created_at: new Date().toISOString(),
     status: jobData.status || 'planned', // Default to 'planned'
-    ref: newJobRef, // Use the allocated reference
+    ref: newJobRef, // Use the allocated or provided reference
     ...jobData,
     created_by: actorId, // Ensure created_by is the actor
   };
