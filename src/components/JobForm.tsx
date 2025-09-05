@@ -175,14 +175,17 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign Driver (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "unassigned-driver" ? undefined : value)}
+                    value={field.value || "unassigned-driver"} // Set value to special string if undefined
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a driver" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned-driver">Unassigned</SelectItem> {/* Changed value */}
                       {drivers.map(driver => (
                         <SelectItem key={driver.id} value={driver.id}>
                           {driver.full_name} ({driver.truck_reg || 'N/A'})
