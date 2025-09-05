@@ -16,7 +16,7 @@ const CreateDriver: React.FC = () => {
   const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined);
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
-  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
+  const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
 
   useEffect(() => {
     if (userRole !== 'admin') {
@@ -35,9 +35,9 @@ const CreateDriver: React.FC = () => {
           const profiles = await getProfiles(defaultTenantId);
           setCurrentProfile(profiles.find(p => p.user_id === currentUserId));
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch profiles:", err);
-        setError("Failed to load profiles. Please try again.");
+        setError(err.message || "Failed to load profiles. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -68,11 +68,11 @@ const CreateDriver: React.FC = () => {
       toast.promise(promise, {
         loading: 'Creating driver...',
         success: 'Driver created successfully!',
-        error: 'Failed to create driver.',
+        error: (err) => `Failed to create driver: ${err.message}`,
       });
       await promise;
       navigate('/admin/users');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating driver:", err);
       toast.error("An unexpected error occurred while creating the driver.");
     }
@@ -90,7 +90,7 @@ const CreateDriver: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <p className="text-red-500 text-lg mb-4">{error}</p>
+        <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/admin/users')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
