@@ -68,7 +68,7 @@ const CreateOffice: React.FC = () => {
         error: (err) => `Failed to create office user: ${err.message}`,
       });
       await promise;
-      navigate('/admin/users');
+      navigate('/admin/users'); // Navigate back to the list page
     } catch (err: any) {
       console.error("Error creating office user:", err);
       toast.error("An unexpected error occurred while creating the office user.");

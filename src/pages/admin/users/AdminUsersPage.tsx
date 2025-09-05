@@ -5,7 +5,7 @@ import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPasswor
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail } from 'lucide-react';
+import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw } from 'lucide-react'; // Added RefreshCw icon
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +33,7 @@ const AdminUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [profiles, setProfiles] = useState<Profile[]>([]); // For currentProfile
+  const [busyId, setBusyId] = useState<string | null>(null); // To disable buttons during action
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
@@ -74,8 +75,7 @@ const AdminUsersPage: React.FC = () => {
       return;
     }
     try {
-      // In a real app, you'd need the user's email to send a reset link.
-      // For this mock, we'll just simulate the action.
+      setBusyId(user.id);
       const promise = resetUserPassword(currentTenantId, user.user_id, currentProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${user.full_name}...`,
@@ -86,6 +86,8 @@ const AdminUsersPage: React.FC = () => {
     } catch (err: any) {
       console.error("Error sending password reset:", err);
       toast.error("An unexpected error occurred while sending password reset.");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -95,17 +97,24 @@ const AdminUsersPage: React.FC = () => {
       return;
     }
     try {
+      setBusyId(user.id);
       const promise = deleteUser(currentTenantId, user.id, currentProfile.id);
       toast.promise(promise, {
         loading: `Deleting ${user.full_name}...`,
         success: `${user.full_name} deleted successfully! (Simulated)`,
         error: `Failed to delete ${user.full_name}.`,
       });
-      await promise;
-      fetchUsers(); // Refresh the list
+      const result = await promise;
+      if (result) {
+        fetchUsers(); // Refresh the list after successful deletion
+      } else {
+        toast.error(`Failed to delete ${user.full_name}: User not found or could not be deleted.`);
+      }
     } catch (err: any) {
       console.error("Error deleting user:", err);
       toast.error("An unexpected error occurred while deleting user.");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -165,9 +174,14 @@ const AdminUsersPage: React.FC = () => {
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-2xl font-bold">Admin: User Management</CardTitle>
-            <Button onClick={() => navigate('/admin/users/new')}>
-              <UserPlus className="h-4 w-4 mr-2" /> Add New User
-            </Button>
+            <div className="flex space-x-2">
+              <Button onClick={fetchUsers} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              </Button>
+              <Button onClick={() => navigate('/admin/users/new')}>
+                <UserPlus className="h-4 w-4 mr-2" /> Add New User
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -224,7 +238,7 @@ const AdminUsersPage: React.FC = () => {
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" disabled={busyId === user.id}>
                                   <Mail className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -237,13 +251,13 @@ const AdminUsersPage: React.FC = () => {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleResetPassword(user)}>Send Reset Email</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleResetPassword(user)} disabled={busyId === user.id}>Send Reset Email</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
+                                <Button variant="destructive" size="sm" disabled={busyId === user.id}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -256,7 +270,7 @@ const AdminUsersPage: React.FC = () => {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(user)}>Delete User</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(user)} disabled={busyId === user.id}>Delete User</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>

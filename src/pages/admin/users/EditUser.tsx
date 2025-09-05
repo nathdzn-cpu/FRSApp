@@ -4,7 +4,7 @@ import { useUserRole } from '@/context/UserRoleContext';
 import { getTenants, getProfiles, updateUser, resetUserPassword } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import EditUserForm from '@/components/admin/users/EditUserForm';
 import {
@@ -27,6 +27,7 @@ const EditUser: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [userToEdit, setUserToEdit] = useState<Profile | undefined>(undefined);
   const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined);
+  const [isResetPasswordBusy, setIsResetPasswordBusy] = useState(false);
 
   const currentTenantId = 'demo-tenant-id'; // Hardcoded for mock data
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : userRole === 'driver' ? 'auth_user_dave' : 'unknown';
@@ -82,8 +83,12 @@ const EditUser: React.FC = () => {
         success: 'User updated successfully!',
         error: (err) => `Failed to update user: ${err.message}`,
       });
-      await promise;
-      navigate('/admin/users');
+      const result = await promise;
+      if (result) {
+        navigate('/admin/users'); // Navigate back to the list page
+      } else {
+        toast.error(`Failed to update ${userToEdit.full_name}: User not found or could not be updated.`);
+      }
     } catch (err: any) {
       console.error("Error updating user:", err);
       toast.error("An unexpected error occurred while updating the user.");
@@ -98,6 +103,7 @@ const EditUser: React.FC = () => {
     // In a real app, you'd need the user's email to send a reset link.
     // For this mock, we'll just simulate the action.
     try {
+      setIsResetPasswordBusy(true);
       const promise = resetUserPassword(currentTenantId, userToEdit.user_id, currentProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
@@ -108,6 +114,8 @@ const EditUser: React.FC = () => {
     } catch (err: any) {
       console.error("Error sending password reset:", err);
       toast.error("An unexpected error occurred while sending password reset.");
+    } finally {
+      setIsResetPasswordBusy(false);
     }
   };
 
@@ -170,7 +178,7 @@ const EditUser: React.FC = () => {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" disabled={isResetPasswordBusy}>
                   <Mail className="h-4 w-4 mr-2" /> Send Password Reset
                 </Button>
               </AlertDialogTrigger>
@@ -183,7 +191,7 @@ const EditUser: React.FC = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleResetPassword}>Send Reset Email</AlertDialogAction>
+                  <AlertDialogAction onClick={handleResetPassword} disabled={isResetPasswordBusy}>Send Reset Email</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

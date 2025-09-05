@@ -71,7 +71,7 @@ const CreateDriver: React.FC = () => {
         error: (err) => `Failed to create driver: ${err.message}`,
       });
       await promise;
-      navigate('/admin/users');
+      navigate('/admin/users'); // Navigate back to the list page
     } catch (err: any) {
       console.error("Error creating driver:", err);
       toast.error("An unexpected error occurred while creating the driver.");
