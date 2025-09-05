@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { mockJobs, mockJobStops, mockJobEvents, mockDocuments, mockAuditLogs, Job, JobStop, JobEvent, Document } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
+import { allocateJobRef } from './tenantCounters'; // Import the new function
 
 export const getJobs = async (tenantId: string, role: 'admin' | 'office' | 'driver', driverId?: string): Promise<Job[]> => {
   await delay(300);
@@ -47,11 +48,14 @@ export const getJobDocuments = async (tenantId: string, jobId: string): Promise<
 
 export const createJob = async (
   tenantId: string,
-  jobData: Omit<Job, 'id' | 'tenant_id' | 'created_at' | 'status' | 'created_by'> & { status?: Job['status']; created_by: string; },
+  jobData: Omit<Job, 'id' | 'tenant_id' | 'created_at' | 'status' | 'created_by' | 'ref'> & { status?: Job['status']; created_by: string; },
   stopsData: Omit<JobStop, 'id' | 'tenant_id' | 'job_id'>[],
   actorId: string
 ): Promise<Job> => {
   await delay(1000); // Simulate API call delay
+
+  // Allocate job reference
+  const newJobRef = await allocateJobRef(tenantId, actorId);
 
   const newJobId = uuidv4();
   const newJob: Job = {
@@ -59,6 +63,7 @@ export const createJob = async (
     tenant_id: tenantId,
     created_at: new Date().toISOString(),
     status: jobData.status || 'planned', // Default to 'planned'
+    ref: newJobRef, // Use the allocated reference
     ...jobData,
     created_by: actorId, // Ensure created_by is the actor
   };

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
 import JobsTable from '@/components/JobsTable';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Users } from 'lucide-react'; // Added Users icon
 import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
@@ -22,6 +22,7 @@ const Index = () => {
   const currentUserId = userRole === 'admin' ? 'auth_user_alice' : userRole === 'office' ? 'auth_user_owen' : 'auth_user_dave';
   const currentProfile = profiles.find(p => p.user_id === currentUserId);
   const canCreateJob = userRole === 'admin' || userRole === 'office';
+  const canAccessAdminUsers = userRole === 'admin'; // New permission check
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,6 +78,11 @@ const Index = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Haulage Office Dashboard</h1>
           <div className="flex items-center space-x-2">
+            {canAccessAdminUsers && (
+              <Button onClick={() => navigate('/admin/users')} variant="outline">
+                <Users className="h-4 w-4 mr-2" /> Admin Users
+              </Button>
+            )}
             {canCreateJob && (
               <Button onClick={() => navigate('/jobs/new')} className="mr-4">
                 <PlusCircle className="h-4 w-4 mr-2" /> Create New Job

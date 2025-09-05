@@ -30,7 +30,7 @@ const stopSchema = z.object({
 });
 
 const formSchema = z.object({
-  ref: z.string().min(1, { message: 'Job reference is required.' }),
+  ref: z.string().optional(), // Now optional as it's auto-generated
   scheduled_date: z.date({ required_error: 'Scheduled date is required.' }),
   price: z.number().min(0, { message: 'Price must be a positive number.' }).optional(),
   notes: z.string().optional(),
@@ -46,13 +46,14 @@ interface JobFormProps {
   profiles: Profile[];
   canSeePrice: boolean;
   defaultValues?: Partial<JobFormValues>;
+  generatedRef?: string; // New prop for displaying generated ref
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues }) => {
+const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ref: '',
+      ref: '', // Still keep default for form, but it will be overwritten/ignored
       scheduled_date: new Date(),
       price: undefined,
       notes: '',
@@ -90,19 +91,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
             <CardTitle>Job Details</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="ref"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Reference</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., JOB-001" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormItem>
+              <FormLabel>Order Number</FormLabel>
+              <FormControl>
+                <Input value={generatedRef || 'Generated on submit'} readOnly disabled />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
 
             <FormField
               control={form.control}
@@ -185,7 +180,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="unassigned-driver">Unassigned</SelectItem> {/* Changed value */}
+                      <SelectItem value="unassigned-driver">Unassigned</SelectItem>
                       {drivers.map(driver => (
                         <SelectItem key={driver.id} value={driver.id}>
                           {driver.full_name} ({driver.truck_reg || 'N/A'})
