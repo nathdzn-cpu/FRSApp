@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Import new modular components
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
-import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
+import JobOverviewCard from '@/components/job-detail/JobDetailOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
@@ -117,15 +117,187 @@ const JobDetail: React.FC = () => {
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
-  // --- Handlers (kept for now, but not directly used in simplified render) ---
-  const handleRequestPod = async () => { /* ... */ };
-  const handleExportPdf = async () => { /* ... */ };
-  const handleCloneJob = async () => { /* ... */ };
-  const handleCancelJob = async () => { /* ... */ };
-  const handleEditSubmit = async (values: JobFormValues) => { /* ... */ };
-  const handleAssignDriver = async (driverId: string | null) => { /* ... */ };
-  const handleUpdateProgress = async (entries: ProgressUpdateEntry[]) => { /* ... */ };
-  // --- End Handlers ---
+  const handleRequestPod = async () => {
+    if (!job || !currentProfile || !userRole) return;
+    const promise = requestPod(job.id, currentOrgId, currentProfile.id, userRole);
+    toast.promise(promise, {
+      loading: 'Requesting POD...',
+      success: 'POD request sent to driver!',
+      error: 'Failed to request POD.',
+    });
+    await promise;
+    refetchJobData();
+  };
+
+  const handleExportPdf = async () => {
+    if (!job || !currentProfile) return;
+    const promise = generateJobPdf(job.id, currentOrgId, currentProfile.id);
+    toast.promise(promise, {
+      loading: 'Generating PDF...',
+      success: (url) => {
+        if (url) {
+          window.open(url, '_blank');
+          return 'PDF generated and opened in new tab!';
+        }
+        return 'PDF generated, but no URL returned.';
+      },
+      error: 'Failed to generate PDF.',
+    });
+  };
+
+  const handleCloneJob = async () => {
+    if (!job || !currentProfile || !userRole) return;
+    const promise = cloneJob(job.id, currentOrgId, currentProfile.id, userRole);
+    toast.promise(promise, {
+      loading: 'Cloning job...',
+      success: (clonedJob) => {
+        if (clonedJob) {
+          navigate(`/jobs/${clonedJob.id}`);
+          return `Job ${clonedJob.order_number} cloned successfully!`;
+        }
+        return 'Job cloned, but no new job returned.';
+      },
+      error: 'Failed to clone job.',
+    });
+  };
+
+  const handleCancelJob = async () => {
+    if (!job || !currentProfile || !userRole) return;
+    const promise = cancelJob(job.id, currentOrgId, currentProfile.id, userRole);
+    toast.promise(promise, {
+      loading: 'Cancelling job...',
+      success: 'Job cancelled successfully!',
+      error: 'Failed to cancel job.',
+    });
+    await promise;
+    refetchJobData();
+  };
+
+  const handleEditSubmit = async (values: JobFormValues) => {
+    if (!job || !currentProfile || !userRole) {
+      toast.error("Job or user profile/role not found. Cannot update job.");
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    try {
+      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : [])); // Ensure s.id exists
+
+      const allNewStops = [...values.collections, ...values.deliveries];
+
+      const stops_to_add = allNewStops.filter(s => !s.id);
+      const stops_to_update = allNewStops.filter(s => s.id && originalStopsMap.has(s.id));
+      const stops_to_delete = stops.filter(s => !allNewStops.some(ns => ns.id === s.id)).map(s => s.id);
+
+      const jobUpdates: Partial<Job> = {
+        order_number: values.order_number || null,
+        date_created: values.date_created.toISOString().split('T')[0],
+        price: values.price,
+        assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
+        notes: values.notes,
+        status: values.status,
+      };
+
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        actor_role: userRole,
+        job_updates: jobUpdates,
+        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
+        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })),
+        stops_to_delete: stops_to_delete,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: 'Updating job...',
+        success: 'Job updated successfully!',
+        error: (err) => `Failed to update job: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
+    } catch (err: any) {
+      console.error("Error updating job:", err);
+      toast.error("An unexpected error occurred while updating the job.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleAssignDriver = async (driverId: string | null) => {
+    if (!job || !currentProfile || !userRole) {
+      toast.error("Job or user profile/role not found. Cannot assign driver.");
+      return;
+    }
+    setIsAssigningDriver(true);
+    try {
+      const jobUpdates: Partial<Job> = {
+        assigned_driver_id: driverId,
+      };
+
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        actor_role: userRole,
+        job_updates: jobUpdates,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: driverId ? 'Assigning driver...' : 'Unassigning driver...',
+        success: driverId ? 'Driver assigned successfully!' : 'Driver unassigned successfully!',
+        error: (err) => `Failed to assign driver: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
+    } catch (err: any) {
+      console.error("Error assigning driver:", err);
+      toast.error("An unexpected error occurred while assigning the driver.");
+    } finally {
+      setIsAssigningDriver(false);
+    }
+  };
+
+  const handleUpdateProgress = async (entries: ProgressUpdateEntry[]) => {
+    if (!job || !currentProfile || !userRole || entries.length === 0) {
+      toast.error("No status updates to log.");
+      return;
+    }
+
+    setIsUpdatingProgress(true);
+    try {
+      // Sort entries by dateTime to ensure chronological order
+      const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+
+      for (const entry of sortedEntries) {
+        const payload = {
+          job_id: job.id,
+          org_id: currentOrgId,
+          actor_id: currentProfile.id,
+          actor_role: userRole,
+          new_status: entry.status,
+          timestamp: entry.dateTime.toISOString(),
+          notes: entry.notes.trim() || undefined,
+        };
+
+        await updateJobProgress(payload);
+      }
+
+      toast.success('Job progress updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
+    } catch (err: any) {
+      console.error("Error updating job progress:", err);
+      toast.error("An unexpected error occurred while updating job progress.");
+      throw err; // Re-throw to allow dialog to handle its own error state if needed
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -158,15 +330,45 @@ const JobDetail: React.FC = () => {
     );
   }
 
-  // Simplified render for debugging
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900">Job Detail Page - Debugging: {job.order_number}</h1>
-        <p>If you see this, the basic page is loading. The issue is in one of the modular components.</p>
+
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <JobDetailHeader
+            job={job}
+            stops={stops}
+            allProfiles={allProfiles}
+            userRole={userRole!}
+            currentProfile={currentProfile!}
+            currentOrgId={currentOrgId}
+            onEditSubmit={handleEditSubmit}
+            onAssignDriver={handleAssignDriver}
+            onUpdateProgress={handleUpdateProgress}
+            onRequestPod={handleRequestPod}
+            onExportPdf={handleExportPdf}
+            onCloneJob={handleCloneJob}
+            onCancelJob={handleCancelJob}
+            isSubmittingEdit={isSubmittingEdit}
+            isAssigningDriver={isAssigningDriver}
+            isUpdatingProgress={isUpdatingProgress}
+          />
+          <JobOverviewCard
+            job={job}
+            stops={stops}
+            allProfiles={allProfiles}
+          />
+        </Card>
+
+        <JobDetailTabs
+          progressLogs={progressLogs}
+          allProfiles={allProfiles}
+          stops={stops}
+          documents={documents}
+        />
       </div>
     </div>
   );
