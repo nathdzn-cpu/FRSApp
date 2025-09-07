@@ -9,13 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSession } from '@supabase/auth-helpers-react'; // Import useSession
 
 const LoginPage: React.FC = () => {
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
-  const { isLoading: isSessionLoading } = useSession(); // Use useSession for global loading state
+  const { login, isLoadingAuth } = useAuth(); // Use isLoadingAuth from useAuth
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +25,14 @@ const LoginPage: React.FC = () => {
     await login(userIdOrEmail, password);
   };
 
-  if (isSessionLoading) {
+  // isLoadingAuth from AuthContext primarily indicates if the user profile is being fetched after a session is established.
+  // For the login form itself, we can use this to disable the form while an auth operation is in progress.
+  // If the AuthContext's initial profile fetch is still ongoing, we show a loading state.
+  if (isLoadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading session...</p>
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading user profile...</p>
       </div>
     );
   }
@@ -54,7 +55,7 @@ const LoginPage: React.FC = () => {
                 value={userIdOrEmail}
                 onChange={(e) => setUserIdOrEmail(e.target.value)}
                 required
-                disabled={isSessionLoading}
+                disabled={isLoadingAuth}
               />
             </div>
             <div className="space-y-2">
@@ -66,11 +67,11 @@ const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isSessionLoading}
+                disabled={isLoadingAuth}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isSessionLoading}>
-              {isSessionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isLoadingAuth}>
+              {isLoadingAuth && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Log In
             </Button>
           </form>
