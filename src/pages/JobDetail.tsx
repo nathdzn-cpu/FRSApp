@@ -103,6 +103,11 @@ const JobDetail: React.FC = () => {
       const fetchedEvents = await getJobEvents(currentOrgId, id);
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
 
+      console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
+      console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
+      console.log("DEBUG: JobDetail - fetchedEvents:", fetchedEvents);
+      console.log("DEBUG: JobDetail - fetchedDocuments:", fetchedDocuments);
+
       return {
         job: fetchedJob,
         stops: fetchedStops,
@@ -187,7 +192,7 @@ const JobDetail: React.FC = () => {
     setIsSubmittingEdit(true);
     try {
       // Use the 'stops' variable from the useQuery hook
-      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
+      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : []).filter(Boolean)); // Filter out undefined IDs
       const currentStopIds = new Set(stops.map(s => s.id));
 
       const allNewStops = [...values.collections, ...values.deliveries];
