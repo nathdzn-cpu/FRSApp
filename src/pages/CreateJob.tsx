@@ -12,7 +12,6 @@ import JobForm from '@/components/JobForm';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card'; // Import Card components
-import { usePersistentForm } from '@/hooks/usePersistentForm'; // Import usePersistentForm
 
 interface JobFormValues {
   ref?: string;
@@ -42,8 +41,6 @@ interface JobFormValues {
   }>;
 }
 
-const formKey = 'create-job-form-state'; // Unique key for this form
-
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
@@ -52,13 +49,6 @@ const CreateJob: React.FC = () => {
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
-
-  // This component no longer directly uses usePersistentForm for the form data,
-  // but it needs a way to trigger clearing it.
-  // We can get the setter from usePersistentForm and pass it down, or directly clear sessionStorage.
-  // For simplicity and to avoid prop drilling, we'll directly clear sessionStorage here.
-  const [, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>(formKey, {});
-
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -102,7 +92,6 @@ const CreateJob: React.FC = () => {
         loading: 'Creating job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          // Form clearing is now handled by JobForm's internal onSubmit wrapper
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },
@@ -112,11 +101,6 @@ const CreateJob: React.FC = () => {
       console.error("Error creating job:", err);
       toast.error("An unexpected error occurred while creating the job.");
     }
-  };
-
-  // Function to clear the form state, to be called on cancel or successful submission
-  const handleClearForm = () => {
-    setPersistedFormState({}); // Clear the persisted state
   };
 
   if (isLoadingAuth || isLoadingProfiles) {
@@ -147,19 +131,16 @@ const CreateJob: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <Button onClick={() => { navigate('/'); handleClearForm(); }} variant="outline"> {/* Clear on navigate away */}
+          <Button onClick={() => { navigate('/'); }} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
           </Button>
-          <Button onClick={handleClearForm} variant="destructive">
-            Clear Form
-          </Button>
+          {/* Removed Clear Form button as state will reset on unmount */}
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
 
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardContent className="p-0">
-            {/* JobForm now manages its own persistence, so defaultValues is not passed from here */}
             <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} />
           </CardContent>
         </Card>
