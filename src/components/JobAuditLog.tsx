@@ -3,9 +3,9 @@ import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog } from 'lucide-react';
-import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils'; // Import coreProgressActionTypes
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
-interface JobTimelineProps {
+interface JobAuditLogProps {
   progressLogs: JobProgressLog[];
   profiles: Profile[];
 }
@@ -24,35 +24,46 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   pod_received: FileText,
   cancelled: XCircle,
 
-  // Other significant events that are part of the core progress flow
+  // Other significant events
   job_created: CheckCircle,
+  job_cloned: Copy,
   job_confirmed: CheckCircle,
   eta_set: Clock,
   pod_requested: FileText,
   pod_uploaded: FileText,
-  driver_reassigned: UserCog, // Icon for driver reassignment
-  status_changed: Clock, // For generic status changes via edit
-  stop_added: MapPin, // For stop additions
-  stop_updated: MapPin, // For stop updates
-  stop_deleted: MapPin, // For stop deletions
-  stop_details_updated: MapPin, // For driver updating stop details
+  document_uploaded: FileText,
+  location_ping: MapPin,
+  note_added: MessageSquare,
+  status_changed: Clock,
+  driver_reassigned: UserCog,
+  stop_added: PlusCircle,
+  stop_updated: Edit,
+  stop_deleted: Trash2,
+  stop_details_updated: Edit,
+  daily_check_submitted: CalendarCheck,
+  daily_check_item_created: PlusCircle,
+  daily_check_item_updated: Edit,
+  daily_check_item_deleted: Trash2,
+  user_created: UserPlus,
+  user_updated: UserCog,
+  user_deleted: Trash2,
+  password_reset_sent: Mail,
+  purge_demo_users: Eraser,
+  purge_all_non_admin_users: Eraser,
 };
 
-const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles }) => {
+const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => {
   const getActorName = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
-    return actor ? actor.full_name : 'Unknown User'; // Only full name
+    return actor ? actor.full_name : 'Unknown User';
   };
 
-  // Filter logs to only include core progress action types
-  const filteredLogs = progressLogs.filter(log => coreProgressActionTypes.includes(log.action_type));
-
-  if (filteredLogs.length === 0) {
-    return <p className="text-gray-600">No core progress events recorded for this job yet.</p>;
+  if (progressLogs.length === 0) {
+    return <p className="text-gray-600">No audit log entries for this job yet.</p>;
   }
 
   // Sort logs by timestamp descending (newest first)
-  const sortedLogs = [...filteredLogs].sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+  const sortedLogs = [...progressLogs].sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
 
   return (
     <div className="relative pl-8">
@@ -62,7 +73,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles }) => 
         const logDate = parseISO(log.timestamp);
         return (
           <div key={log.id} className="mb-6 relative">
-            <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
+            <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-gray-600 text-white">
               <Icon size={16} />
             </div>
             <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
@@ -77,9 +88,9 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles }) => 
               </div>
               <p className="text-gray-800 mb-1">
                 <span className="font-medium text-gray-900 flex items-center gap-1">
-                  <User className="h-3 w-3" /> {getActorName(log.actor_id)}
+                  <User className="h-3 w-3" /> {getActorName(log.actor_id)} ({log.actor_role || 'N/A'})
                 </span>{' '}
-                {log.notes || `Marked as '${getDisplayStatus(log.action_type)}'.`}
+                {log.notes || `performed a '${getDisplayStatus(log.action_type)}' event.`}
               </p>
               {(log.lat && log.lon) && (
                 <p className="text-xs text-gray-600 flex items-center">
@@ -94,4 +105,4 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles }) => 
   );
 };
 
-export default JobTimeline;
+export default JobAuditLog;

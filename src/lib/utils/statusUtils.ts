@@ -13,6 +13,23 @@ export const jobStatusOrder: Array<Job['status']> = [
   'pod_received',
 ];
 
+// Define core progress action types to display in the timeline
+export const coreProgressActionTypes: string[] = [
+  'job_created',
+  'planned',
+  'assigned',
+  'accepted',
+  'on_route_collection',
+  'at_collection',
+  'loaded',
+  'on_route_delivery',
+  'at_delivery',
+  'delivered',
+  'pod_received',
+  'job_confirmed',
+  'eta_set',
+];
+
 export const getSkippedStatuses = (currentStatus: Job['status'], newStatus: Job['status']): Job['status'][] => {
   const currentIndex = jobStatusOrder.indexOf(currentStatus);
   const newIndex = jobStatusOrder.indexOf(newStatus);
