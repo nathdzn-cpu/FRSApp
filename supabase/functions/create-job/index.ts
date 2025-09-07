@@ -29,7 +29,7 @@ function userClient(authHeader: string | null) {
 }
 
 serve(async (req) => {
-  console.log("DEBUG: create-job function started."); // Added this line
+  console.log("DEBUG: create-job function started.");
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -61,10 +61,10 @@ serve(async (req) => {
       console.error("Error parsing request body:", e);
       return {};
     });
-    console.log("Received body:", JSON.stringify(body, null, 2)); // Log the full received body
+    console.log("Received body:", JSON.stringify(body, null, 2));
 
     const { jobData, stopsData, org_id, actor_id } = body;
-    console.log("Destructured values:", { jobData, stopsData, org_id, actor_id }); // Log destructured values
+    console.log("Destructured values:", { jobData, stopsData, org_id, actor_id });
 
     if (!jobData || !stopsData || !org_id || !actor_id) {
       throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body.");
@@ -109,11 +109,11 @@ serve(async (req) => {
       org_id: org_id,
       ref: newJobRef,
       status: jobData.status || 'planned',
-      date_created: jobData.date_created, // New field
-      price: jobData.price || null, // New field
-      assigned_driver_id: jobData.assigned_driver_id || null, // New field
-      notes: jobData.notes || null, // New field
-      created_at: new Date().toISOString(), // Use current time for DB created_at
+      date_created: jobData.date_created,
+      price: jobData.price || null,
+      assigned_driver_id: jobData.assigned_driver_id || null,
+      notes: jobData.notes || null,
+      created_at: new Date().toISOString(),
       deleted_at: null,
     };
 
@@ -131,15 +131,15 @@ serve(async (req) => {
       id: uuidv4(),
       org_id: org_id,
       job_id: insertedJob.id,
-      seq: index + 1, // Ensure sequence is set
+      seq: index + 1,
       type: stop.type,
       name: stop.name,
       address_line1: stop.address_line1,
       address_line2: stop.address_line2 || null,
       city: stop.city,
       postcode: stop.postcode,
-      window_from: stop.window_from || null, // Keep window_from
-      window_to: stop.window_to || null,     // Keep window_to
+      window_from: stop.window_from || null,
+      window_to: stop.window_to || null,
       notes: stop.notes || null,
       created_at: new Date().toISOString(),
     }));
@@ -156,8 +156,8 @@ serve(async (req) => {
       }
     }
 
-    // 7) Audit log
-    await admin.from("audit_logs").insert({ // Added await here
+    // 7) Audit log (removed await to allow it to run non-blocking, chained .catch directly)
+    admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,
       entity: "jobs",
@@ -170,7 +170,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(insertedJob),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } }, // Include CORS headers here
+      { headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (e) {
     console.error("DEBUG: function error", e);
@@ -178,7 +178,7 @@ serve(async (req) => {
       JSON.stringify({ ok: false, error: (e as Error).message }),
       {
         status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders }, // Include CORS headers here
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );
   }
