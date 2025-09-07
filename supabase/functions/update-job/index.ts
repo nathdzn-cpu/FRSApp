@@ -83,6 +83,8 @@ serve(async (req) => {
     const finalJobUpdates: Record<string, any> = {};
     const auditBeforeJob: Record<string, any> = { ...existingJob };
     const auditAfterJob: Record<string, any> = {};
+    let statusChanged = false;
+    let oldStatus = existingJob.status;
 
     // Role-based access control for job updates
     if (me.role === 'admin' || me.role === 'office') {
@@ -92,6 +94,9 @@ serve(async (req) => {
           if (job_updates.hasOwnProperty(key)) {
             finalJobUpdates[key] = job_updates[key];
             auditAfterJob[key] = job_updates[key];
+            if (key === 'status' && job_updates[key] !== oldStatus) {
+              statusChanged = true;
+            }
           }
         }
       }
@@ -100,6 +105,9 @@ serve(async (req) => {
       if (job_updates?.status !== undefined) {
         finalJobUpdates.status = job_updates.status;
         auditAfterJob.status = job_updates.status;
+        if (job_updates.status !== oldStatus) {
+          statusChanged = true;
+        }
       }
       if (job_updates?.notes !== undefined) {
         finalJobUpdates.notes = job_updates.notes;
@@ -125,6 +133,23 @@ serve(async (req) => {
         .single();
       if (updateJobError) throw new Error("Failed to update job: " + updateJobError.message);
       updatedJobData = data;
+
+      // If status changed, log to job_progress_log
+      if (statusChanged) {
+        const { error: progressLogError } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: org_id,
+            job_id: job_id,
+            actor_id: actor_id,
+            status: finalJobUpdates.status,
+            notes: `Job status changed from '${oldStatus}' to '${finalJobUpdates.status}' via edit.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogError) {
+          console.error("DEBUG: progress log insert failed for status change in update-job", progressLogError.message);
+        }
+      }
     }
 
     // Handle stop updates (Admin/Office can add/update/delete, Driver can only update window_from/to and notes)

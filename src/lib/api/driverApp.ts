@@ -1,63 +1,74 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
   mockJobs,
-  mockJobEvents,
   mockDocuments,
   mockProfileDevices,
   mockDailyChecks,
   mockProfiles,
-  JobEvent,
+  JobEvent, // Still needed for type definition in confirmJob/updateJobStage return types, but not for insertion
   Document,
   ProfileDevice,
   DailyCheck,
 } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
+import { supabase } from '../supabaseClient'; // Import supabase client
 
 export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobEvent[]> => { // Changed tenantId to orgId
   await delay(500);
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  const events: JobEvent[] = [];
+  const events: JobEvent[] = []; // Keep for return type, but actual events go to progress log
 
-  // Add job_confirmed event
-  const confirmedEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    actor_id: driverId,
-    event_type: 'job_confirmed',
-    notes: 'Driver confirmed job.',
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(confirmedEvent);
-  events.push(confirmedEvent);
+  // Add job_confirmed event to job_progress_log
+  const { data: confirmedLog, error: confirmedLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: driverId,
+      status: 'job_confirmed',
+      notes: 'Driver confirmed job.',
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  if (confirmedLogError) console.error("Error inserting confirmed job log:", confirmedLogError);
+  if (confirmedLog) events.push({ ...confirmedLog, event_type: 'job_confirmed' }); // Mock JobEvent for return
 
-  // Add eta_set event
-  const etaEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    actor_id: driverId,
-    event_type: 'eta_set',
-    notes: `ETA to first collection: ${eta}`,
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(etaEvent);
-  events.push(etaEvent);
+  // Add eta_set event to job_progress_log
+  const { data: etaLog, error: etaLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: driverId,
+      status: 'eta_set',
+      notes: `ETA to first collection: ${eta}`,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  if (etaLogError) console.error("Error inserting ETA log:", etaLogError);
+  if (etaLog) events.push({ ...etaLog, event_type: 'eta_set' }); // Mock JobEvent for return
 
   // Update job status to 'in_progress' if it was 'assigned'
   if (job.status === 'assigned') {
-    job.status = 'in_progress';
-    mockJobEvents.push({
-      id: uuidv4(),
-      org_id: orgId, // Changed tenant_id to org_id
-      job_id: jobId,
-      actor_id: driverId,
-      event_type: 'status_changed',
-      notes: 'Job status changed to in_progress by driver.',
-      created_at: new Date().toISOString(),
-    });
+    job.status = 'accepted'; // Changed to 'accepted'
+    const { data: statusChangeLog, error: statusChangeLogError } = await supabase
+      .from('job_progress_log')
+      .insert({
+        org_id: orgId,
+        job_id: jobId,
+        actor_id: driverId,
+        status: 'accepted', // Use 'accepted' as the status for the log
+        notes: 'Job status changed to accepted by driver.',
+        timestamp: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (statusChangeLogError) console.error("Error inserting status change log:", statusChangeLogError);
+    if (statusChangeLog) events.push({ ...statusChangeLog, event_type: 'status_changed' }); // Mock JobEvent for return
   }
 
   return events;
@@ -81,22 +92,30 @@ export const updateJobStage = async (
   if (eventType === 'delivered') {
     job.status = 'delivered';
   } else if (job.status === 'assigned' || job.status === 'planned') {
-    job.status = 'in_progress';
+    job.status = 'accepted'; // Changed to 'accepted'
   }
 
-  const newEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    stop_id: stopId,
-    actor_id: driverId,
-    event_type: eventType,
-    notes: notes,
-    lat: lat,
-    lon: lon,
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(newEvent);
+  // Insert into job_progress_log
+  const { data: newLog, error: insertError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      stop_id: stopId,
+      actor_id: driverId,
+      status: eventType, // Use eventType as the status for the log
+      notes: notes,
+      lat: lat,
+      lon: lon,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting job stage log:", insertError);
+    throw new Error(insertError.message);
+  }
 
   // Update driver's last job status
   const driverProfile = mockProfiles.find(p => p.id === driverId);
@@ -104,7 +123,7 @@ export const updateJobStage = async (
     driverProfile.last_job_status = job.status;
   }
 
-  return newEvent;
+  return { ...newLog, event_type: eventType }; // Mock JobEvent for return
 };
 
 export const uploadDocument = async (
@@ -130,17 +149,19 @@ export const uploadDocument = async (
   };
   mockDocuments.push(newDocument);
 
-  // Add a job event for document upload
-  mockJobEvents.push({
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    stop_id: stopId,
-    actor_id: driverId,
-    event_type: type === 'pod' ? 'pod_uploaded' : 'note_added', // Generic for other types
-    notes: `${type.replace(/_/g, ' ')} uploaded.`,
-    created_at: new Date().toISOString(),
-  });
+  // Add a job event for document upload to job_progress_log
+  const { error: progressLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      stop_id: stopId,
+      actor_id: driverId,
+      status: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific status for log
+      notes: `${type.replace(/_/g, ' ')} uploaded.`,
+      timestamp: new Date().toISOString(),
+    });
+  if (progressLogError) console.error("Error inserting document upload log:", progressLogError);
 
   console.log(`Simulating image upload to ${storagePath}. Base64 length: ${base64Image.length}`);
   return newDocument;
@@ -151,35 +172,52 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  const newEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    actor_id: driverId,
-    event_type: 'note_added',
-    notes: note,
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(newEvent);
-  return newEvent;
+  // Insert into job_progress_log
+  const { data: newLog, error: insertError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: driverId,
+      status: 'note_added', // Use 'note_added' as the status for the log
+      notes: note,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting job note log:", insertError);
+    throw new Error(insertError.message);
+  }
+
+  return { ...newLog, event_type: 'note_added' }; // Mock JobEvent for return
 };
 
 export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => { // Changed tenantId to orgId
   await delay(100); // Very quick for frequent pings
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
-  if (!job || job.status !== 'in_progress') throw new Error("Job not in progress or not assigned to this driver.");
+  if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver."); // Changed 'in_progress' to 'accepted'
 
-  const newEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    actor_id: driverId,
-    event_type: 'location_ping',
-    lat: lat,
-    lon: lon,
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(newEvent);
+  // Insert into job_progress_log
+  const { data: newLog, error: insertError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: driverId,
+      status: 'location_ping', // Use 'location_ping' as the status for the log
+      lat: lat,
+      lon: lon,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting location ping log:", insertError);
+    throw new Error(insertError.message);
+  }
 
   // Update driver's last location
   const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
@@ -187,7 +225,7 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
     driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
-  return newEvent;
+  return { ...newLog, event_type: 'location_ping' }; // Mock JobEvent for return
 };
 
 export const registerPushToken = async (profileId: string, orgId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => { // Changed tenantId to orgId

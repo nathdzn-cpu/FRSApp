@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { Job, JobStop, JobEvent, Document, JobProgressLog } from '@/utils/mockData';
+import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData'; // Removed JobEvent
 import { callFn } from '../callFunction'; // Import callFn
 
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
@@ -64,20 +64,8 @@ export const getJobStops = async (orgId: string, jobId: string): Promise<JobStop
   return data as JobStop[];
 };
 
-export const getJobEvents = async (orgId: string, jobId: string): Promise<JobEvent[]> => {
-  const { data, error } = await supabase
-    .from('job_events')
-    .select('*')
-    .eq('job_id', jobId)
-    .eq('org_id', orgId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error("Error fetching job events:", error);
-    throw new Error(error.message);
-  }
-  return data as JobEvent[];
-};
+// getJobEvents is removed as JobProgressLog will now be the unified timeline source.
+// export const getJobEvents = async (orgId: string, jobId: string): Promise<JobEvent[]> => { ... }
 
 export const getJobDocuments = async (orgId: string, jobId: string): Promise<Document[]> => {
   const { data, error } = await supabase
@@ -159,7 +147,7 @@ interface UpdateJobProgressPayload {
   job_id: string;
   org_id: string;
   actor_id: string;
-  new_status: Job['status'];
+  new_status: Job['status']; // This is the job's overall status
   timestamp: string;
   notes?: string;
 }
@@ -171,13 +159,14 @@ export const updateJobProgress = async (payload: UpdateJobProgressPayload): Prom
 
 export const requestPod = async (jobId: string, orgId: string, actorId: string): Promise<boolean> => {
   const { data, error } = await supabase
-    .from('job_events')
+    .from('job_progress_log') // Insert into job_progress_log
     .insert({
       org_id: orgId,
       job_id: jobId,
       actor_id: actorId,
-      event_type: 'pod_requested',
+      status: 'pod_requested', // Use 'pod_requested' as the status for the log
       notes: 'POD requested by office.',
+      timestamp: new Date().toISOString(),
     });
 
   if (error) {
@@ -312,6 +301,21 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
   if (error) {
     console.error("Error cancelling job:", error);
     throw new Error(error.message);
+  }
+
+  // Insert into job_progress_log for cancellation
+  const { error: progressLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: actorId,
+      status: 'cancelled',
+      notes: 'Job cancelled by office.',
+      timestamp: new Date().toISOString(),
+    });
+  if (progressLogError) {
+    console.error("DEBUG: progress log insert failed for cancel job", progressLogError.message);
   }
 
   const { error: auditError } = await supabase.from("audit_logs").insert({

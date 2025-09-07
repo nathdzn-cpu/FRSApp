@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase';
-import { Job, JobStop, JobEvent, Document, Profile, JobProgressLog } from '@/utils/mockData';
+import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase'; // Removed getJobEvents
+import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData'; // Removed JobEvent
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle, UserPlus, MapPin } from 'lucide-react';
-import JobTimeline from '@/components/JobTimeline';
+import JobTimeline from '@/components/JobTimeline'; // This will now be the unified timeline
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
-import JobProgressTimeline from '@/components/JobProgressTimeline';
-import JobStopsList from '@/components/JobStopsList'; // Import the new component
+// JobProgressTimeline is no longer needed as JobTimeline will be unified
+import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -35,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -121,7 +121,7 @@ const JobDetail: React.FC = () => {
   const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
     job: Job | undefined;
     stops: JobStop[];
-    events: JobEvent[];
+    // events: JobEvent[]; // Removed events
     documents: Document[];
     progressLogs: JobProgressLog[];
   }, Error>({
@@ -137,20 +137,20 @@ const JobDetail: React.FC = () => {
       }
 
       const fetchedStops = await getJobStops(currentOrgId, id);
-      const fetchedEvents = await getJobEvents(currentOrgId, id);
+      // const fetchedEvents = await getJobEvents(currentOrgId, id); // Removed getJobEvents
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
       const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id);
 
       console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
       console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
-      console.log("DEBUG: JobDetail - fetchedEvents:", fetchedEvents);
+      // console.log("DEBUG: JobDetail - fetchedEvents:", fetchedEvents); // Removed events log
       console.log("DEBUG: JobDetail - fetchedDocuments:", fetchedDocuments);
       console.log("DEBUG: JobDetail - fetchedProgressLogs:", fetchedProgressLogs);
 
       return {
         job: fetchedJob,
         stops: fetchedStops,
-        events: fetchedEvents,
+        // events: fetchedEvents, // Removed events
         documents: fetchedDocuments,
         progressLogs: fetchedProgressLogs,
       };
@@ -161,7 +161,7 @@ const JobDetail: React.FC = () => {
 
   const job = jobData?.job;
   const stops = jobData?.stops || [];
-  const events = jobData?.events || [];
+  // const events = jobData?.events || []; // Removed events
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
@@ -621,11 +621,11 @@ const JobDetail: React.FC = () => {
         </Card>
 
         <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1">
+          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1"> {/* Changed grid-cols to 3 */}
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="stops">Stops Table</TabsTrigger> {/* Renamed for clarity */}
+            <TabsTrigger value="stops">Stops Table</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
-            <TabsTrigger value="progress-log">Progress Log</TabsTrigger>
+            {/* Removed Progress Log tab */}
           </TabsList>
           <TabsContent value="timeline" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
@@ -633,14 +633,14 @@ const JobDetail: React.FC = () => {
                 <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
               </CardHeader>
               <CardContent className="p-0 pt-4">
-                <JobTimeline events={events} profiles={allProfiles} />
+                <JobTimeline progressLogs={progressLogs} profiles={allProfiles} /> {/* Pass progressLogs */}
               </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="stops" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
               <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops Table</CardTitle> {/* Renamed for clarity */}
+                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops Table</CardTitle>
               </CardHeader>
               <CardContent className="p-0 pt-4">
                 <JobStopsTable stops={stops} />
@@ -657,16 +657,7 @@ const JobDetail: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="progress-log" className="mt-4">
-            <Card className="bg-white shadow-sm rounded-xl p-6">
-              <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Job Progress Log</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 pt-4">
-                <JobProgressTimeline progressLogs={progressLogs} profiles={allProfiles} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* Removed Progress Log tab content */}
         </Tabs>
 
         {/* Assign Driver Dialog */}

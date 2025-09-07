@@ -1,27 +1,36 @@
 import { v4 as uuidv4 } from 'uuid';
-import { mockJobs, mockJobEvents, mockAuditLogs, mockJobStops, mockProfileDevices, Job } from '@/utils/mockData';
+import { mockJobs, mockAuditLogs, mockJobStops, mockProfileDevices, Job, mockProfiles } from '@/utils/mockData'; // Added mockProfiles
 import { delay } from '../utils/apiUtils';
+import { supabase } from '../supabaseClient'; // Import supabase client
 
 // Keeping only functions that are unique or truly simulate Edge Function interactions
 // Functions like requestPod, generateJobPdf, cloneJob, cancelJob, assignDriverToJob
 // are now handled by src/lib/api/jobs.ts with direct Supabase calls.
 
-export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => { // Changed tenantId to orgId
+export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<any> => { // Changed return type to any for simplicity
   await delay(100); // Very quick for frequent pings
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
-  if (!job || job.status !== 'in_progress') throw new Error("Job not in progress or not assigned to this driver.");
+  if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver."); // Changed 'in_progress' to 'accepted'
 
-  const newEvent: JobEvent = {
-    id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
-    job_id: jobId,
-    actor_id: driverId,
-    event_type: 'location_ping',
-    lat: lat,
-    lon: lon,
-    created_at: new Date().toISOString(),
-  };
-  mockJobEvents.push(newEvent);
+  // Insert into job_progress_log
+  const { data: newLog, error: insertError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      actor_id: driverId,
+      status: 'location_ping', // Use 'location_ping' as the status for the log
+      lat: lat,
+      lon: lon,
+      timestamp: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting location ping log:", insertError);
+    throw new Error(insertError.message);
+  }
 
   // Update driver's last location
   const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
@@ -29,7 +38,7 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
     driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
-  return newEvent;
+  return newLog; // Return the inserted log entry
 };
 
 export const registerPushToken = async (profileId: string, orgId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => { // Changed tenantId to orgId

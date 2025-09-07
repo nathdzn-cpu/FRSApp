@@ -108,18 +108,8 @@ export interface JobStop {
   notes?: string | null;
 }
 
-export interface JobEvent {
-  id: string;
-  org_id: string;
-  job_id: string;
-  stop_id?: string | null;
-  actor_id: string; // profile_id
-  event_type: 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'pod_requested' | 'pod_uploaded' | 'location_ping' | 'status_changed' | 'job_cancelled' | 'note_added';
-  notes?: string | null;
-  lat?: number | null;
-  lon?: number | null;
-  created_at: string;
-}
+// JobEvent interface is removed as JobProgressLog will now handle all timeline events.
+// export interface JobEvent { ... }
 
 export interface Document {
   id: string;
@@ -146,7 +136,7 @@ export interface JobProgressLog {
   org_id: string;
   job_id: string;
   actor_id: string;
-  status: Job['status']; // Use the same status types as Job
+  status: string; // Changed to string to accommodate all event types
   timestamp: string;
   notes?: string | null;
   created_at: string;
@@ -158,7 +148,7 @@ export interface AuditLog {
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
-  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress'; // Added update_progress
+  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress' | 'pod_requested' | 'pod_uploaded' | 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'location_ping' | 'note_added'; // Added common event types
   before?: Record<string, any> | null;
   after?: Record<string, any> | null;
   notes?: string | null;
@@ -265,7 +255,7 @@ tomorrow.setDate(today.getDate() + 1);
 // Removed mockJobs, mockJobStops, mockJobEvents, mockDocuments
 export const mockJobs: Job[] = [];
 export const mockJobStops: JobStop[] = [];
-export const mockJobEvents: JobEvent[] = [];
+// mockJobEvents is removed
 export const mockDocuments: Document[] = [];
 export const mockJobProgressLogs: JobProgressLog[] = []; // New mock array for progress logs
 
