@@ -128,9 +128,6 @@ const AdminUsersPage: React.FC = () => {
       toast.error("Admin profile not found. Cannot purge demo users.");
       return;
     }
-    if (!window.confirm("Are you sure you want to permanently delete ALL demo users in this tenant (Auth + profiles)? This action cannot be undone.")) {
-      return;
-    }
 
     setPurging(true);
     try {
@@ -152,9 +149,6 @@ const AdminUsersPage: React.FC = () => {
   const handlePurgeAllNonAdminUsers = async () => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot purge non-admin users.");
-      return;
-    }
-    if (!window.confirm("This will permanently delete ALL non-admin users (Auth + profiles) in this tenant. This action cannot be undone. Continue?")) {
       return;
     }
 
@@ -268,22 +262,64 @@ const AdminUsersPage: React.FC = () => {
                 />
                 <Label htmlFor="show-demo" className="text-gray-700">Show demo users</Label>
               </div>
-              <Button
-                variant="destructive"
-                onClick={handlePurgeDemoUsers}
-                disabled={purging}
-                className="w-full sm:w-auto"
-              >
-                {purging ? "Purging Demo..." : "Purge Demo Users"}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handlePurgeAllNonAdminUsers}
-                disabled={purgingAll}
-                className="w-full sm:w-auto"
-              >
-                <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={purging}
+                    className="w-full sm:w-auto"
+                  >
+                    {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Purge Demo Users
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure you want to purge ALL demo users?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all user profiles and associated authentication records marked as demo.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePurgeDemoUsers} disabled={purging} variant="destructive">
+                      {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Purge Demo Users
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={purgingAll}
+                    className="w-full sm:w-auto"
+                  >
+                    <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure you want to purge ALL non-admin users?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all user profiles and associated authentication records that are not 'admin' role in this tenant.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePurgeAllNonAdminUsers} disabled={purgingAll} variant="destructive">
+                      {purgingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Purge All Non-Admin Users
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
 
             {filteredUsers.length === 0 ? (
