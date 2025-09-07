@@ -21,7 +21,7 @@ import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner'; // Import Toaster for sonner toasts
-import { useRouteScroll } from "@/hooks/useRouteScroll"; // Import the new hook
+import { useScrollKeeper } from "@/hooks/useScrollKeeper"; // Import the new hook
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Array<'admin' | 'office' | 'driver'> }) => {
@@ -67,9 +67,7 @@ const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Arra
 
 // MainLayout component for authenticated users
 const MainLayout = () => {
-  // Call the route-specific scroll restoration hook here
-  useRouteScroll(); 
-
+  // useScrollKeeper is called at the App level, so no need to call it here.
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -88,7 +86,8 @@ function App() {
   const user = useUser();
   const supabaseClient = useSupabaseClient();
 
-  // Removed: useRouteScroll() from here
+  // Call the route-specific scroll restoration hook here
+  useScrollKeeper();
 
   console.log("Supabase Session State:", session); // Added for debugging
 

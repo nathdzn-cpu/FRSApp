@@ -51,9 +51,6 @@ const CreateJob: React.FC = () => {
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
 
-  // Removed: For clearing the persistent form state
-  // Removed: const [, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>("jobFormState", {});
-
   useEffect(() => {
     if (isLoadingAuth) return;
 
@@ -96,7 +93,6 @@ const CreateJob: React.FC = () => {
         loading: 'Creating job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          // Removed: setPersistedFormState({}); // Clear the persisted form state on success
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },

@@ -17,8 +17,8 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useFormStore } from "@/store/formStore"; // Import the new hook
-import { useLocation } from "react-router-dom";
+// Removed: import { useFormStore } from "@/store/formStore";
+// Removed: import { useLocation } from "react-router-dom";
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -52,12 +52,12 @@ interface JobFormProps {
 }
 
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
-  const { jobForm, setJobForm, clearJobForm } = useFormStore();
-  const location = useLocation();
+  // Removed: const { jobForm, setJobForm, clearJobForm } = useFormStore();
+  // Removed: const location = useLocation();
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: jobForm || { // Initialize from store or with empty defaults
+    defaultValues: defaultValues || { // Initialize with provided defaultValues or empty defaults
       ref: '',
       override_ref: false,
       manual_ref: '',
@@ -80,22 +80,22 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
 
   const overrideOrderNumber = form.watch('override_ref');
 
-  // Effect to persist form state whenever values change
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      setJobForm(value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, setJobForm]);
+  // Removed: Effect to persist form state whenever values change
+  // Removed: useEffect(() => {
+  // Removed:   const subscription = form.watch((value) => {
+  // Removed:     setJobForm(value);
+  // Removed:   });
+  // Removed:   return () => subscription.unsubscribe();
+  // Removed: }, [form, setJobForm]);
 
-  // Clear form state when leaving the /jobs/new route
-  useEffect(() => {
-    return () => {
-      if (location.pathname !== "/jobs/new") {
-        clearJobForm();
-      }
-    };
-  }, [location.pathname, clearJobForm]);
+  // Removed: Clear form state when leaving the /jobs/new route
+  // Removed: useEffect(() => {
+  // Removed:   return () => {
+  // Removed:     if (location.pathname !== "/jobs/new") {
+  // Removed:       clearJobForm();
+  // Removed:     }
+  // Removed:   };
+  // Removed: }, [location.pathname, clearJobForm]);
 
   return (
     <Form {...form}>
