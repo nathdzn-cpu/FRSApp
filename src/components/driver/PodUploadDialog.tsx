@@ -67,18 +67,38 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       toast.error("User profile or organization ID not found. Cannot upload POD.");
       return;
     }
+    if (!job.order_number) {
+      toast.error("Job order number is missing. Cannot generate filename.");
+      return;
+    }
 
     setIsLoading(true); // Use external loading state
     try {
-      const timestamp = new Date().toISOString();
-      const fileName = `${currentProfile.org_id}/${job.id}/${timestamp}-${selectedFile.name}`; // Path: {org_id}/{job_id}/{timestamp}-{filename}
-      const { data: uploadData, error: uploadError } = await supabase.storage.from("pods").upload(fileName, selectedFile, { upsert: false });
+      const fileExtension = selectedFile.name.split('.').pop();
+      const storagePathPrefix = `${currentProfile.org_id}/${job.id}/`;
+
+      // List existing files to determine the next sequential index
+      const { data: existingFiles, error: listError } = await supabase.storage
+        .from("pods")
+        .list(storagePathPrefix, {
+          search: `${job.order_number}_`, // Search for files starting with job number
+        });
+
+      if (listError) {
+        throw listError;
+      }
+
+      const nextIndex = (existingFiles?.length || 0) + 1;
+      const fileName = `${job.order_number}_${nextIndex}.${fileExtension}`;
+      const fullStoragePath = `${storagePathPrefix}${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("pods").upload(fullStoragePath, selectedFile, { upsert: false });
 
       if (uploadError) {
         throw uploadError;
       }
 
-      const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fullStoragePath);
       const publicUrl = urlData?.publicUrl;
 
       if (!publicUrl) {

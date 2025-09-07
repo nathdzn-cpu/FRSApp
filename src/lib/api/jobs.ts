@@ -448,6 +448,7 @@ export const uploadDocument = async (
       action_type: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific action_type for log
       notes: `${type.replace(/_/g, ' ')} uploaded.`,
       timestamp: new Date().toISOString(),
+      file_path: storagePath, // Store the full storage path
     });
   if (progressLogError) console.error("Error inserting document upload log:", progressLogError);
 

@@ -79,6 +79,12 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
                       </div>
                     </div>
                     {log.notes && <p className="text-gray-800 text-sm">{log.notes}</p>}
+                    {log.file_path && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center">
+                        <ImageIcon className="h-3 w-3 mr-1" />
+                        File: <a href={log.file_path} target="_blank" rel="noopener noreferrer" className="underline ml-1">{log.file_path.split('/').pop()}</a>
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -104,12 +110,11 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {podDocuments.map((doc) => (
                 <Card key={doc.id} className="p-3 shadow-sm rounded-md border border-gray-200">
-                  <div className="flex items-center mb-2">
-                    <ImageIcon className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-900 truncate">{doc.storage_path.split('/').pop()}</span>
+                  <div className="flex flex-col items-start mb-2">
+                    <ImageIcon className="h-5 w-5 text-blue-600 mb-1" />
+                    <span className="text-sm font-medium text-gray-900 truncate w-full">{doc.storage_path.split('/').pop()}</span>
                   </div>
                   <p className="text-xs text-gray-500">Uploaded: {format(parseISO(doc.created_at), 'MMM dd, HH:mm')}</p>
-                  {/* In a real app, you'd have a link to view the image */}
                   <Button variant="link" size="sm" className="p-0 h-auto text-blue-600" onClick={() => window.open(doc.storage_path, '_blank')}>
                     View
                   </Button>

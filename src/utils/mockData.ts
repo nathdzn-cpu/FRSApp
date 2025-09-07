@@ -142,6 +142,7 @@ export interface JobProgressLog {
   lon?: number; // Added lat/lon for location pings
   stop_id?: string | null; // Added stop_id for stop-specific events
   visible_in_timeline?: boolean; // New field for timeline visibility
+  file_path?: string | null; // New field for file paths in logs
 }
 
 export interface AuditLog {
