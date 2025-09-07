@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Import new modular components
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
-import JobOverviewCard from '@/components/job-detail/JobDetailOverviewCard';
+import JobOverviewCard from '@/components/job-detail/JobOverviewCard'; // Corrected import name
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
