@@ -62,6 +62,8 @@ function App() {
   const user = useUser();
   const supabaseClient = useSupabaseClient();
 
+  console.log("Supabase Session State:", session); // Added for debugging
+
   if (session === undefined) {
     return <div>Loading session…</div>;
   }
