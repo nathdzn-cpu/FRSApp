@@ -368,6 +368,8 @@ const JobDetail: React.FC = () => {
           allProfiles={allProfiles}
           stops={stops}
           documents={documents}
+          currentOrgId={currentOrgId} // Pass currentOrgId
+          onLogVisibilityChange={refetchJobData} // Pass refetch function
         />
       </div>
     </div>

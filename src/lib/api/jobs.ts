@@ -159,6 +159,19 @@ export const updateJobProgress = async (payload: UpdateJobProgressPayload): Prom
   return result;
 };
 
+interface UpdateJobProgressLogVisibilityPayload {
+  log_id: string;
+  org_id: string;
+  actor_id: string;
+  actor_role: 'admin' | 'office'; // Only admin/office can change visibility
+  visible_in_timeline: boolean;
+}
+
+export const updateJobProgressLogVisibility = async (payload: UpdateJobProgressLogVisibilityPayload): Promise<{ message: string; log: JobProgressLog }> => {
+  const result = await callFn<{ message: string; log: JobProgressLog }>('update-timeline-visibility', payload);
+  return result;
+};
+
 export const requestPod = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
   const { data, error } = await supabase
     .from('job_progress_log')

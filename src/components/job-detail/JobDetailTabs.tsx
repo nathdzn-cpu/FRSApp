@@ -15,10 +15,12 @@ interface JobDetailTabsProps {
   allProfiles: Profile[];
   stops: JobStop[];
   documents: Document[];
+  currentOrgId: string; // Added currentOrgId
+  onLogVisibilityChange: () => void; // Added onLogVisibilityChange
 }
 
-const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles, stops, documents }) => {
-  // Filter logs for the Timeline tab
+const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles, stops, documents, currentOrgId, onLogVisibilityChange }) => {
+  // Filter logs for the Timeline tab (JobTimeline component will handle its own filtering for visible_in_timeline)
   const timelineLogs = progressLogs.filter(log => coreProgressActionTypes.includes(log.action_type));
 
   return (
@@ -35,7 +37,12 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
             <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <JobTimeline progressLogs={timelineLogs} profiles={allProfiles} /> {/* Pass filtered logs */}
+            <JobTimeline
+              progressLogs={timelineLogs}
+              profiles={allProfiles}
+              currentOrgId={currentOrgId}
+              onLogVisibilityChange={onLogVisibilityChange}
+            />
           </CardContent>
         </Card>
       </TabsContent>
