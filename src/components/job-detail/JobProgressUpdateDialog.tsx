@@ -92,18 +92,30 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
           timeInput: value,
           timeError: error,
         };
-        if (formattedTime) {
-          // Update dateTime with today's date and the formatted time
+        if (formattedTime && newEntries[index].dateTime) {
+          // Update dateTime with the formatted time, keeping the date part
           const [hoursStr, minutesStr] = formattedTime.split(':');
           const hours = parseInt(hoursStr, 10);
           const minutes = parseInt(minutesStr, 10);
-          let newDateTime = setHours(new Date(), hours); // Always use today's date
+          let newDateTime = setHours(newEntries[index].dateTime, hours);
           newDateTime = setMinutes(newDateTime, minutes);
           newDateTime = setSeconds(newDateTime, 0);
           newEntries[index].dateTime = newDateTime;
+        } else if (formattedTime && !newEntries[index].dateTime) {
+          // If no date is selected, default to today's date with the chosen time
+          let newDateTime = new Date();
+          newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
+          newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
+          newDateTime = setSeconds(newDateTime, 0);
+          newEntries[index].dateTime = newDateTime;
         } else {
-          // If time input is invalid, set dateTime to today 00:00:00
-          newEntries[index].dateTime = setSeconds(setMinutes(setHours(new Date(), 0), 0), 0);
+          // If time is invalid or empty, clear the time part of the date
+          if (newEntries[index].dateTime) {
+            const newDateTime = setHours(setMinutes(setSeconds(newEntries[index].dateTime, 0), 0), 0);
+            newEntries[index].dateTime = newDateTime;
+          } else {
+            newEntries[index].dateTime = undefined as any; // Set to undefined if no date
+          }
         }
       } else {
         newEntries[index] = { ...newEntries[index], [field]: value };
@@ -141,7 +153,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <AlertDialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
           <AlertDialogDescription>
@@ -175,17 +187,27 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                 <h3 className="text-lg font-semibold">Log Entries:</h3>
                 {progressUpdateEntries.map((entry, index) => (
                   <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
-                    <p className="font-medium text-gray-900 mb-2">{getDisplayStatus(entry.status)}</p>
-                    <DateTimePicker
-                      label="Date and Time"
-                      value={entry.dateTime}
-                      onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
-                      disabled={isUpdatingProgress}
-                      timeError={entry.timeError}
-                      onTimeInputChange={(time) => handleProgressUpdateEntryChange(index, 'timeInput', time)}
-                    />
-                    <div className="space-y-2 mt-2">
-                      <Label htmlFor={`notes-${index}`}>Notes (Optional)</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                      {/* Status Display */}
+                      <div className="flex flex-col">
+                        <Label className="text-gray-700">Status:</Label>
+                        <p className="font-semibold text-lg text-gray-900">{getDisplayStatus(entry.status)}</p>
+                      </div>
+
+                      {/* Date and Time Picker */}
+                      <DateTimePicker
+                        label="Date and Time"
+                        value={entry.dateTime}
+                        onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
+                        disabled={isUpdatingProgress}
+                        timeError={entry.timeError}
+                        onTimeInputChange={(time) => handleProgressUpdateEntryEntryChange(index, 'timeInput', time)}
+                      />
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-2 mt-4">
+                      <Label htmlFor={`notes-${index}`} className="text-gray-700">Notes (Optional)</Label>
                       <Textarea
                         id={`notes-${index}`}
                         value={entry.notes}
