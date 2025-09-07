@@ -122,6 +122,9 @@ importers:
       embla-carousel-react:
         specifier: ^8.3.0
         version: 8.6.0(react@18.3.1)
+      getaddress-api:
+        specifier: ^2.3.1
+        version: 2.3.1
       input-otp:
         specifier: ^1.2.4
         version: 1.4.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1844,6 +1847,10 @@ packages:
   get-nonce@1.0.1:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
     engines: {node: '>=6'}
+
+  getaddress-api@2.3.1:
+    resolution: {integrity: sha512-LR/xL0h9jKqyAF5IoKEE8myEkxm8JCsZt0TXvhsRKtX4aICdcZIbFIxeCNmOt6nMLBcWsjWIVlbcsm9bZukIrA==}
+    engines: {node: '>= 18.0.0'}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -4162,6 +4169,8 @@ snapshots:
   function-bind@1.1.2: {}
 
   get-nonce@1.0.1: {}
+
+  getaddress-api@2.3.1: {}
 
   glob-parent@5.1.2:
     dependencies:

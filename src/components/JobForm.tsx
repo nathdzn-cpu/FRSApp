@@ -12,12 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Search } from 'lucide-react'; // Added Search icon
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { formatGBPDisplay, parseCurrencyInput } from '@/lib/utils/formatUtils'; // Import new utilities
+import { formatGBPDisplay, parseCurrencyInput, formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
+import AddressSearchDialog from '@/components/AddressSearchDialog'; // Import AddressSearchDialog
+import { FullAddress } from '@/lib/supabase'; // Import FullAddress type
 
 // Helper to format time input to HH:MM
 const formatTimeInput = (value: string) => {
@@ -97,15 +99,52 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
     }
   }, [form.watch('price')]); // Watch the form's price field
 
-  const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
+  const { fields: collectionFields, append: appendCollection, remove: removeCollection, update: updateCollection } = useFieldArray({
     control: form.control,
     name: 'collections',
   });
 
-  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery } = useFieldArray({
+  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery, update: updateDelivery } = useFieldArray({
     control: form.control,
     name: 'deliveries',
   });
+
+  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
+  const [currentStopIndex, setCurrentStopIndex] = useState<number | null>(null);
+  const [currentStopType, setCurrentStopType] = useState<'collections' | 'deliveries' | null>(null);
+
+  const handleOpenAddressSearch = (index: number, type: 'collections' | 'deliveries') => {
+    setCurrentStopIndex(index);
+    setCurrentStopType(type);
+    setIsAddressSearchOpen(true);
+  };
+
+  const handleAddressSelect = (fullAddress: FullAddress) => {
+    if (currentStopIndex !== null && currentStopType) {
+      const addressLine1 = fullAddress.line_1 || fullAddress.thoroughfare || fullAddress.formatted_address[0] || '';
+      const addressLine2 = fullAddress.line_2 || fullAddress.formatted_address[1] || '';
+      const city = fullAddress.town_or_city || fullAddress.locality || '';
+      const postcode = fullAddress.postcode || '';
+      const name = fullAddress.building_name || fullAddress.sub_building_name || addressLine1;
+
+      const updatedStop = {
+        name: formatAddressPart(name),
+        address_line1: formatAddressPart(addressLine1),
+        address_line2: formatAddressPart(addressLine2) || null,
+        city: formatAddressPart(city),
+        postcode: formatPostcode(postcode),
+        window_from: form.getValues(`${currentStopType}.${currentStopIndex}.window_from`) || '',
+        window_to: form.getValues(`${currentStopType}.${currentStopIndex}.window_to`) || '',
+        notes: form.getValues(`${currentStopType}.${currentStopIndex}.notes`) || null,
+      };
+
+      if (currentStopType === 'collections') {
+        updateCollection(currentStopIndex, updatedStop);
+      } else {
+        updateDelivery(currentStopIndex, updatedStop);
+      }
+    }
+  };
 
   return (
     <Form {...form}>
@@ -332,9 +371,22 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                     render={({ field: stopField }) => (
                       <FormItem>
                         <FormLabel className="text-gray-700">Postcode</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., SW1A 0AA" {...stopField} />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., SW1A 0AA"
+                              {...stopField}
+                              value={formatPostcode(stopField.value)}
+                              onBlur={(e) => {
+                                stopField.onChange(formatPostcode(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
+                          </FormControl>
+                          <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddressSearch(index, 'collections')}>
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -478,9 +530,22 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                     render={({ field: stopField }) => (
                       <FormItem>
                         <FormLabel className="text-gray-700">Postcode</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., M1 1AA" {...stopField} />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., M1 1AA"
+                              {...stopField}
+                              value={formatPostcode(stopField.value)}
+                              onBlur={(e) => {
+                                stopField.onChange(formatPostcode(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
+                          </FormControl>
+                          <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddressSearch(index, 'deliveries')}>
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -552,6 +617,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
 
         <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Job</Button>
       </form>
+
+      <AddressSearchDialog
+        open={isAddressSearchOpen}
+        onOpenChange={setIsAddressSearchOpen}
+        onAddressSelect={handleAddressSelect}
+        initialQuery={currentStopIndex !== null && currentStopType ? form.getValues(`${currentStopType}.${currentStopIndex}.postcode`) || '' : ''}
+      />
     </Form>
   );
 };
