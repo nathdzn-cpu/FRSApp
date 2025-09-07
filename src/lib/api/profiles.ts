@@ -2,10 +2,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { mockProfiles, mockAuditLogs, Profile } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { callFn } from '../callFunction'; // Import callFn
+import { supabase } from '../supabaseClient'; // Import supabase client for direct queries
 
-export const getProfiles = async (orgId: string): Promise<Profile[]> => {
-  const result = await callFn<Profile[]>('admin-users-management', { op: "read_all", org_id: orgId });
-  return result;
+export const getProfiles = async (orgId: string, userRole: 'admin' | 'office' | 'driver' | undefined): Promise<Profile[]> => {
+  if (userRole === 'driver') {
+    // Drivers should only see their own profile, which RLS will enforce.
+    // We still need to fetch profiles to get the assigned driver's name for the jobs table.
+    // RLS on 'profiles' table should ensure a driver only sees their own profile.
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo")
+      .eq("org_id", orgId); // RLS will filter this further to just the driver's own profile
+
+    if (error) {
+      console.error("Error fetching profiles for driver:", error);
+      throw new Error(error.message);
+    }
+    return data as Profile[];
+  } else if (userRole === 'admin' || userRole === 'office') {
+    // Admin and office users use the Edge Function to get all profiles in their org
+    const result = await callFn<Profile[]>('admin-users-management', { op: "read_all", org_id: orgId });
+    return result;
+  }
+  return []; // Should not happen if user is authenticated and has a role
 };
 
 export const getProfileByAuthId = async (authUserId: string): Promise<Profile | undefined> => {

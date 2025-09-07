@@ -84,10 +84,10 @@ const Index = () => {
 
   // Fetch profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', selectedOrgId],
-    queryFn: () => getProfiles(currentOrgId), // Always fetch all profiles for the current org for display purposes
+    queryKey: ['profiles', selectedOrgId, userRole], // Add userRole to query key
+    queryFn: () => getProfiles(currentOrgId, userRole), // Pass userRole
     staleTime: 5 * 60 * 1000,
-    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth,
+    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth && !!userRole, // Ensure userRole is defined
     onError: (err) => console.error("Profiles query failed", err),
   });
 
