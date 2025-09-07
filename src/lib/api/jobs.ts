@@ -2,13 +2,22 @@ import { supabase } from '../supabaseClient';
 import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
-export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
+export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' = 'active'): Promise<Job[]> => {
   let query = supabase
     .from('jobs_with_stop_details') // Query the new view
     .select('*')
     .eq('org_id', orgId)
-    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .order('created_at', { ascending: false });
+
+  // Apply status filter
+  if (statusFilter === 'active') {
+    query = query.not('status', 'in', ['delivered', 'pod_received', 'cancelled']);
+  } else if (statusFilter === 'completed') {
+    query = query.in('status', ['delivered', 'pod_received']);
+  } else if (statusFilter === 'cancelled') {
+    query = query.eq('status', 'cancelled');
+  }
+  // 'all' statusFilter means no status filtering applied
 
   // Apply date filters based on created_at
   if (startDate) {
@@ -34,7 +43,7 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    .is('deleted_at', null)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .single();
 
   const { data, error } = await query;
@@ -206,7 +215,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string, ac
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    .is('deleted_at', null)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .single();
 
   if (jobError || !originalJob) {
@@ -313,7 +322,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string, a
     .select('status')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    .is('deleted_at', null)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .single();
 
   if (fetchError || !oldJob) {
@@ -326,7 +335,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string, a
     .update({ status: 'cancelled', deleted_at: new Date().toISOString(), last_status_update_at: new Date().toISOString() }) // Soft delete on cancel
     .eq('id', jobId)
     .eq('org_id', orgId)
-    .is('deleted_at', null)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .select()
     .single();
 
