@@ -13,6 +13,7 @@
     "sb:link": "supabase link --project-ref hrastslmlkkfwsdsbbcn",
     "sb:secrets": "supabase secrets set SUPABASE_URL=https://hrastslmlkkfwsdsbbcn.supabase.co SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY",
     "sb:deploy:daily": "supabase functions deploy admin-daily-check-items --project-ref hrastslmlkkfwsdsbbcn && supabase functions deploy driver-daily-check-submit --project-ref hrastslmlkkfwsdsbbcn",
+    "sb:deploy:create-job": "supabase functions deploy create-job --project-ref hrastslmlkkfwsdsbbcn",
     "sb:list": "supabase functions list --project-ref hrastslmlkkfwsdsbbcn"
   },
   "dependencies": {

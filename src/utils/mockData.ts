@@ -77,13 +77,14 @@ export interface Job {
   id: string;
   tenant_id: string;
   ref: string;
-  price: number;
+  price: number | null; -- Changed to allow null
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
   scheduled_date: string; // YYYY-MM-DD
-  notes?: string;
+  notes?: string | null; -- Changed to allow null
   created_by: string; // profile_id
-  assigned_driver_id?: string; // profile_id
+  assigned_driver_id?: string | null; // profile_id -- Changed to allow null
   created_at: string;
+  deleted_at?: string | null; -- Added for soft deletion
 }
 
 export interface JobStop {
@@ -94,24 +95,24 @@ export interface JobStop {
   type: 'collection' | 'delivery';
   name: string;
   address_line1: string;
-  address_line2?: string;
+  address_line2?: string | null; -- Changed to allow null
   city: string;
   postcode: string;
-  window_from?: string; // HH:MM
-  window_to?: string; // HH:MM
-  notes?: string;
+  window_from?: string | null; // HH:MM -- Changed to allow null
+  window_to?: string | null; // HH:MM -- Changed to allow null
+  notes?: string | null; -- Changed to allow null
 }
 
 export interface JobEvent {
   id: string;
   tenant_id: string;
   job_id: string;
-  stop_id?: string;
+  stop_id?: string | null; -- Changed to allow null
   actor_id: string; // profile_id
   event_type: 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'pod_requested' | 'pod_uploaded' | 'location_ping' | 'status_changed' | 'job_cancelled' | 'note_added';
-  notes?: string;
-  lat?: number;
-  lon?: number;
+  notes?: string | null; -- Changed to allow null
+  lat?: number | null; -- Changed to allow null
+  lon?: number | null; -- Changed to allow null
   created_at: string;
 }
 
@@ -119,7 +120,7 @@ export interface Document {
   id: string;
   tenant_id: string;
   job_id: string;
-  stop_id?: string;
+  stop_id?: string | null; -- Changed to allow null
   type: 'pod' | 'cmr' | 'damage' | 'check_signature';
   storage_path: string;
   uploaded_by: string; // profile_id
@@ -142,9 +143,9 @@ export interface AuditLog {
   entity: string;
   entity_id: string;
   action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password';
-  before?: Record<string, any>;
-  after?: Record<string, any>;
-  notes?: string;
+  before?: Record<string, any> | null; -- Changed to allow null
+  after?: Record<string, any> | null; -- Changed to allow null
+  notes?: string | null; -- Changed to allow null
   created_at: string;
 }
 
@@ -153,10 +154,6 @@ const demoTenantId = uuidv4();
 const aliceAdminId = uuidv4();
 const daveDriverId = uuidv4(); // New driver ID
 
-const job1Id = uuidv4();
-const stop1Id = uuidv4();
-const stop2Id = uuidv4();
-const stop3Id = uuidv4();
 const checklist1Id = uuidv4();
 
 export const mockTenants: Tenant[] = [
@@ -249,21 +246,12 @@ const today = new Date();
 const tomorrow = new Date(today);
 tomorrow.setDate(today.getDate() + 1);
 
-export const mockJobs: Job[] = [
-  // Jobs will be created dynamically or assigned to existing users
-];
+// Removed mockJobs, mockJobStops, mockJobEvents, mockDocuments
+export const mockJobs: Job[] = [];
+export const mockJobStops: JobStop[] = [];
+export const mockJobEvents: JobEvent[] = [];
+export const mockDocuments: Document[] = [];
 
-export const mockJobStops: JobStop[] = [
-  // Stops will be created dynamically
-];
-
-export const mockJobEvents: JobEvent[] = [
-  // Events will be created dynamically
-];
-
-export const mockDocuments: Document[] = [
-  // Documents will be created dynamically
-];
 
 export const mockProfileDevices: ProfileDevice[] = []; // Initially empty
 

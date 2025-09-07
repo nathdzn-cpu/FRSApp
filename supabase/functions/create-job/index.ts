@@ -1,0 +1,167 @@
+// deno-lint-ignore-file no-explicit-any
+import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
+
+function adminClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
+}
+
+function userClient(authHeader: string | null) {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const token =
+    (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : "") || "";
+  return createClient(url, anon, {
+    global: { headers: { Authorization: token ? `Bearer ${token}` : "" } },
+    auth: { persistSession: false },
+  });
+}
+
+serve(async (req) => {
+  try {
+    const admin = adminClient();
+    const user = userClient(req.headers.get("authorization"));
+
+    // 1) Authenticate and authorize caller
+    const { data: authUser } = await user.auth.getUser();
+    if (!authUser?.user?.id) {
+      throw new Error("Not signed in or no auth user ID.");
+    }
+
+    const { data: me, error: meErr } = await user
+      .from("profiles")
+      .select("id, role, tenant_id")
+      .eq("id", authUser.user.id)
+      .single();
+
+    if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
+    if (!me || !me.tenant_id || !['admin', 'office'].includes(me.role)) {
+      throw new Error("Access denied (admin or office role required and tenant_id must be set).");
+    }
+
+    // 2) Parse body
+    const body = await req.json().catch(() => ({}));
+    const { jobData, stopsData, tenant_id, actor_id } = body;
+
+    if (!jobData || !stopsData || !tenant_id || !actor_id) {
+      throw new Error("Missing jobData, stopsData, tenant_id, or actor_id in request body.");
+    }
+
+    if (tenant_id !== me.tenant_id) {
+      throw new Error("Tenant ID mismatch. User can only create jobs in their own tenant.");
+    }
+    if (actor_id !== me.id) {
+      throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
+    }
+
+    // 3) Allocate job reference if not provided
+    let newJobRef = jobData.ref;
+    if (!newJobRef) {
+      // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
+      const { data: existingRefsData, error: refsError } = await admin
+        .from("jobs")
+        .select("ref")
+        .eq("tenant_id", tenant_id)
+        .like("ref", "FRS-%");
+
+      if (refsError) throw new Error("Failed to fetch existing job references: " + refsError.message);
+
+      const existingRefNumbers = new Set(
+        (existingRefsData || [])
+          .map((job: any) => parseInt(job.ref.substring(4), 10))
+          .filter((num: any) => !isNaN(num))
+      );
+
+      let nextNumber = 1;
+      while (existingRefNumbers.has(nextNumber)) {
+        nextNumber++;
+      }
+      newJobRef = `FRS-${nextNumber.toString().padStart(3, '0')}`;
+    }
+
+    // 4) Prepare job data for insert
+    const newJobId = uuidv4();
+    const jobToInsert = {
+      id: newJobId,
+      tenant_id: tenant_id,
+      ref: newJobRef,
+      price: jobData.price || null,
+      status: jobData.status || 'planned',
+      scheduled_date: jobData.scheduled_date,
+      notes: jobData.notes || null,
+      created_by: actor_id,
+      assigned_driver_id: jobData.assigned_driver_id || null,
+      created_at: new Date().toISOString(),
+      deleted_at: null,
+    };
+
+    // 5) Insert job
+    const { data: insertedJob, error: jobInsertError } = await admin
+      .from("jobs")
+      .insert(jobToInsert)
+      .select()
+      .single();
+
+    if (jobInsertError) throw new Error("Failed to create job: " + jobInsertError.message);
+
+    // 6) Prepare and insert stops
+    const stopsToInsert = stopsData.map((stop: any, index: number) => ({
+      id: uuidv4(),
+      tenant_id: tenant_id,
+      job_id: insertedJob.id,
+      seq: index + 1, // Ensure sequence is set
+      type: stop.type,
+      name: stop.name,
+      address_line1: stop.address_line1,
+      address_line2: stop.address_line2 || null,
+      city: stop.city,
+      postcode: stop.postcode,
+      window_from: stop.window_from || null,
+      window_to: stop.window_to || null,
+      notes: stop.notes || null,
+      created_at: new Date().toISOString(),
+    }));
+
+    if (stopsToInsert.length > 0) {
+      const { error: stopsInsertError } = await admin
+        .from("job_stops")
+        .insert(stopsToInsert);
+
+      if (stopsInsertError) {
+        // If stops fail, consider rolling back job creation
+        await admin.from("jobs").delete().eq("id", insertedJob.id);
+        throw new Error("Failed to create job stops: " + stopsInsertError.message);
+      }
+    }
+
+    // 7) Audit log
+    await admin.from("audit_logs").insert({
+      tenant_id: tenant_id,
+      actor_id: actor_id,
+      entity: "jobs",
+      entity_id: insertedJob.id,
+      action: "create",
+      before: null,
+      after: insertedJob,
+      created_at: new Date().toISOString(),
+    }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+
+    return new Response(
+      JSON.stringify(insertedJob),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  } catch (e) {
+    console.error("DEBUG: function error", e);
+    return new Response(
+      JSON.stringify({ ok: false, error: (e as Error).message }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+});
