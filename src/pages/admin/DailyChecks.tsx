@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, PlusCircle, Edit, Trash2, Check, X, RefreshCw } from 'lucide-react';
@@ -24,17 +24,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"; // Import Dialog components
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { createDailyCheckItem, updateDailyCheckItem, deleteDailyCheckItem, getDailyCheckItems } from '@/lib/api/dailyCheckItems'; // Import API functions
+import { createDailyCheckItem, updateDailyCheckItem, deleteDailyCheckItem, getDailyCheckItems } from '@/lib/api/dailyCheckItems';
 
 type DailyCheckItem = { id: string; title: string; description: string | null; is_active: boolean };
 
 const AdminDailyChecks: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [items, setItems] = useState<DailyCheckItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
@@ -46,8 +54,9 @@ const AdminDailyChecks: React.FC = () => {
 
   // State for editing item dialog
   const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control Dialog open/close
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
 
   const loadItems = async () => {
     if (!user || userRole !== 'admin' || !currentOrgId) {
@@ -58,11 +67,10 @@ const AdminDailyChecks: React.FC = () => {
     setLoadingData(true);
     setError(null);
     try {
-      // Try reading via SQL directly (requires RLS to allow admin read)
       const { data, error: dbError } = await supabase
         .from("daily_check_items")
         .select("id, title, description, is_active")
-        .eq("org_id", currentOrgId) // Filter by org_id
+        .eq("org_id", currentOrgId)
         .order("created_at", { ascending: false });
 
       if (dbError) {
@@ -79,7 +87,7 @@ const AdminDailyChecks: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
@@ -105,7 +113,7 @@ const AdminDailyChecks: React.FC = () => {
     try {
       const itemData = { title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive };
       try {
-        await createDailyCheckItem(currentOrgId, itemData); // Pass orgId
+        await createDailyCheckItem(currentOrgId, itemData);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
           const { error: dbError } = await supabase.from("daily_check_items").insert({ ...itemData, org_id: currentOrgId });
@@ -134,7 +142,7 @@ const AdminDailyChecks: React.FC = () => {
     try {
       const updates = { is_active: !is_active };
       try {
-        await updateDailyCheckItem(currentOrgId, id, updates); // Pass orgId
+        await updateDailyCheckItem(currentOrgId, id, updates);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
           const { error: dbError } = await supabase.from("daily_check_items").update(updates).eq("id", id).eq("org_id", currentOrgId);
@@ -156,6 +164,7 @@ const AdminDailyChecks: React.FC = () => {
 
   const handleEditItem = (item: DailyCheckItem) => {
     setEditingItem({ ...item });
+    setIsEditDialogOpen(true); // Open the Dialog
   };
 
   const handleUpdateItem = async () => {
@@ -168,7 +177,7 @@ const AdminDailyChecks: React.FC = () => {
     try {
       const updates = { title: editingItem.title, description: editingItem.description?.trim() || null };
       try {
-        await updateDailyCheckItem(currentOrgId, editingItem.id, updates); // Pass orgId
+        await updateDailyCheckItem(currentOrgId, editingItem.id, updates);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
           const { error: dbError } = await supabase.from("daily_check_items").update(updates).eq("id", editingItem.id).eq("org_id", currentOrgId);
@@ -179,6 +188,7 @@ const AdminDailyChecks: React.FC = () => {
       }
       toast.success("Item updated successfully!");
       setEditingItem(null);
+      setIsEditDialogOpen(false); // Close the Dialog
       await loadItems();
     } catch (e: any) {
       console.error("Error updating item:", e);
@@ -194,7 +204,7 @@ const AdminDailyChecks: React.FC = () => {
     setFnError(null);
     try {
       try {
-        await deleteDailyCheckItem(currentOrgId, id); // Pass orgId
+        await deleteDailyCheckItem(currentOrgId, id);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
           const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("org_id", currentOrgId);
@@ -235,7 +245,7 @@ const AdminDailyChecks: React.FC = () => {
   }
 
   if (!user || userRole !== 'admin') {
-    return null; // Should be redirected by useEffect
+    return null;
   }
 
   return (
@@ -347,7 +357,7 @@ const AdminDailyChecks: React.FC = () => {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy} variant="destructive">Delete</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
@@ -362,57 +372,57 @@ const AdminDailyChecks: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Edit Item Dialog */}
-      {editingItem && (
-        <AlertDialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Edit Daily Check Item</AlertDialogTitle>
-              <AlertDialogDescription>
-                Make changes to the item here. Click save when you're done.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editItemTitle">Title</Label>
-                <Input
-                  id="editItemTitle"
-                  value={editingItem.title}
-                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                  disabled={busy}
-                />
+        {/* Edit Item Dialog */}
+        {editingItem && (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold text-gray-900">Edit Daily Check Item</DialogTitle>
+                <DialogDescription>
+                  Make changes to the item here. Click save when you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editItemTitle">Title</Label>
+                  <Input
+                    id="editItemTitle"
+                    value={editingItem.title}
+                    onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editItemDescription">Description (Optional)</Label>
+                  <Textarea
+                    id="editItemDescription"
+                    value={editingItem.description || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="editItemIsActive"
+                    checked={editingItem.is_active}
+                    onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
+                    disabled={busy}
+                  />
+                  <Label htmlFor="editItemIsActive">Is Active</Label>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="editItemDescription">Description (Optional)</Label>
-                <Textarea
-                  id="editItemDescription"
-                  value={editingItem.description || ''}
-                  onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                  disabled={busy}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="editItemIsActive"
-                  checked={editingItem.is_active}
-                  onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
-                  disabled={busy}
-                />
-                <Label htmlFor="editItemIsActive">Is Active</Label>
-              </div>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleUpdateItem} disabled={busy}>
-                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={busy}>Cancel</Button>
+                <Button onClick={handleUpdateItem} disabled={busy}>
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </div>
   );
 };

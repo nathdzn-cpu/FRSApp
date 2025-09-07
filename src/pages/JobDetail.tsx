@@ -11,7 +11,7 @@ import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, Che
 import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
-import JobProgressTimeline from '@/components/JobProgressTimeline'; // Import new component
+import JobProgressTimeline from '@/components/JobProgressTimeline';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -27,9 +27,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import JobEditForm from '@/components/JobEditForm'; // Import the new JobEditForm
+import JobEditForm from '@/components/JobEditForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import DateTimePicker from '@/components/DateTimePicker'; // Import new DateTimePicker
+import DateTimePicker from '@/components/DateTimePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
@@ -87,6 +87,7 @@ const JobDetail: React.FC = () => {
   const jobStatuses: Array<Job['status']> = [
     'planned',
     'assigned',
+    'in_progress',
     'on_route_collection',
     'at_collection',
     'loaded',
@@ -95,7 +96,6 @@ const JobDetail: React.FC = () => {
     'delivered',
     'pod_received',
     'cancelled',
-    'in_progress', // Include in_progress for completeness, though it might be an internal state
   ];
 
   // Filter statuses for the progress update dropdown (exclude 'planned', 'assigned', 'cancelled' as direct updates)
@@ -117,7 +117,7 @@ const JobDetail: React.FC = () => {
     stops: JobStop[];
     events: JobEvent[];
     documents: Document[];
-    progressLogs: JobProgressLog[]; // Fetch progress logs
+    progressLogs: JobProgressLog[];
   }, Error>({
     queryKey: ['jobDetail', id, userRole],
     queryFn: async () => {
@@ -133,7 +133,7 @@ const JobDetail: React.FC = () => {
       const fetchedStops = await getJobStops(currentOrgId, id);
       const fetchedEvents = await getJobEvents(currentOrgId, id);
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
-      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id); // Fetch progress logs
+      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id);
 
       console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
       console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
@@ -157,7 +157,7 @@ const JobDetail: React.FC = () => {
   const stops = jobData?.stops || [];
   const events = jobData?.events || [];
   const documents = jobData?.documents || [];
-  const progressLogs = jobData?.progressLogs || []; // Access progress logs
+  const progressLogs = jobData?.progressLogs || [];
 
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
@@ -295,8 +295,8 @@ const JobDetail: React.FC = () => {
         error: (err) => `Failed to update job progress: ${err.message}`,
       });
       await promise;
-      queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs list
-      refetchJobData(); // Refetch current job details and progress logs
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
       setIsProgressUpdateDialogOpen(false);
       setSelectedProgressStatus('');
       setProgressUpdateDateTime(new Date());
@@ -451,15 +451,54 @@ const JobDetail: React.FC = () => {
                     </DialogContent>
                   </Dialog>
 
-                  <Button variant="outline" onClick={handleRequestPod}>
-                    <FileText className="h-4 w-4 mr-2" /> Request POD
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline">
+                        <FileText className="h-4 w-4 mr-2" /> Request POD
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Request Proof of Delivery (POD)?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will send a notification to the assigned driver to upload a Proof of Delivery for this job.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel asChild>
+                          <Button variant="outline">Dismiss</Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRequestPod}>Request POD</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
                   <Button variant="outline" onClick={handleExportPdf}>
                     <FileDown className="h-4 w-4 mr-2" /> Export PDF
                   </Button>
-                  <Button variant="outline" onClick={handleCloneJob}>
-                    <Copy className="h-4 w-4 mr-2" /> Clone Job
-                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline">
+                        <Copy className="h-4 w-4 mr-2" /> Clone Job
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Clone this Job?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will create a new job with all the same details and stops as this one. You can then edit the new job.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel asChild>
+                          <Button variant="outline">Dismiss</Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCloneJob}>Clone Job</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive">
@@ -515,11 +554,11 @@ const JobDetail: React.FC = () => {
         </Card>
 
         <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1"> {/* Increased grid-cols to 4 */}
+          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1">
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="stops">Stops</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
-            <TabsTrigger value="progress-log">Progress Log</TabsTrigger> {/* New tab */}
+            <TabsTrigger value="progress-log">Progress Log</TabsTrigger>
           </TabsList>
           <TabsContent value="timeline" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
@@ -551,7 +590,7 @@ const JobDetail: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="progress-log" className="mt-4"> {/* New tab content */}
+          <TabsContent value="progress-log" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
               <CardHeader className="p-0 pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-900">Job Progress Log</CardTitle>

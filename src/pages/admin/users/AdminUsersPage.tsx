@@ -51,8 +51,6 @@ const AdminUsersPage: React.FC = () => {
     setLoadingData(true);
     setError(null);
     try {
-      // getTenants and getProfiles are still mock-based or client-side RLS based.
-      // getUsersForAdmin now uses the Edge Function.
       const fetchedUsers = await getUsersForAdmin(currentOrgId);
       setUsers(fetchedUsers);
     } catch (err: any) {
@@ -111,7 +109,7 @@ const AdminUsersPage: React.FC = () => {
       });
       const result = await promise;
       if (result) {
-        fetchUsers(); // Refresh the list after successful deletion
+        fetchUsers();
       } else {
         toast.error(`Failed to delete ${userToDelete.full_name}: User not found or could not be deleted.`);
       }
@@ -134,7 +132,7 @@ const AdminUsersPage: React.FC = () => {
       const result = await purgeDemoUsers(currentOrgId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} demo user(s).`);
-        fetchUsers(); // Refresh the list after purge
+        fetchUsers();
       } else {
         toast.error("Failed to purge demo users.");
       }
@@ -157,7 +155,7 @@ const AdminUsersPage: React.FC = () => {
       const result = await purgeAllNonAdminUsers(currentOrgId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} non-admin user(s).`);
-        fetchUsers(); // Refresh the list after purge
+        fetchUsers();
       } else {
         toast.error("Failed to purge non-admin users.");
       }
