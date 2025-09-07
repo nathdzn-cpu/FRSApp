@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Added Card imports
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -85,7 +86,7 @@ const Index = () => {
 
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate], // Removed currentProfile?.id as driverId filter is removed
+    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate],
     queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate),
     staleTime: 60 * 1000, // Cache jobs for 1 minute
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
@@ -139,88 +140,91 @@ const Index = () => {
               </Button>
             )}
             {canCreateJob && (
-              <Button onClick={() => navigate('/jobs/new')} className="mr-4">
+              <Button onClick={() => navigate('/jobs/new')} variant="default">
                 <PlusCircle className="h-4 w-4 mr-2" /> Create New Job
               </Button>
             )}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-4 sm:p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Active Jobs</h2>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4 items-center">
-            <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only">Filter by date:</Label>
-            <Select value={filterRange} onValueChange={(value: DateRangeFilter) => setFilterRange(value)}>
-              <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
+        <Card className="shadow-lg rounded-xl p-4 sm:p-6 mb-6">
+          <CardHeader className="flex flex-row justify-between items-center">
+            <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-white">Active Jobs</CardTitle>
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only">Filter by date:</Label>
+              <Select value={filterRange} onValueChange={(value: DateRangeFilter) => setFilterRange(value)}>
+                <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Select date range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {filterRange === 'custom' && (
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !customStartDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customStartDate ? format(customStartDate, "PPP") : <span>Start Date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={customStartDate}
-                      onSelect={setCustomStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <span>-</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !customEndDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customEndDate ? format(customEndDate, "PPP") : <span>End Date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={customEndDate}
-                      onSelect={setCustomEndDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              {filterRange === 'custom' && (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !customStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customStartDate ? format(customStartDate, "PPP") : <span>Start Date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customStartDate}
+                        onSelect={setCustomStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <span>-</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !customEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customEndDate ? format(customEndDate, "PPP") : <span>End Date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customEndDate}
+                        onSelect={setCustomEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {jobs.length > 0 ? (
+              <JobsTable jobs={jobs} profiles={profiles} />
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400">No jobs found for this tenant with the selected filter.</p>
             )}
-          </div>
-
-          {jobs.length > 0 ? (
-            <JobsTable jobs={jobs} profiles={profiles} />
-          ) : (
-            <p className="text-gray-600 dark:text-gray-400">No jobs found for this tenant with the selected filter.</p>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
       <MadeWithDyad />
     </div>

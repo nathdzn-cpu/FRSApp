@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Truck, CalendarCheck, Settings, Users, ListChecks } from 'lucide-react';
+import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck } from 'lucide-react'; // Added ClipboardList, Shield
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -18,10 +18,10 @@ interface NavLinkItem {
 
 const navLinks: NavLinkItem[] = [
   { to: '/', icon: Briefcase, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
-  { to: '/drivers', icon: Truck, label: 'Drivers', roles: ['admin', 'office'] },
+  { to: '/drivers', icon: Users, label: 'Drivers', roles: ['admin', 'office'] },
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
-  { to: '/admin/checklists', icon: ListChecks, label: 'Admin Checklists', roles: ['admin'] },
-  { to: '/admin/users', icon: Users, label: 'Admin Users', roles: ['admin'] },
+  { to: '/admin/checklists', icon: ClipboardList, label: 'Admin Checklists', roles: ['admin'] },
+  { to: '/admin/users', icon: Shield, label: 'Admin Users', roles: ['admin'] },
   { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'office', 'driver'] },
 ];
 
@@ -42,7 +42,7 @@ const Sidebar: React.FC = () => {
           to={link.to}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-gray-900 dark:hover:text-gray-50",
+              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-white hover:bg-blue-500",
               isActive ? "bg-blue-600 text-white" : "text-gray-600 dark:text-gray-400"
             )
           }
@@ -64,7 +64,7 @@ const Sidebar: React.FC = () => {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px]">
-          <h2 className="text-xl font-bold p-4 border-b dark:border-gray-700">Navigation</h2>
+          <h2 className="text-xl font-bold p-4 border-b dark:border-gray-700">FRS Haulage</h2>
           {renderNavLinks()}
         </SheetContent>
       </Sheet>
@@ -74,7 +74,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="flex h-screen w-64 flex-col border-r bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 dark:border-gray-700">
-        <span className="font-semibold text-lg">Haulage App</span>
+        <span className="font-semibold text-lg text-blue-600">FRS Haulage</span>
       </div>
       <div className="flex-1 overflow-auto py-2">
         {renderNavLinks()}
