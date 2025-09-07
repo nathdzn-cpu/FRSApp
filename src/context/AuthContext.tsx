@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode, useCa
 import { supabase } from '@/lib/supabaseClient';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js'; // Import AuthChangeEvent
 import { Profile } from '@/utils/mockData';
-import { useNavigate, useLocation } => 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Corrected: changed '=>' to 'from'
 import { toast } from 'sonner';
 
 type UserRole = 'admin' | 'office' | 'driver' | undefined;
