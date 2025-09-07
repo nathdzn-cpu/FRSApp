@@ -1,3 +1,5 @@
+"use client";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -113,29 +115,19 @@ const App = () => {
     );
   }
 
-  if (!session) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <LoginPage />
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthContextProvider initialSession={session} initialUser={session.user}>
-            <AppContent />
-          </AuthContextProvider>
+          {session ? (
+            <AuthContextProvider initialSession={session} initialUser={session.user}>
+              <AppContent />
+            </AuthContextProvider>
+          ) : (
+            <LoginPage />
+          )}
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
