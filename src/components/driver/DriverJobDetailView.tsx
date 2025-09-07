@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, CheckCircle } from 'lucide-react';
 import { Job, JobStop, Profile, JobProgressLog } from '@/utils/mockData';
-import DriverJobStopCard from './DriverJobStopCard';
-import { updateJobProgress } from '@/lib/api/jobs'; // Using jobs API for consistency
+import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Import Tabs components
+import ProgressActionDialog from './ProgressActionDialog';
+import PodUploadDialog from './PodUploadDialog';
+import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction'; // Import the new utility
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
 interface DriverJobDetailViewProps {
   job: Job;
@@ -32,8 +35,16 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [nextAction, setNextAction] = useState<NextDriverAction | null>(null);
+  const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+  const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
 
-  const sortedStops = [...stops].sort((a, b) => a.seq - b.seq);
+  useEffect(() => {
+    if (job && stops && progressLogs && currentProfile) {
+      const action = computeNextDriverAction(job, stops, progressLogs, currentProfile.id);
+      setNextAction(action);
+    }
+  }, [job, stops, progressLogs, currentProfile]);
 
   const handleUpdateProgress = async (
     newStatus: Job['status'],
@@ -55,8 +66,10 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
       };
       await updateJobProgress(payload);
       refetchJobData(); // Refetch all job data to update logs and status
+      toast.success(`${nextAction?.label || 'Action'} logged successfully!`);
     } catch (err: any) {
       console.error("Error updating job progress:", err);
+      toast.error(`Failed to log ${nextAction?.label || 'action'}: ${err.message || String(err)}`);
       throw err; // Re-throw to allow dialog to handle its own error state
     } finally {
       setIsUpdatingProgress(false);
@@ -65,7 +78,40 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
 
   const handlePodUploadSuccess = () => {
     refetchJobData(); // Refetch after POD upload to update job status
+    toast.success("POD uploaded successfully!");
   };
+
+  const handleNextActionButtonClick = () => {
+    if (!nextAction) return;
+
+    if (nextAction.nextStatus === 'pod_received') {
+      setIsPodUploadDialogOpen(true);
+    } else {
+      setIsProgressDialogOpen(true);
+    }
+  };
+
+  const renderStopDetails = (stop: JobStop) => (
+    <div key={stop.id} className={`p-4 shadow-sm rounded-md ${stop.type === 'collection' ? 'border-l-4 border-blue-500' : 'border-l-4 border-green-500'}`}>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <MapPin className={`h-4 w-4 ${stop.type === 'collection' ? 'text-blue-600' : 'text-green-600'}`} />
+          <h4 className="font-semibold text-lg text-gray-900">{formatAddressPart(stop.name)} ({stop.type === 'collection' ? 'Collection' : 'Delivery'} {stop.seq})</h4>
+        </div>
+      </div>
+      <p className="text-gray-700">{formatAddressPart(stop.address_line1)}</p>
+      {stop.address_line2 && <p className="text-gray-700">{formatAddressPart(stop.address_line2)}</p>}
+      <p className="text-gray-700">{formatAddressPart(stop.city)}, {formatPostcode(stop.postcode)}</p>
+      {(stop.window_from || stop.window_to) && (
+        <p className="text-sm text-gray-600 mt-1">Window: {stop.window_from || 'Anytime'} - {stop.window_to || 'Anytime'}</p>
+      )}
+      {stop.notes && (
+        <p className="text-sm text-gray-600 mt-1">Notes: {stop.notes}</p>
+      )}
+    </div>
+  );
+
+  const currentStopForAction = nextAction ? stops.find(s => s.id === nextAction.stopId) : undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -84,37 +130,60 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
               <p className="text-gray-700">{job.notes || '-'}</p>
             </div>
 
-            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Stops</h3>
-            {sortedStops.length === 0 ? (
-              <p className="text-gray-600">No stops defined for this job.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
+
+            {nextAction ? (
+              <>
+                {nextAction.stopId && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
+                  </p>
+                )}
+                {currentStopForAction && renderStopDetails(currentStopForAction)}
+                <Button
+                  onClick={handleNextActionButtonClick}
+                  disabled={isUpdatingProgress}
+                  className="w-full mt-4 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                  data-testid="driver-next-action-btn"
+                >
+                  {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                  {nextAction.label}
+                </Button>
+              </>
             ) : (
-              <Tabs defaultValue={sortedStops[0].id} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 bg-gray-100 p-1 rounded-lg">
-                  {sortedStops.map((stop) => (
-                    <TabsTrigger key={stop.id} value={stop.id} data-testid="driver-stop-tab">
-                      {stop.type === 'collection' ? 'Collection' : 'Delivery'} {stop.seq}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {sortedStops.map((stop) => (
-                  <TabsContent key={stop.id} value={stop.id} className="mt-4">
-                    <DriverJobStopCard
-                      job={job}
-                      stop={stop}
-                      progressLogs={progressLogs}
-                      currentProfile={currentProfile}
-                      currentOrgId={currentOrgId}
-                      onUpdateProgress={handleUpdateProgress}
-                      onPodUploadSuccess={handlePodUploadSuccess}
-                      isUpdatingProgress={isUpdatingProgress}
-                    />
-                  </TabsContent>
-                ))}
-              </Tabs>
+              <div className="text-center py-8">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
+                <p className="text-gray-600">All stops have been processed.</p>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {nextAction && nextAction.nextStatus !== 'pod_received' && (
+        <ProgressActionDialog
+          open={isProgressDialogOpen}
+          onOpenChange={setIsProgressDialogOpen}
+          title={`Log ${nextAction.promptLabel}`}
+          description={`Enter the date and time for the "${nextAction.promptLabel}" action.`}
+          actionLabel={`Log ${nextAction.label}`}
+          onSubmit={(dateTime, notes) => handleUpdateProgress(nextAction.nextStatus, dateTime, notes, nextAction.stopId)}
+          isLoading={isUpdatingProgress}
+        />
+      )}
+
+      {nextAction && nextAction.nextStatus === 'pod_received' && (
+        <PodUploadDialog
+          open={isPodUploadDialogOpen}
+          onOpenChange={setIsPodUploadDialogOpen}
+          job={job}
+          stopId={nextAction.stopId}
+          currentProfile={currentProfile}
+          onUploadSuccess={handlePodUploadSuccess}
+          isLoading={isUpdatingProgress}
+        />
+      )}
     </div>
   );
 };

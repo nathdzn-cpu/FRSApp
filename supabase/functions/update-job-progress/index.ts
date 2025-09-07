@@ -70,7 +70,7 @@ serve(async (req) => {
     });
     console.log("Received body for update-job-progress:", JSON.stringify(body, null, 2));
 
-    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes } = body; // Destructure actor_role
+    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes, stop_id } = body; // Destructure actor_role
 
     if (!job_id || !org_id || !actor_id || !actor_role || !new_status || !timestamp) {
       throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role, new_status, timestamp.");
@@ -107,12 +107,49 @@ serve(async (req) => {
     }
 
     // 4) Update jobs table
+    const jobUpdates: Record<string, any> = {
+      status: new_status,
+      last_status_update_at: timestamp,
+    };
+
+    // Check if this is the final POD upload for the last delivery stop
+    if (new_status === 'pod_received') {
+      const { data: jobStops, error: stopsError } = await admin
+        .from('job_stops')
+        .select('id, type, seq')
+        .eq('job_id', job_id)
+        .eq('org_id', org_id)
+        .order('seq', { ascending: true });
+
+      if (stopsError) console.error("Error fetching job stops for final status check:", stopsError.message);
+
+      const deliveryStops = jobStops?.filter(s => s.type === 'delivery') || [];
+      const currentStopIsLastDelivery = deliveryStops.length > 0 && deliveryStops[deliveryStops.length - 1].id === stop_id;
+
+      if (currentStopIsLastDelivery) {
+        // Check if all delivery stops have 'pod_received' logs
+        const { data: deliveryLogs, error: logsError } = await admin
+          .from('job_progress_log')
+          .select('stop_id, action_type')
+          .eq('job_id', job_id)
+          .eq('org_id', org_id)
+          .in('stop_id', deliveryStops.map(s => s.id));
+
+        if (logsError) console.error("Error fetching delivery logs for final status check:", logsError.message);
+
+        const allDeliveryStopsHavePod = deliveryStops.every(dStop =>
+          deliveryLogs?.some(log => log.stop_id === dStop.id && log.action_type === 'pod_received')
+        );
+
+        if (allDeliveryStopsHavePod) {
+          jobUpdates.status = 'delivered'; // Set overall job status to 'delivered'
+        }
+      }
+    }
+
     const { data: updatedJob, error: updateJobError } = await admin
       .from("jobs")
-      .update({
-        status: new_status,
-        last_status_update_at: timestamp,
-      })
+      .update(jobUpdates)
       .eq("id", job_id)
       .eq("org_id", org_id)
       .select()
@@ -135,6 +172,7 @@ serve(async (req) => {
         action_type: new_status, // Renamed from status
         timestamp: timestamp,
         notes: notes || null,
+        stop_id: stop_id || null, // Include stop_id
         created_at: new Date().toISOString(),
       })
       .select()
@@ -154,7 +192,7 @@ serve(async (req) => {
       entity_id: job_id,
       action: "update_progress",
       before: { status: oldJob.status },
-      after: { status: new_status, last_status_update_at: timestamp },
+      after: { status: updatedJob.status, last_status_update_at: timestamp },
       notes: `Job progress updated to: ${new_status}`,
       created_at: new Date().toISOString(),
     });

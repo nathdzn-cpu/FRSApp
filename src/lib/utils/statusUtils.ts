@@ -30,6 +30,52 @@ export const coreProgressActionTypes: string[] = [
   'eta_set',
 ];
 
+// Driver-specific status sequences for stops
+export const collectionStopStatusSequence: Array<Job['status']> = [
+  'on_route_collection',
+  'at_collection',
+  'loaded',
+];
+
+export const deliveryStopStatusSequence: Array<Job['status']> = [
+  'on_route_delivery',
+  'at_delivery',
+  'pod_received', // This is the final status for a delivery stop
+];
+
+// Driver action button labels
+export const driverActionLabels: Record<Job['status'], string> = {
+  'on_route_collection': 'On Route to Collection',
+  'at_collection': 'Arrived at Collection',
+  'loaded': 'Loaded',
+  'on_route_delivery': 'On Route to Delivery',
+  'at_delivery': 'Arrived at Delivery',
+  'pod_received': 'Upload POD', // Special case for POD
+  // Fallbacks for other statuses, though they shouldn't appear as primary actions
+  'planned': 'Start Job',
+  'assigned': 'Accept Job',
+  'accepted': 'Start Job',
+  'delivered': 'Job Complete',
+  'cancelled': 'Job Cancelled',
+};
+
+// Driver action dialog prompt labels
+export const driverPromptLabels: Record<Job['status'], string> = {
+  'on_route_collection': 'ETA to collection',
+  'at_collection': 'Arrival time at collection',
+  'loaded': 'Departed collection time',
+  'on_route_delivery': 'ETA to delivery',
+  'at_delivery': 'Arrival time at delivery',
+  'pod_received': 'Upload POD', // This will trigger the POD dialog directly
+  // Fallbacks
+  'planned': 'Start Job Time',
+  'assigned': 'Accept Job Time',
+  'accepted': 'Start Job Time',
+  'delivered': 'Job Completion Time',
+  'cancelled': 'Job Cancellation Time',
+};
+
+
 export const getSkippedStatuses = (currentStatus: Job['status'], newStatus: Job['status']): Job['status'][] => {
   const currentIndex = jobStatusOrder.indexOf(currentStatus);
   const newIndex = jobStatusOrder.indexOf(newStatus);
