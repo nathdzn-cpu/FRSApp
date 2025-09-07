@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import Dashboard from "./components/Dashboard"; // Import the new Dashboard component
 
 function App() {
   const session = useSession();
@@ -46,10 +47,9 @@ function App() {
   }
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Welcome, {session.user.email}</h2>
-      <pre>{JSON.stringify(session.user, null, 2)}</pre>
+    <div>
       <button onClick={() => supabase.auth.signOut()}>Logout</button>
+      <Dashboard />
     </div>
   );
 }
