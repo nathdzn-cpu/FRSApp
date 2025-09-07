@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatAddressPart } from '@/lib/utils/formatUtils'; // Import new utility
 
 interface JobsTableProps {
   jobs: Job[];
@@ -149,12 +150,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                 </TableCell>
                 <TableCell>
                   {job.collection_name && job.collection_city
-                    ? `${job.collection_name}, ${job.collection_city}`
+                    ? `${formatAddressPart(job.collection_name)}, ${formatAddressPart(job.collection_city)}`
                     : '-'}
                 </TableCell>
                 <TableCell>
                   {job.delivery_name && job.delivery_city
-                    ? `${job.delivery_name}, ${job.delivery_city}`
+                    ? `${formatAddressPart(job.delivery_name)}, ${formatAddressPart(job.delivery_city)}`
                     : '-'}
                 </TableCell>
                 <TableCell className="text-center">

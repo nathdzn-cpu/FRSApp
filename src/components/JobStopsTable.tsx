@@ -2,6 +2,7 @@ import React from 'react';
 import { JobStop } from '@/utils/mockData';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
 
 interface JobStopsTableProps {
   stops: JobStop[];
@@ -34,11 +35,11 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
                   {stop.type}
                 </Badge>
               </TableCell>
-              <TableCell className="font-medium text-gray-900">{stop.name}</TableCell>
+              <TableCell className="font-medium text-gray-900">{formatAddressPart(stop.name)}</TableCell>
               <TableCell className="text-gray-700">
-                {stop.address_line1}
-                {stop.address_line2 && `, ${stop.address_line2}`}
-                , {stop.city}, {stop.postcode}
+                {formatAddressPart(stop.address_line1)}
+                {stop.address_line2 && `, ${formatAddressPart(stop.address_line2)}`}
+                , {formatAddressPart(stop.city)}, {formatPostcode(stop.postcode)}
               </TableCell>
               <TableCell className="text-gray-700">
                 {stop.window_from && stop.window_to

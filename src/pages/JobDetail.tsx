@@ -12,6 +12,7 @@ import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
 import JobProgressTimeline from '@/components/JobProgressTimeline';
+import JobStopsList from '@/components/JobStopsList'; // Import the new component
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -33,7 +34,8 @@ import DateTimePicker from '@/components/DateTimePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
-import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
 
 interface JobFormValues {
   order_number?: string | null;
@@ -383,21 +385,8 @@ const JobDetail: React.FC = () => {
   const isAssignedDriver = userRole === 'driver' && job.assigned_driver_id === user?.id;
   const canEditJob = isOfficeOrAdmin || isAssignedDriver;
 
-  // Find first collection and last delivery stop
-  const firstCollectionStop = stops.filter(s => s.type === 'collection').sort((a, b) => a.seq - b.seq)[0];
-  const lastDeliveryStop = stops.filter(s => s.type === 'delivery').sort((a, b) => b.seq - a.seq)[0];
-
-  const formatAddress = (stop: JobStop | undefined) => {
-    if (!stop) return 'N/A';
-    return (
-      <>
-        <p className="font-medium">{stop.name}</p>
-        <p>{stop.address_line1}</p>
-        {stop.address_line2 && <p>{stop.address_line2}</p>}
-        <p>{stop.city}, {stop.postcode}</p>
-      </>
-    );
-  };
+  const collectionStops = stops.filter(s => s.type === 'collection');
+  const deliveryStops = stops.filter(s => s.type === 'delivery');
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -617,15 +606,15 @@ const JobDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
               <div>
                 <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
-                  <MapPin className="h-4 w-4 text-blue-600" /> First Collection:
+                  <MapPin className="h-4 w-4 text-blue-600" /> Collections:
                 </p>
-                {formatAddress(firstCollectionStop)}
+                <JobStopsList stops={collectionStops} type="collection" />
               </div>
               <div>
                 <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
-                  <MapPin className="h-4 w-4 text-green-600" /> Last Delivery:
+                  <MapPin className="h-4 w-4 text-green-600" /> Deliveries:
                 </p>
-                {formatAddress(lastDeliveryStop)}
+                <JobStopsList stops={deliveryStops} type="delivery" />
               </div>
             </div>
           </CardContent>
@@ -634,7 +623,7 @@ const JobDetail: React.FC = () => {
         <Tabs defaultValue="timeline" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1">
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="stops">Stops</TabsTrigger>
+            <TabsTrigger value="stops">Stops Table</TabsTrigger> {/* Renamed for clarity */}
             <TabsTrigger value="pods">PODs</TabsTrigger>
             <TabsTrigger value="progress-log">Progress Log</TabsTrigger>
           </TabsList>
@@ -651,7 +640,7 @@ const JobDetail: React.FC = () => {
           <TabsContent value="stops" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
               <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops</CardTitle>
+                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops Table</CardTitle> {/* Renamed for clarity */}
               </CardHeader>
               <CardContent className="p-0 pt-4">
                 <JobStopsTable stops={stops} />
