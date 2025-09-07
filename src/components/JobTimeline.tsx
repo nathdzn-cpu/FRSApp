@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X } from 'lucide-react';
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff } from 'lucide-react'; // Added EyeOff
 import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils'; // Import coreProgressActionTypes
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import { updateJobProgressLogVisibility } from '@/lib/api/jobs'; // Import the new API function
@@ -48,6 +48,12 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
   const { userRole, profile: currentProfile } = useAuth(); // Get userRole and currentProfile
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState<string | null>(null); // State to track which log is being updated
+  const [localProgressLogs, setLocalProgressLogs] = useState<JobProgressLog[]>(progressLogs); // Local state for optimistic updates
+
+  // Update local state when parent's progressLogs change (e.g., after a full refetch)
+  React.useEffect(() => {
+    setLocalProgressLogs(progressLogs);
+  }, [progressLogs]);
 
   const getActorName = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
@@ -55,7 +61,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
   };
 
   // Filter logs to only include core progress action types AND visible_in_timeline = true
-  const filteredAndVisibleLogs = progressLogs.filter(log =>
+  const filteredAndVisibleLogs = localProgressLogs.filter(log =>
     coreProgressActionTypes.includes(log.action_type) && log.visible_in_timeline !== false
   );
 
@@ -73,6 +79,15 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
     }
 
     setIsUpdatingVisibility(logId);
+
+    // Optimistic update: immediately hide the item from the local state
+    setLocalProgressLogs(prevLogs =>
+      prevLogs.map(log =>
+        log.id === logId ? { ...log, visible_in_timeline: false } : log
+      )
+    );
+    toast.loading('Removing event from timeline...', { id: logId });
+
     try {
       const payload = {
         log_id: logId,
@@ -81,17 +96,18 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
         actor_role: userRole,
         visible_in_timeline: false,
       };
-      const promise = updateJobProgressLogVisibility(payload);
-      toast.promise(promise, {
-        loading: 'Removing event from timeline...',
-        success: 'Event removed from timeline!',
-        error: (err) => `Failed to remove event: ${err.message}`,
-      });
-      await promise;
-      onLogVisibilityChange(); // Trigger refetch of logs in parent
+      await updateJobProgressLogVisibility(payload);
+      toast.success('Event removed from timeline!', { id: logId });
+      onLogVisibilityChange(); // Trigger refetch of logs in parent to ensure consistency
     } catch (err: any) {
       console.error("Error removing event from timeline:", err);
-      toast.error("An unexpected error occurred while removing the event.");
+      // Rollback optimistic update on error
+      setLocalProgressLogs(prevLogs =>
+        prevLogs.map(log =>
+          log.id === logId ? { ...log, visible_in_timeline: true } : log
+        )
+      );
+      toast.error(`Failed to remove event: ${err.message}`, { id: logId });
     } finally {
       setIsUpdatingVisibility(null);
     }

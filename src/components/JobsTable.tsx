@@ -50,9 +50,10 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
       let compare = 0;
 
       if (sortColumn === 'status') {
-        const statusOrder = { 'accepted': 1, 'assigned': 2, 'planned': 3, 'delivered': 4, 'cancelled': 5 };
-        const statusA = statusOrder[a.status] || 99;
-        const statusB = statusOrder[b.status] || 99;
+        // Custom sort order for statuses, with 'cancelled' at the end
+        const statusOrder = { 'accepted': 1, 'assigned': 2, 'planned': 3, 'on_route_collection': 4, 'at_collection': 5, 'loaded': 6, 'on_route_delivery': 7, 'at_delivery': 8, 'delivered': 9, 'pod_received': 10, 'cancelled': 99 };
+        const statusA = statusOrder[a.status] || 98; // Default to a high number but before cancelled
+        const statusB = statusOrder[b.status] || 98;
         compare = statusA - statusB;
       } else if (sortColumn === 'driver') {
         const driverA = getDriverInfo(a.assigned_driver_id).name.toLowerCase();
@@ -123,8 +124,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
         <TableBody>
           {sortedJobs.map((job, index) => {
             const driverInfo = getDriverInfo(job.assigned_driver_id);
+            const isCancelled = job.status === 'cancelled';
             return (
-              <TableRow key={job.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
+              <TableRow key={job.id} className={cn(
+                index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100',
+                isCancelled && 'bg-red-50 hover:bg-red-100 opacity-70' // Light red background for cancelled jobs
+              )}>
                 <TableCell>
                   {driverInfo.name}
                   {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
@@ -135,15 +140,20 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                 <TableCell>
                   <Badge
                     variant={
-                      job.status === 'planned'
+                      isCancelled
+                        ? 'destructive' // Red badge for cancelled
+                        : job.status === 'planned'
                         ? 'secondary'
                         : job.status === 'accepted' || job.status === 'assigned'
                         ? 'default'
                         : job.status === 'delivered'
                         ? 'outline'
-                        : 'destructive'
+                        : 'default' // Fallback for other statuses
                     }
-                    className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
+                    className={cn(
+                      isCancelled && 'bg-red-500 text-white hover:bg-red-600',
+                      job.status === 'delivered' && 'bg-green-500 text-white hover:bg-green-600'
+                    )}
                   >
                     {getDisplayStatus(job.status)}
                   </Badge>

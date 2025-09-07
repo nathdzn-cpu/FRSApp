@@ -2,7 +2,7 @@ import React from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus } from 'lucide-react';
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react'; // Added EyeOff, Eye
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
 interface JobAuditLogProps {
@@ -50,6 +50,8 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   password_reset_sent: Mail,
   purge_demo_users: Eraser,
   purge_all_non_admin_users: Eraser,
+  timeline_event_removed_from_timeline: EyeOff, // New icon for removed from timeline
+  timeline_event_restored_to_timeline: Eye, // New icon for restored to timeline
 };
 
 const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => {
@@ -71,14 +73,16 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
+        const isRemovedFromTimeline = log.visible_in_timeline === false; // Check for visibility status
+
         return (
           <div key={log.id} className="mb-6 relative">
-            <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-gray-600 text-white">
+            <div className={`absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full ${isRemovedFromTimeline ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
               <Icon size={16} />
             </div>
             <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-1">
-                <Badge variant="secondary" className="capitalize">
+                <Badge variant={isRemovedFromTimeline ? 'destructive' : 'secondary'} className="capitalize">
                   {getDisplayStatus(log.action_type)}
                 </Badge>
                 <div className="text-right">
@@ -95,6 +99,11 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
               {(log.lat && log.lon) && (
                 <p className="text-xs text-gray-600 flex items-center">
                   <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
+                </p>
+              )}
+              {isRemovedFromTimeline && (
+                <p className="text-xs text-red-600 flex items-center mt-1">
+                  <EyeOff className="h-3 w-3 mr-1" /> This event is hidden from the main timeline.
                 </p>
               )}
             </div>

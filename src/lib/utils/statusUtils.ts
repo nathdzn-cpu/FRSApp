@@ -117,6 +117,10 @@ export const getDisplayStatus = (status: string): string => {
       return 'Purge Demo Users';
     case 'purge_all_non_admin_users':
       return 'Purge All Non-Admin Users';
+    case 'timeline_event_removed_from_timeline':
+      return 'Removed from Timeline';
+    case 'timeline_event_restored_to_timeline':
+      return 'Restored to Timeline';
     default:
       return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }

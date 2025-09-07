@@ -7,7 +7,7 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
     .from('jobs_with_stop_details') // Query the new view
     .select('*')
     .eq('org_id', orgId)
-    .is('deleted_at', null)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .order('created_at', { ascending: false });
 
   // Apply date filters based on created_at

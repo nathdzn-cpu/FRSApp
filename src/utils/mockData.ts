@@ -144,6 +144,7 @@ export interface JobProgressLog {
   lat?: number; // Added lat/lon for location pings
   lon?: number; // Added lat/lon for location pings
   stop_id?: string | null; // Added stop_id for stop-specific events
+  visible_in_timeline?: boolean; // New field for timeline visibility
 }
 
 export interface AuditLog {
@@ -152,7 +153,7 @@ export interface AuditLog {
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
-  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress' | 'pod_requested' | 'pod_uploaded' | 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'location_ping' | 'note_added'; // Added common event types
+  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress' | 'pod_requested' | 'pod_uploaded' | 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'location_ping' | 'note_added' | 'timeline_event_removed_from_timeline' | 'timeline_event_restored_to_timeline'; // Added common event types
   before?: Record<string, any> | null;
   after?: Record<string, any> | null;
   notes?: string | null;
