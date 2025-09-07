@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { formatGBP } from '@/lib/money'; // Import for price formatting
+import { formatGBPDisplay, parseCurrencyInput } from '@/lib/utils/formatUtils'; // Import new utilities
 
 // Helper to format time input to HH:MM
 const formatTimeInput = (value: string) => {
@@ -83,6 +83,19 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
       deliveries: [], // Changed to empty array
     },
   });
+
+  // Local state for the price input string
+  const [priceInputString, setPriceInputString] = useState<string>('');
+
+  // Sync local state with form's price value
+  useEffect(() => {
+    const formPrice = form.getValues('price');
+    if (formPrice !== null && formPrice !== undefined) {
+      setPriceInputString(formPrice.toFixed(2)); // Format to 2 decimal places for display
+    } else {
+      setPriceInputString('');
+    }
+  }, [form.watch('price')]); // Watch the form's price field
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
     control: form.control,
@@ -169,21 +182,31 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                 <FormItem>
                   <FormLabel className="text-gray-700">Price (GBP)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g., 123.45"
-                      {...field}
-                      value={field.value === null ? '' : field.value}
-                      onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
-                      onBlur={(e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) {
-                          form.setValue('price', parseFloat(val.toFixed(2)));
-                        }
-                        field.onBlur();
-                      }}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">£</span>
+                      <Input
+                        type="text" // Use text type for custom formatting
+                        placeholder="0.00"
+                        value={priceInputString} // Controlled by local state
+                        onChange={(e) => {
+                          const rawInput = e.target.value;
+                          setPriceInputString(rawInput); // Update local state instantly
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseCurrencyInput(priceInputString);
+                          field.onChange(numericValue); // Update react-hook-form with numeric value
+                          // After updating the form, re-sync local state to ensure full formatting
+                          if (numericValue !== null) {
+                            setPriceInputString(numericValue.toFixed(2)); // Ensure 2 decimal places on blur
+                          } else {
+                            setPriceInputString('');
+                          }
+                          field.onBlur(); // Call react-hook-form's onBlur
+                        }}
+                        className="pl-7" // Add left padding for the £ symbol
+                        disabled={field.disabled}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
