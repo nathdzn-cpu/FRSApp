@@ -57,6 +57,7 @@ const AdminDailyChecks: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const currentProfile = profile;
 
   const loadItems = async () => {
     if (!user || userRole !== 'admin' || !currentOrgId) {
@@ -108,6 +109,10 @@ const AdminDailyChecks: React.FC = () => {
       toast.error("Item title cannot be empty.");
       return;
     }
+    if (!currentProfile || !userRole) { // Ensure currentProfile and userRole are available
+      toast.error("User profile or role not found. Cannot create item.");
+      return;
+    }
     setBusy(true);
     setFnError(null);
     try {
@@ -137,6 +142,10 @@ const AdminDailyChecks: React.FC = () => {
   };
 
   const handleToggleActive = async (id: string, is_active: boolean) => {
+    if (!currentProfile || !userRole) { // Ensure currentProfile and userRole are available
+      toast.error("User profile or role not found. Cannot toggle item status.");
+      return;
+    }
     setBusy(true);
     setFnError(null);
     try {
@@ -172,6 +181,10 @@ const AdminDailyChecks: React.FC = () => {
       toast.error("Item title cannot be empty.");
       return;
     }
+    if (!currentProfile || !userRole) { // Ensure currentProfile and userRole are available
+      toast.error("User profile or role not found. Cannot update item.");
+      return;
+    }
     setBusy(true);
     setFnError(null);
     try {
@@ -200,6 +213,10 @@ const AdminDailyChecks: React.FC = () => {
   };
 
   const handleDeleteItem = async (id: string) => {
+    if (!currentProfile || !userRole) { // Ensure currentProfile and userRole are available
+      toast.error("User profile or role not found. Cannot delete item.");
+      return;
+    }
     setBusy(true);
     setFnError(null);
     try {

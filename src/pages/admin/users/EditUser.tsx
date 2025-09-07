@@ -66,8 +66,8 @@ const EditUser: React.FC = () => {
   }, [user, profile, userRole, isLoadingAuth, navigate, id, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
-    if (!userToEdit || !currentAdminProfile) {
-      toast.error("User to edit or admin profile not found. Cannot update user.");
+    if (!userToEdit || !currentAdminProfile || !userRole) { // Ensure userRole is available
+      toast.error("User to edit, admin profile, or role not found. Cannot update user.");
       return;
     }
 
@@ -92,13 +92,13 @@ const EditUser: React.FC = () => {
   };
 
   const performUpdateUser = async (updates: Partial<Profile>) => {
-    if (!userToEdit || !currentAdminProfile) {
-      toast.error("User to edit or admin profile not found. Cannot update user.");
+    if (!userToEdit || !currentAdminProfile || !userRole) { // Ensure userRole is available
+      toast.error("User to edit, admin profile, or role not found. Cannot update user.");
       return;
     }
     setIsUpdateRoleBusy(true);
     try {
-      const promise = updateUser(currentOrgId, userToEdit.id, updates, currentAdminProfile.id);
+      const promise = updateUser(currentOrgId, userToEdit.id, updates, currentAdminProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: `Updating ${userToEdit.full_name}...`,
         success: 'User updated successfully!',
@@ -120,13 +120,13 @@ const EditUser: React.FC = () => {
   };
 
   const handleResetPasswordConfirmed = async () => {
-    if (!userToEdit || !currentAdminProfile) {
-      toast.error("User to edit or admin profile not found. Cannot reset password.");
+    if (!userToEdit || !currentAdminProfile || !userRole) { // Ensure userRole is available
+      toast.error("User to edit, admin profile, or role not found. Cannot reset password.");
       return;
     }
     try {
       setIsResetPasswordBusy(true);
-      const promise = resetUserPassword(currentOrgId, userToEdit.user_id, currentAdminProfile.id);
+      const promise = resetUserPassword(currentOrgId, userToEdit.user_id, currentAdminProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
         success: `Password reset email sent to ${userToEdit.full_name}!`,

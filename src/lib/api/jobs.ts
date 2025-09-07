@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData'; // Removed JobEvent
+import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
@@ -64,9 +64,6 @@ export const getJobStops = async (orgId: string, jobId: string): Promise<JobStop
   return data as JobStop[];
 };
 
-// getJobEvents is removed as JobProgressLog will now be the unified timeline source.
-// export const getJobEvents = async (orgId: string, jobId: string): Promise<JobEvent[]> => { ... }
-
 export const getJobDocuments = async (orgId: string, jobId: string): Promise<Document[]> => {
   const { data, error } = await supabase
     .from('documents')
@@ -102,13 +99,15 @@ interface CreateJobPayload {
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
   org_id: string;
   actor_id: string;
+  actor_role: 'admin' | 'office' | 'driver'; // Added actor_role
 }
 
 export const createJob = async (
   orgId: string,
   jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city' | 'last_status_update_at'> & { order_number?: string | null },
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[],
-  actorId: string
+  actorId: string,
+  actorRole: 'admin' | 'office' | 'driver' // Added actorRole
 ): Promise<Job> => {
   const payload: CreateJobPayload = {
     jobData: {
@@ -122,6 +121,7 @@ export const createJob = async (
     stopsData,
     org_id: orgId,
     actor_id: actorId,
+    actor_role: actorRole, // Pass actor_role
   };
 
   const result = await callFn<Job>('create-job', payload);
@@ -132,6 +132,7 @@ interface UpdateJobPayload {
   job_id: string;
   org_id: string;
   actor_id: string;
+  actor_role: 'admin' | 'office' | 'driver'; // Added actor_role
   job_updates?: Partial<Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'>>;
   stops_to_add?: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
   stops_to_update?: Partial<Omit<JobStop, 'org_id' | 'job_id' | 'created_at'>>[]; // Must include 'id'
@@ -147,6 +148,7 @@ interface UpdateJobProgressPayload {
   job_id: string;
   org_id: string;
   actor_id: string;
+  actor_role: 'admin' | 'office' | 'driver'; // Added actor_role
   new_status: Job['status']; // This is the job's overall status
   timestamp: string;
   notes?: string;
@@ -157,14 +159,15 @@ export const updateJobProgress = async (payload: UpdateJobProgressPayload): Prom
   return result;
 };
 
-export const requestPod = async (jobId: string, orgId: string, actorId: string): Promise<boolean> => {
+export const requestPod = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
   const { data, error } = await supabase
-    .from('job_progress_log') // Insert into job_progress_log
+    .from('job_progress_log')
     .insert({
       org_id: orgId,
       job_id: jobId,
       actor_id: actorId,
-      status: 'pod_requested', // Use 'pod_requested' as the status for the log
+      action_type: 'pod_requested', // Renamed from status
+      actor_role: actorRole, // Added actor_role
       notes: 'POD requested by office.',
       timestamp: new Date().toISOString(),
     });
@@ -184,9 +187,9 @@ export const generateJobPdf = async (jobId: string, orgId: string, actorId: stri
   return mockPdfUrl;
 };
 
-export const cloneJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
+export const cloneJob = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => { // Added actorRole
   const { data: originalJob, error: jobError } = await supabase
-    .from('jobs_with_stop_details') // Query the view
+    .from('jobs_with_stop_details')
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
@@ -259,6 +262,22 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     }
   }
 
+  // Log job creation to job_progress_log
+  const { error: progressLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: clonedJobData.id,
+      actor_id: actorId,
+      actor_role: actorRole,
+      action_type: 'job_cloned',
+      notes: `Job cloned from ${jobId}`,
+      timestamp: new Date().toISOString(),
+    });
+  if (progressLogError) {
+    console.error("DEBUG: progress log insert failed for cloned job", progressLogError.message);
+  }
+
   const { error: auditError } = await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_id: actorId,
@@ -275,9 +294,9 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   return clonedJobData as Job;
 };
 
-export const cancelJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
+export const cancelJob = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => { // Added actorRole
   const { data: oldJob, error: fetchError } = await supabase
-    .from('jobs_with_stop_details') // Query the view
+    .from('jobs_with_stop_details')
     .select('status')
     .eq('id', jobId)
     .eq('org_id', orgId)
@@ -310,7 +329,8 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
       org_id: orgId,
       job_id: jobId,
       actor_id: actorId,
-      status: 'cancelled',
+      action_type: 'cancelled', // Renamed from status
+      actor_role: actorRole, // Added actor_role
       notes: 'Job cancelled by office.',
       timestamp: new Date().toISOString(),
     });

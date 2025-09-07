@@ -40,66 +40,72 @@ interface CreateUserData {
   is_demo?: boolean;
 }
 
-export const createUser = async (orgId: string, userData: CreateUserData, actorId: string): Promise<Profile> => {
+export const createUser = async (orgId: string, userData: CreateUserData, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Profile> => { // Added actorRole
   const payload = {
     op: "create",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
     ...userData,
   };
   const result = await callFn<Profile>('admin-users-management', payload);
   return result;
 };
 
-export const updateUser = async (orgId: string, profileId: string, updates: Partial<Profile>, actorId: string): Promise<Profile | undefined> => {
+export const updateUser = async (orgId: string, profileId: string, updates: Partial<Profile>, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Profile | undefined> => { // Added actorRole
   const payload = {
     op: "update",
     org_id: orgId,
     profile_id: profileId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
     updates: updates,
   };
   const result = await callFn<Profile>('admin-users-management', payload);
   return result;
 };
 
-export const resetUserPassword = async (orgId: string, userId: string, actorId: string): Promise<boolean> => {
+export const resetUserPassword = async (orgId: string, userId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
   const payload = {
     op: "reset_password",
     org_id: orgId,
     user_id: userId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
   };
   await callFn('admin-users-management', payload);
   return true;
 };
 
-export const deleteUser = async (orgId: string, profileId: string, actorId: string): Promise<boolean> => {
+export const deleteUser = async (orgId: string, profileId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
   const payload = {
     op: "delete",
     org_id: orgId,
     profile_id: profileId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
   };
   await callFn('admin-users-management', payload);
   return true;
 };
 
-export const purgeDemoUsers = async (orgId: string, actorId: string): Promise<{ ok: boolean; removed: number }> => {
+export const purgeDemoUsers = async (orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<{ ok: boolean; removed: number }> => { // Added actorRole
   const payload = {
     op: "purge_demo",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
   };
   const result = await callFn<{ ok: boolean; removed: number }>('admin-users-management', payload);
   return result;
 };
 
-export const purgeAllNonAdminUsers = async (orgId: string, actorId: string): Promise<{ ok: boolean; removed: number }> => {
+export const purgeAllNonAdminUsers = async (orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<{ ok: boolean; removed: number }> => { // Added actorRole
   const payload = {
     op: "purge_all_non_admin",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
+    actor_role: actorRole, // Pass actor_role
   };
   const result = await callFn<{ ok: boolean; removed: number }>('admin-users-management', payload);
   return result;

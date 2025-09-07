@@ -84,13 +84,13 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const handleDeleteUserConfirmed = async () => {
-    if (!userToDelete || !currentProfile) {
-      toast.error("User to delete or admin profile not found. Cannot delete user.");
+    if (!userToDelete || !currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("User to delete or admin profile/role not found. Cannot delete user.");
       return;
     }
     try {
       setBusyId(userToDelete.id);
-      const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id);
+      const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: `Deleting ${userToDelete.full_name}...`,
         success: `${userToDelete.full_name} deleted successfully!`,
@@ -112,13 +112,13 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const handleResetPassword = async (userToReset: Profile) => {
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot reset password.");
+    if (!currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Admin profile or role not found. Cannot reset password.");
       return;
     }
     try {
       setBusyId(userToReset.id);
-      const promise = resetUserPassword(currentOrgId, userToReset.user_id, currentProfile.id);
+      const promise = resetUserPassword(currentOrgId, userToReset.user_id, currentProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: `Sending password reset to ${userToReset.full_name}...`,
         success: `Password reset email sent to ${userToReset.full_name}!`,
@@ -134,14 +134,14 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const handlePurgeDemoUsersConfirmed = async () => {
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot purge demo users.");
+    if (!currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Admin profile or role not found. Cannot purge demo users.");
       return;
     }
 
     setPurging(true);
     try {
-      const result = await purgeDemoUsers(currentOrgId, currentProfile.id);
+      const result = await purgeDemoUsers(currentOrgId, currentProfile.id, userRole); // Pass userRole
       if (result.ok) {
         toast.success(`Removed ${result.removed} demo user(s).`);
         fetchUsers();
@@ -157,14 +157,14 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const handlePurgeAllNonAdminUsersConfirmed = async () => {
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot purge non-admin users.");
+    if (!currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Admin profile or role not found. Cannot purge non-admin users.");
       return;
     }
 
     setPurgingAll(true);
     try {
-      const result = await purgeAllNonAdminUsers(currentOrgId, currentProfile.id);
+      const result = await purgeAllNonAdminUsers(currentOrgId, currentProfile.id, userRole); // Pass userRole
       if (result.ok) {
         toast.success(`Removed ${result.removed} non-admin user(s).`);
         fetchUsers();

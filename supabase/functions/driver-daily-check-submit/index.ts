@@ -45,10 +45,10 @@ serve(async (req) => {
 
     // 2) Parse body
     const body = await req.json().catch(() => ({}));
-    const { truck_reg, trailer_no, started_at, finished_at, signature, items, org_id: body_org_id, driver_id: body_driver_id } = body;
+    const { truck_reg, trailer_no, started_at, finished_at, signature, items, org_id: body_org_id, driver_id: body_driver_id, actor_role } = body; // Destructure actor_role
 
-    if (!truck_reg || !started_at || !finished_at || !signature || !items || !Array.isArray(items)) {
-      throw new Error("Missing required fields: truck_reg, started_at, finished_at, signature, items.");
+    if (!truck_reg || !started_at || !finished_at || !signature || !items || !Array.isArray(items) || !actor_role) {
+      throw new Error("Missing required fields: truck_reg, started_at, finished_at, signature, items, or actor_role.");
     }
 
     // Ensure org_id and driver_id from body match user's profile
@@ -57,6 +57,9 @@ serve(async (req) => {
     }
     if (body_driver_id && body_driver_id !== me.id) {
       throw new Error("Driver ID mismatch. Driver can only submit checks as themselves.");
+    }
+    if (actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
 
     const effective_org_id = me.org_id;
@@ -85,7 +88,23 @@ serve(async (req) => {
 
     if (insertError) throw new Error("Failed to insert daily check response: " + insertError.message);
 
-    // 4) Audit log
+    // 4) Log daily check submission to job_progress_log (as a general event)
+    const { error: progressLogError } = await admin
+      .from('job_progress_log')
+      .insert({
+        org_id: effective_org_id,
+        job_id: null, // Daily checks are not directly tied to a job_id in this context
+        actor_id: effective_driver_id,
+        actor_role: actor_role,
+        action_type: 'daily_check_submitted',
+        notes: `Daily HGV check submitted for truck ${truck_reg}.`,
+        timestamp: new Date().toISOString(),
+      });
+    if (progressLogError) {
+      console.error("DEBUG: progress log insert failed for daily check submission", progressLogError.message);
+    }
+
+    // 5) Audit log
     await admin.from("audit_logs").insert({
       org_id: effective_org_id,
       actor_id: effective_driver_id,

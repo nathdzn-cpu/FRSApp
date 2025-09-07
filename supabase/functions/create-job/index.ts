@@ -70,11 +70,11 @@ serve(async (req) => {
     });
     console.log("Received body:", JSON.stringify(body, null, 2));
 
-    const { jobData, stopsData, org_id, actor_id } = body;
-    console.log("Destructured values:", { jobData, stopsData, org_id, actor_id });
+    const { jobData, stopsData, org_id, actor_id, actor_role } = body; // Destructure actor_role
+    console.log("Destructured values:", { jobData, stopsData, org_id, actor_id, actor_role });
 
-    if (!jobData || !stopsData || !org_id || !actor_id) {
-      throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body.");
+    if (!jobData || !stopsData || !org_id || !actor_id || !actor_role) {
+      throw new Error("Missing jobData, stopsData, org_id, actor_id, or actor_role in request body.");
     }
 
     if (org_id !== me.org_id) {
@@ -82,6 +82,9 @@ serve(async (req) => {
     }
     if (actor_id !== me.id) {
       throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
+    }
+    if (actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
 
     // 3) Prepare job data for insert
@@ -141,7 +144,23 @@ serve(async (req) => {
       }
     }
 
-    // 6) Audit log
+    // 6) Log job creation to job_progress_log
+    const { error: progressLogError } = await admin
+      .from('job_progress_log')
+      .insert({
+        org_id: org_id,
+        job_id: insertedJob.id,
+        actor_id: actor_id,
+        actor_role: actor_role,
+        action_type: 'job_created',
+        notes: `Job ${insertedJob.order_number} created.`,
+        timestamp: new Date().toISOString(),
+      });
+    if (progressLogError) {
+      console.error("DEBUG: progress log insert failed for job creation", progressLogError.message);
+    }
+
+    // 7) Audit log
     const { error: auditError } = await admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,

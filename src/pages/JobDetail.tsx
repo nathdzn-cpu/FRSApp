@@ -2,16 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase';
-import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData'; // Removed JobEvent
+import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle, UserPlus, MapPin } from 'lucide-react';
-import JobTimeline from '@/components/JobTimeline'; // This will now be the unified timeline
+import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
-// JobProgressTimeline is no longer needed as JobTimeline will be unified
 import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -164,8 +163,8 @@ const JobDetail: React.FC = () => {
   const error = allProfilesError || jobError;
 
   const handleRequestPod = async () => {
-    if (!job || !currentProfile) return;
-    const promise = requestPod(job.id, currentOrgId, currentProfile.id);
+    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
+    const promise = requestPod(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
     toast.promise(promise, {
       loading: 'Requesting POD...',
       success: 'POD request sent to driver!',
@@ -192,8 +191,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCloneJob = async () => {
-    if (!job || !currentProfile) return;
-    const promise = cloneJob(job.id, currentOrgId, currentProfile.id);
+    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
+    const promise = cloneJob(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
     toast.promise(promise, {
       loading: 'Cloning job...',
       success: (clonedJob) => {
@@ -208,8 +207,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCancelJob = async () => {
-    if (!job || !currentProfile) return;
-    const promise = cancelJob(job.id, currentOrgId, currentProfile.id);
+    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
+    const promise = cancelJob(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
@@ -220,8 +219,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleEditSubmit = async (values: JobFormValues) => {
-    if (!job || !currentProfile) {
-      toast.error("Job or user profile not found. Cannot update job.");
+    if (!job || !currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Job or user profile/role not found. Cannot update job.");
       return;
     }
 
@@ -248,6 +247,7 @@ const JobDetail: React.FC = () => {
         job_id: job.id,
         org_id: currentOrgId,
         actor_id: currentProfile.id,
+        actor_role: userRole, // Pass userRole
         job_updates: jobUpdates,
         stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
         stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })),
@@ -273,8 +273,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleAssignDriver = async (driverId: string | null) => {
-    if (!job || !currentProfile) {
-      toast.error("Job or user profile not found. Cannot assign driver.");
+    if (!job || !currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Job or user profile/role not found. Cannot assign driver.");
       return;
     }
     setIsAssigningDriver(true);
@@ -287,6 +287,7 @@ const JobDetail: React.FC = () => {
         job_id: job.id,
         org_id: currentOrgId,
         actor_id: currentProfile.id,
+        actor_role: userRole, // Pass userRole
         job_updates: jobUpdates,
       };
 
@@ -308,7 +309,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleProgressUpdate = async () => {
-    if (!job || !currentProfile || !selectedProgressStatus || !progressUpdateDateTime) {
+    if (!job || !currentProfile || !userRole || !selectedProgressStatus || !progressUpdateDateTime) { // Ensure userRole is available
       toast.error("Please select a status, date, and time for the progress update.");
       return;
     }
@@ -319,6 +320,7 @@ const JobDetail: React.FC = () => {
         job_id: job.id,
         org_id: currentOrgId,
         actor_id: currentProfile.id,
+        actor_role: userRole, // Pass userRole
         new_status: selectedProgressStatus,
         timestamp: progressUpdateDateTime.toISOString(),
         notes: progressUpdateNotes.trim() || undefined,
@@ -616,7 +618,7 @@ const JobDetail: React.FC = () => {
         </Card>
 
         <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1"> {/* Changed grid-cols to 3 */}
+          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1">
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="stops">Stops Table</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
@@ -627,7 +629,7 @@ const JobDetail: React.FC = () => {
                 <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
               </CardHeader>
               <CardContent className="p-0 pt-4">
-                <JobTimeline progressLogs={progressLogs} profiles={allProfiles} /> {/* Pass progressLogs */}
+                <JobTimeline progressLogs={progressLogs} profiles={allProfiles} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -28,6 +28,36 @@ function userClient(authHeader: string | null) {
   });
 }
 
+// Helper to invoke another Edge Function
+async function invokeEdgeFunction(functionName: string, payload: any) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Missing Supabase URL or Anon Key for Edge Function invocation.");
+    return;
+  }
+
+  const url = `${supabaseUrl}/functions/v1/${functionName}`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`, // Use anon key for function-to-function calls
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error invoking ${functionName}: ${response.status} - ${errorText}`);
+    } else {
+      console.log(`Successfully invoked ${functionName}.`);
+    }
+  } catch (error) {
+    console.error(`Failed to invoke ${functionName}: ${error.message}`);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -57,10 +87,10 @@ serve(async (req) => {
 
     // 2) Parse body
     const body = await req.json().catch(() => ({}));
-    const { job_id, org_id, actor_id, job_updates, stops_to_add, stops_to_update, stops_to_delete } = body;
+    const { job_id, org_id, actor_id, actor_role, job_updates, stops_to_add, stops_to_update, stops_to_delete } = body;
 
-    if (!job_id || !org_id || !actor_id) {
-      throw new Error("Missing job_id, org_id, or actor_id in request body.");
+    if (!job_id || !org_id || !actor_id || !actor_role) {
+      throw new Error("Missing job_id, org_id, actor_id, or actor_role in request body.");
     }
     if (org_id !== me.org_id) {
       throw new Error("Organization ID mismatch. User can only manage jobs in their own organization.");
@@ -68,11 +98,14 @@ serve(async (req) => {
     if (actor_id !== me.id) {
       throw new Error("Actor ID mismatch. User can only perform actions as themselves.");
     }
+    if (actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
+    }
 
     // Fetch the existing job to compare and apply role-based restrictions
     const { data: existingJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status, assigned_driver_id, notes")
+      .select("status, assigned_driver_id, notes, order_number") // Fetch order_number for notifications
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
@@ -85,6 +118,9 @@ serve(async (req) => {
     const auditAfterJob: Record<string, any> = {};
     let statusChanged = false;
     let oldStatus = existingJob.status;
+    let driverReassigned = false;
+    let oldAssignedDriverId = existingJob.assigned_driver_id;
+    let newAssignedDriverId = existingJob.assigned_driver_id;
 
     // Role-based access control for job updates
     if (me.role === 'admin' || me.role === 'office') {
@@ -96,6 +132,10 @@ serve(async (req) => {
             auditAfterJob[key] = job_updates[key];
             if (key === 'status' && job_updates[key] !== oldStatus) {
               statusChanged = true;
+            }
+            if (key === 'assigned_driver_id' && job_updates[key] !== oldAssignedDriverId) {
+              driverReassigned = true;
+              newAssignedDriverId = job_updates[key];
             }
           }
         }
@@ -142,12 +182,87 @@ serve(async (req) => {
             org_id: org_id,
             job_id: job_id,
             actor_id: actor_id,
-            status: finalJobUpdates.status,
+            actor_role: actor_role,
+            action_type: finalJobUpdates.status, // Use the new status as action_type
             notes: `Job status changed from '${oldStatus}' to '${finalJobUpdates.status}' via edit.`,
             timestamp: new Date().toISOString(),
           });
         if (progressLogError) {
           console.error("DEBUG: progress log insert failed for status change in update-job", progressLogError.message);
+        }
+      }
+
+      // If driver reassigned, log to job_progress_log and send notifications
+      if (driverReassigned) {
+        let oldDriverName = "Unassigned";
+        let newDriverName = "Unassigned";
+
+        // Fetch old driver's profile and push token
+        if (oldAssignedDriverId) {
+          const { data: oldDriverProfile, error: oldDriverProfileError } = await admin
+            .from("profiles")
+            .select("full_name, user_id")
+            .eq("id", oldAssignedDriverId)
+            .single();
+          if (oldDriverProfileError) console.error("Error fetching old driver profile:", oldDriverProfileError.message);
+          if (oldDriverProfile) {
+            oldDriverName = oldDriverProfile.full_name;
+            const { data: oldDriverDevices } = await admin
+              .from("profile_devices")
+              .select("expo_push_token")
+              .eq("profile_id", oldAssignedDriverId);
+            if (oldDriverDevices && oldDriverDevices.length > 0) {
+              for (const device of oldDriverDevices) {
+                await invokeEdgeFunction('send-push-notification', {
+                  to: device.expo_push_token,
+                  title: "Job Unassigned",
+                  body: `Job ${existingJob.order_number} has been unassigned from you.`,
+                });
+              }
+            }
+          }
+        }
+
+        // Fetch new driver's profile and push token
+        if (newAssignedDriverId) {
+          const { data: newDriverProfile, error: newDriverProfileError } = await admin
+            .from("profiles")
+            .select("full_name, user_id")
+            .eq("id", newAssignedDriverId)
+            .single();
+          if (newDriverProfileError) console.error("Error fetching new driver profile:", newDriverProfileError.message);
+          if (newDriverProfile) {
+            newDriverName = newDriverProfile.full_name;
+            const { data: newDriverDevices } = await admin
+              .from("profile_devices")
+              .select("expo_push_token")
+              .eq("profile_id", newAssignedDriverId);
+            if (newDriverDevices && newDriverDevices.length > 0) {
+              for (const device of newDriverDevices) {
+                await invokeEdgeFunction('send-push-notification', {
+                  to: device.expo_push_token,
+                  title: "Job Assigned",
+                  body: `You've been assigned to Job ${existingJob.order_number}.`,
+                });
+              }
+            }
+          }
+        }
+
+        // Log reassignment to job_progress_log
+        const { error: reassignmentLogError } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: org_id,
+            job_id: job_id,
+            actor_id: actor_id,
+            actor_role: actor_role,
+            action_type: 'driver_reassigned',
+            notes: `Driver reassigned from '${oldDriverName}' to '${newDriverName}' by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (reassignmentLogError) {
+          console.error("DEBUG: progress log insert failed for driver reassignment", reassignmentLogError.message);
         }
       }
     }
@@ -187,6 +302,21 @@ serve(async (req) => {
         const { error: addStopsError } = await admin.from("job_stops").insert(newStops);
         if (addStopsError) throw new Error("Failed to add new stops: " + addStopsError.message);
         auditAfterStops.push(...newStops);
+
+        // Log stop additions to job_progress_log
+        const { error: progressLogError } = await admin
+          .from('job_progress_log')
+          .insert(newStops.map((stop: any) => ({
+            org_id: org_id,
+            job_id: job_id,
+            actor_id: actor_id,
+            actor_role: actor_role,
+            action_type: 'stop_added',
+            stop_id: stop.id,
+            notes: `Added ${stop.type} stop: ${stop.name}.`,
+            timestamp: new Date().toISOString(),
+          })));
+        if (progressLogError) console.error("DEBUG: progress log insert failed for stop additions", progressLogError.message);
       }
 
       if (stops_to_update && stops_to_update.length > 0) {
@@ -203,10 +333,26 @@ serve(async (req) => {
             .eq("org_id", org_id);
           if (updateStopError) throw new Error(`Failed to update stop ${stopId}: ${updateStopError.message}`);
           auditAfterStops.push({ id: stopId, ...updates });
+
+          // Log stop updates to job_progress_log
+          const { error: progressLogError } = await admin
+            .from('job_progress_log')
+            .insert({
+              org_id: org_id,
+              job_id: job_id,
+              actor_id: actor_id,
+              actor_role: actor_role,
+              action_type: 'stop_updated',
+              stop_id: stopId,
+              notes: `Updated ${oldStop?.type} stop: ${oldStop?.name}.`,
+              timestamp: new Date().toISOString(),
+            });
+          if (progressLogError) console.error("DEBUG: progress log insert failed for stop updates", progressLogError.message);
         }
       }
 
       if (stops_to_delete && stops_to_delete.length > 0) {
+        const deletedStops = currentStops.filter(s => stops_to_delete.includes(s.id));
         const { error: deleteStopsError } = await admin
           .from("job_stops")
           .delete()
@@ -214,7 +360,22 @@ serve(async (req) => {
           .eq("job_id", job_id)
           .eq("org_id", org_id);
         if (deleteStopsError) throw new Error("Failed to delete stops: " + deleteStopsError.message);
-        auditBeforeStops.push(...currentStops.filter(s => stops_to_delete.includes(s.id)));
+        auditBeforeStops.push(...deletedStops);
+
+        // Log stop deletions to job_progress_log
+        const { error: progressLogError } = await admin
+          .from('job_progress_log')
+          .insert(deletedStops.map((stop: any) => ({
+            org_id: org_id,
+            job_id: job_id,
+            actor_id: actor_id,
+            actor_role: actor_role,
+            action_type: 'stop_deleted',
+            stop_id: stop.id,
+            notes: `Deleted ${stop.type} stop: ${stop.name}.`,
+            timestamp: new Date().toISOString(),
+          })));
+        if (progressLogError) console.error("DEBUG: progress log insert failed for stop deletions", progressLogError.message);
       }
     } else if (me.role === 'driver') {
       // Driver can only update window_from, window_to, and notes on existing stops
@@ -249,6 +410,21 @@ serve(async (req) => {
               .eq("org_id", org_id);
             if (updateStopError) throw new Error(`Failed to update stop ${stopId}: ${updateStopError.message}`);
             auditAfterStops.push({ id: stopId, ...driverStopUpdates });
+
+            // Log driver stop updates to job_progress_log
+            const { error: progressLogError } = await admin
+              .from('job_progress_log')
+              .insert({
+                org_id: org_id,
+                job_id: job_id,
+                actor_id: actor_id,
+                actor_role: actor_role,
+                action_type: 'stop_details_updated',
+                stop_id: stopId,
+                notes: `Driver updated stop details for ${oldStop?.name}.`,
+                timestamp: new Date().toISOString(),
+              });
+            if (progressLogError) console.error("DEBUG: progress log insert failed for driver stop updates", progressLogError.message);
           }
         }
       }

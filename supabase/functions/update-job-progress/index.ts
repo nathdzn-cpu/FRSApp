@@ -69,10 +69,10 @@ serve(async (req) => {
     });
     console.log("Received body for update-job-progress:", JSON.stringify(body, null, 2));
 
-    const { job_id, org_id, actor_id, new_status, timestamp, notes } = body;
+    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes } = body; // Destructure actor_role
 
-    if (!job_id || !org_id || !actor_id || !new_status || !timestamp) {
-      throw new Error("Missing required fields: job_id, org_id, actor_id, new_status, timestamp.");
+    if (!job_id || !org_id || !actor_id || !actor_role || !new_status || !timestamp) {
+      throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role, new_status, timestamp.");
     }
 
     if (org_id !== me.org_id) {
@@ -80,6 +80,9 @@ serve(async (req) => {
     }
     if (actor_id !== me.id) {
       throw new Error("Actor ID mismatch. User can only perform actions as themselves.");
+    }
+    if (actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
 
     // 3) Start a database transaction
@@ -122,7 +125,8 @@ serve(async (req) => {
         org_id: org_id,
         job_id: job_id,
         actor_id: actor_id,
-        status: new_status,
+        actor_role: actor_role, // Added actor_role
+        action_type: new_status, // Renamed from status
         timestamp: timestamp,
         notes: notes || null,
         created_at: new Date().toISOString(),

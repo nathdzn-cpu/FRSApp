@@ -53,7 +53,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name") // Fetch full_name for audit logs
       .eq("id", authUser.user.id)
       .single();
 
@@ -64,13 +64,18 @@ serve(async (req) => {
 
     // 2) Parse body and determine operation
     const body = await req.json().catch(() => ({}));
-    const { op, id, full_name, email, password, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id } = body;
+    const { op, id, full_name, email, password, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role } = body; // Destructure actor_role
 
     // Ensure org_id from body matches user's org_id
     if (body_org_id && body_org_id !== me.org_id) {
       throw new Error("Organization ID mismatch. User can only manage items in their own organization.");
     }
     const effective_org_id = me.org_id;
+
+    // Ensure actor_role matches authenticated user's role
+    if (actor_role && actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
+    }
 
     let resultData: any;
     let status = 200;
@@ -133,6 +138,20 @@ serve(async (req) => {
           throw new Error("Profile update failed after auth user creation: " + uErr.message);
         }
 
+        // Log user creation to job_progress_log (as a general event)
+        const { error: progressLogErrorCreate } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null, // Not directly tied to a job
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'user_created',
+            notes: `User '${full_name}' (${role}) created by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorCreate) console.error("DEBUG: progress log insert failed for user creation", progressLogErrorCreate.message);
+
         try {
           await admin.from("audit_logs").insert({
             org_id: effective_org_id,
@@ -155,7 +174,7 @@ serve(async (req) => {
 
         const { data: oldProfile, error: fetchOldProfileError } = await admin
           .from("profiles")
-          .select("user_id")
+          .select("user_id, full_name, role") // Fetch old role for logging
           .eq("id", profile_id)
           .eq("org_id", effective_org_id)
           .single();
@@ -172,6 +191,20 @@ serve(async (req) => {
           .single();
 
         if (updateError) throw updateError;
+
+        // Log user update to job_progress_log
+        const { error: progressLogErrorUpdate } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'user_updated',
+            notes: `User '${oldProfile.full_name}' updated by ${me.full_name || me.role}. Role changed from '${oldProfile.role}' to '${updates.role || oldProfile.role}'.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorUpdate) console.error("DEBUG: progress log insert failed for user update", progressLogErrorUpdate.message);
 
         try {
           await admin.from("audit_logs").insert({
@@ -196,7 +229,7 @@ serve(async (req) => {
 
         const { data: profileToDelete, error: fetchProfileError } = await admin
           .from("profiles")
-          .select("user_id, full_name")
+          .select("user_id, full_name, role")
           .eq("id", profile_id)
           .eq("org_id", effective_org_id)
           .single();
@@ -216,6 +249,20 @@ serve(async (req) => {
           .eq("org_id", effective_org_id);
 
         if (deleteProfileError) throw new Error("Failed to delete profile: " + deleteProfileError.message);
+
+        // Log user deletion to job_progress_log
+        const { error: progressLogErrorDelete } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'user_deleted',
+            notes: `User '${profileToDelete.full_name}' (${profileToDelete.role}) deleted by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorDelete) console.error("DEBUG: progress log insert failed for user deletion", progressLogErrorDelete.message);
 
         try {
           await admin.from("audit_logs").insert({
@@ -239,7 +286,7 @@ serve(async (req) => {
 
         const { data: userToReset, error: fetchUserToResetError } = await admin
           .from("profiles")
-          .select("email") // Assuming email is stored in profiles or can be derived
+          .select("email, full_name") // Assuming email is stored in profiles or can be derived
           .eq("user_id", user_id)
           .eq("org_id", effective_org_id)
           .single();
@@ -253,6 +300,20 @@ serve(async (req) => {
         });
 
         if (resetError) throw new Error("Failed to send password reset email: " + resetError.message);
+
+        // Log password reset to job_progress_log
+        const { error: progressLogErrorReset } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'password_reset_sent',
+            notes: `Password reset email sent to user '${userToReset.full_name}' by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorReset) console.error("DEBUG: progress log insert failed for password reset", progressLogErrorReset.message);
 
         try {
           await admin.from("audit_logs").insert({
@@ -274,7 +335,7 @@ serve(async (req) => {
       case "purge_demo":
         const { data: demoProfiles, error: fetchDemoError } = await admin
           .from("profiles")
-          .select("id, user_id")
+          .select("id, user_id, full_name, role")
           .eq("org_id", effective_org_id)
           .eq("is_demo", true);
 
@@ -286,6 +347,20 @@ serve(async (req) => {
           await admin.from("profiles").delete().eq("id", p.id).catch(e => console.warn(`Failed to delete profile ${p.id} during purge: ${e.message}`));
           removedCount++;
         }
+
+        // Log purge demo users to job_progress_log
+        const { error: progressLogErrorPurgeDemo } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'purge_demo_users',
+            notes: `Purged ${removedCount} demo user(s) by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorPurgeDemo) console.error("DEBUG: progress log insert failed for purge demo users", progressLogErrorPurgeDemo.message);
 
         try {
           await admin.from("audit_logs").insert({
@@ -306,7 +381,7 @@ serve(async (req) => {
       case "purge_all_non_admin":
         const { data: nonAdminProfiles, error: fetchNonAdminError } = await admin
           .from("profiles")
-          .select("id, user_id")
+          .select("id, user_id, full_name, role")
           .eq("org_id", effective_org_id)
           .neq("role", "admin");
 
@@ -318,6 +393,20 @@ serve(async (req) => {
           await admin.from("profiles").delete().eq("id", p.id).catch(e => console.warn(`Failed to delete profile ${p.id} during purge: ${e.message}`));
           nonAdminRemovedCount++;
         }
+
+        // Log purge all non-admin users to job_progress_log
+        const { error: progressLogErrorPurgeAll } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'purge_all_non_admin_users',
+            notes: `Purged ${nonAdminRemovedCount} non-admin user(s) by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorPurgeAll) console.error("DEBUG: progress log insert failed for purge all non-admin users", progressLogErrorPurgeAll.message);
 
         try {
           await admin.from("audit_logs").insert({

@@ -50,8 +50,8 @@ const CreateOffice: React.FC = () => {
   }, [user, userRole, isLoadingAuth, navigate, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
-    if (!currentAdminProfile || !currentOrgId) {
-      toast.error("Admin profile or organization ID not found. Cannot create user.");
+    if (!currentAdminProfile || !currentOrgId || !userRole) { // Ensure userRole is available
+      toast.error("Admin profile, organization ID, or role not found. Cannot create user.");
       return;
     }
 
@@ -65,7 +65,7 @@ const CreateOffice: React.FC = () => {
         is_demo: false, // Default to non-demo for manual creation
       };
 
-      const promise = createUser(currentOrgId, newOfficeData, currentAdminProfile.id);
+      const promise = createUser(currentOrgId, newOfficeData, currentAdminProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: 'Creating office user...',
         success: 'Office user created successfully!',

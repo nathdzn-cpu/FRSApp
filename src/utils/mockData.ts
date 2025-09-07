@@ -108,19 +108,8 @@ export interface JobStop {
   notes?: string | null;
 }
 
-// Restored JobEvent interface for driverApp.ts return types
-export interface JobEvent {
-  id: string;
-  org_id: string;
-  job_id: string;
-  stop_id?: string | null;
-  actor_id: string;
-  event_type: string; // e.g., 'at_collection', 'note_added', 'pod_uploaded'
-  notes?: string | null;
-  lat?: number;
-  lon?: number;
-  created_at: string;
-}
+// JobEvent interface is removed as JobProgressLog will now handle all timeline events.
+// export interface JobEvent { ... }
 
 export interface Document {
   id: string;
@@ -147,7 +136,8 @@ export interface JobProgressLog {
   org_id: string;
   job_id: string;
   actor_id: string;
-  status: string; // Changed to string to accommodate all event types
+  action_type: string; // Renamed from status
+  actor_role?: 'driver' | 'office' | 'admin'; // New field
   timestamp: string;
   notes?: string | null;
   created_at: string;

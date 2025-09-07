@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -81,7 +81,7 @@ const Index = () => {
   // Fetch profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', selectedOrgId],
-    queryFn: () => getProfiles(selectedOrgId!),
+    queryFn: () => getProfiles(currentOrgId), // Always fetch all profiles for the current org for display purposes
     staleTime: 5 * 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth,
     onError: (err) => console.error("Profiles query failed", err),
@@ -90,7 +90,7 @@ const Index = () => {
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
     queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate],
-    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate),
+    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate), // Pass userRole to getJobs
     staleTime: 60 * 1000, // Cache jobs for 1 minute
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
     onError: (err) => console.error("Jobs query failed", err),

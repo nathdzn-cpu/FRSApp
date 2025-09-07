@@ -50,8 +50,8 @@ const CreateDriver: React.FC = () => {
   }, [user, userRole, isLoadingAuth, navigate, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
-    if (!currentAdminProfile || !currentOrgId) {
-      toast.error("Admin profile or organization ID not found. Cannot create user.");
+    if (!currentAdminProfile || !currentOrgId || !userRole) { // Ensure userRole is available
+      toast.error("Admin profile, organization ID, or role not found. Cannot create user.");
       return;
     }
 
@@ -71,7 +71,7 @@ const CreateDriver: React.FC = () => {
 
       // truck_reg and trailer_no are no longer part of the form, so no need to pass them here.
 
-      const promise = createUser(currentOrgId, newDriverData, currentAdminProfile.id);
+      const promise = createUser(currentOrgId, newDriverData, currentAdminProfile.id, userRole); // Pass userRole
       toast.promise(promise, {
         loading: 'Creating driver...',
         success: 'Driver created successfully!',

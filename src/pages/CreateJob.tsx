@@ -69,8 +69,8 @@ const CreateJob: React.FC = () => {
   const drivers = allProfiles.filter(p => p.role === 'driver');
 
   const handleSubmit = async (values: JobFormValues) => {
-    if (!currentProfile) {
-      toast.error("User profile not found. Cannot create job.");
+    if (!currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("User profile or role not found. Cannot create job.");
       return;
     }
 
@@ -90,7 +90,7 @@ const CreateJob: React.FC = () => {
         seq: index + 1,
       }));
 
-      const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id);
+      const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id, userRole); // Pass userRole
 
       toast.promise(promise, {
         loading: 'Creating job...',

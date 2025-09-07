@@ -123,8 +123,8 @@ const DriverDailyCheck: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!currentProfile) {
-      toast.error("Driver profile not found. Cannot submit check.");
+    if (!currentProfile || !userRole) { // Ensure userRole is available
+      toast.error("Driver profile or role not found. Cannot submit check.");
       return;
     }
     if (!startTime) {
@@ -178,6 +178,7 @@ const DriverDailyCheck: React.FC = () => {
         items: itemsPayload,
         org_id: currentOrgId,
         driver_id: currentProfile.id,
+        actor_role: userRole, // Pass actor_role
       };
 
       try {

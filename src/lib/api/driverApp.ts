@@ -5,16 +5,15 @@ import {
   mockProfileDevices,
   mockDailyChecks,
   mockProfiles,
-  JobEvent, // Still needed for type definition in confirmJob/updateJobStage return types, but not for insertion
   Document,
   ProfileDevice,
   DailyCheck,
-  JobProgressLog, // Import JobProgressLog
+  JobProgressLog,
 } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
 
-export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobProgressLog[]> => { // Changed return type to JobProgressLog[]
+export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobProgressLog[]> => {
   await delay(500);
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
@@ -28,7 +27,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'job_confirmed',
+      actor_role: 'driver', // Driver role
+      action_type: 'job_confirmed',
       notes: 'Driver confirmed job.',
       timestamp: new Date().toISOString(),
     })
@@ -44,7 +44,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'eta_set',
+      actor_role: 'driver', // Driver role
+      action_type: 'eta_set',
       notes: `ETA to first collection: ${eta}`,
       timestamp: new Date().toISOString(),
     })
@@ -62,7 +63,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
         org_id: orgId,
         job_id: jobId,
         actor_id: driverId,
-        status: 'accepted', // Use 'accepted' as the status for the log
+        actor_role: 'driver', // Driver role
+        action_type: 'accepted', // Use 'accepted' as the action_type for the log
         notes: 'Job status changed to accepted by driver.',
         timestamp: new Date().toISOString(),
       })
@@ -79,18 +81,18 @@ export const updateJobStage = async (
   jobId: string,
   orgId: string,
   driverId: string,
-  eventType: 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'on_route_collection' | 'on_route_delivery' | 'loaded', // Added more specific statuses
+  actionType: 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'on_route_collection' | 'on_route_delivery' | 'loaded', // Renamed eventType to actionType
   stopId?: string,
   notes?: string,
   lat?: number,
   lon?: number,
-): Promise<JobProgressLog | undefined> => { // Changed return type to JobProgressLog
+): Promise<JobProgressLog | undefined> => {
   await delay(500);
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  // Update job status based on event type
-  job.status = eventType; // Directly set job status to eventType
+  // Update job status based on actionType
+  job.status = actionType; // Directly set job status to actionType
 
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
@@ -100,7 +102,8 @@ export const updateJobStage = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      status: eventType,
+      actor_role: 'driver', // Driver role
+      action_type: actionType, // Use actionType as the action_type for the log
       notes: notes,
       lat: lat,
       lon: lon,
@@ -154,7 +157,8 @@ export const uploadDocument = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      status: type === 'pod' ? 'pod_uploaded' : 'document_uploaded',
+      actor_role: 'driver', // Driver role
+      action_type: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific action_type for log
       notes: `${type.replace(/_/g, ' ')} uploaded.`,
       timestamp: new Date().toISOString(),
     });
@@ -164,7 +168,7 @@ export const uploadDocument = async (
   return newDocument;
 };
 
-export const addJobNote = async (jobId: string, orgId: string, driverId: string, note: string): Promise<JobProgressLog> => { // Changed return type to JobProgressLog
+export const addJobNote = async (jobId: string, orgId: string, driverId: string, note: string): Promise<JobProgressLog> => {
   await delay(300);
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
@@ -176,7 +180,8 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'note_added',
+      actor_role: 'driver', // Driver role
+      action_type: 'note_added',
       notes: note,
       timestamp: new Date().toISOString(),
     })
@@ -191,7 +196,7 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
   return newLog;
 };
 
-export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobProgressLog> => { // Changed return type to JobProgressLog
+export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobProgressLog> => {
   await delay(100); // Very quick for frequent pings
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver.");
@@ -203,7 +208,8 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'location_ping',
+      actor_role: 'driver', // Driver role
+      action_type: 'location_ping',
       lat: lat,
       lon: lon,
       timestamp: new Date().toISOString(),

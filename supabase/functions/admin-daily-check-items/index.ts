@@ -45,13 +45,18 @@ serve(async (req) => {
 
     // 2) Parse body and determine operation
     const body = await req.json().catch(() => ({}));
-    const { op, id, title, description, is_active, changes, org_id: body_org_id } = body;
+    const { op, id, title, description, is_active, changes, org_id: body_org_id, actor_role } = body; // Destructure actor_role
 
     // Ensure org_id from body matches user's org_id
     if (body_org_id && body_org_id !== me.org_id) {
       throw new Error("Organization ID mismatch. User can only manage items in their own organization.");
     }
     const effective_org_id = me.org_id;
+
+    // Ensure actor_role matches authenticated user's role
+    if (actor_role && actor_role !== me.role) {
+      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
+    }
 
     let resultData: any;
     let status = 200;
@@ -83,6 +88,21 @@ serve(async (req) => {
           .select()
           .single();
         if (createError) throw createError;
+
+        // Log item creation to job_progress_log (as a general event)
+        const { error: progressLogErrorCreate } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null, // Not directly tied to a job
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'daily_check_item_created',
+            notes: `Daily check item '${title}' created.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorCreate) console.error("DEBUG: progress log insert failed for daily check item creation", progressLogErrorCreate.message);
+
         resultData = createData;
         break;
 
@@ -96,17 +116,49 @@ serve(async (req) => {
           .select()
           .single();
         if (updateError) throw updateError;
+
+        // Log item update to job_progress_log
+        const { error: progressLogErrorUpdate } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'daily_check_item_updated',
+            notes: `Daily check item '${updateData.title}' updated.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorUpdate) console.error("DEBUG: progress log insert failed for daily check item update", progressLogErrorUpdate.message);
+
         resultData = updateData;
         break;
 
       case "delete":
         if (!id) throw new Error("ID is required for deleting a daily check item.");
-        const { error: deleteError } = await admin
+        const { data: deletedItem, error: deleteError } = await admin
           .from("daily_check_items")
           .delete()
           .eq("id", id)
-          .eq("org_id", effective_org_id);
+          .eq("org_id", effective_org_id)
+          .select()
+          .single();
         if (deleteError) throw deleteError;
+
+        // Log item deletion to job_progress_log
+        const { error: progressLogErrorDelete } = await admin
+          .from('job_progress_log')
+          .insert({
+            org_id: effective_org_id,
+            job_id: null,
+            actor_id: me.id,
+            actor_role: me.role,
+            action_type: 'daily_check_item_deleted',
+            notes: `Daily check item '${deletedItem.title}' deleted.`,
+            timestamp: new Date().toISOString(),
+          });
+        if (progressLogErrorDelete) console.error("DEBUG: progress log insert failed for daily check item deletion", progressLogErrorDelete.message);
+
         resultData = { message: "Item deleted successfully." };
         break;
 
