@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
 import JobsTable from '@/components/JobsTable';
-import { Loader2, PlusCircle, Users, CalendarIcon, Search } from 'lucide-react';
+import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle } from 'lucide-react'; // Added Truck, CheckCircle2, XCircle for StatCard icons
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { Input } from '@/components/ui/input'; // Import Input for search bar
+import StatCard from '@/components/StatCard'; // Import the new StatCard component
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -117,6 +118,12 @@ const Index = () => {
     );
   }, [jobs, searchTerm, profiles]);
 
+  // Calculate job statistics for StatCards
+  const totalJobs = jobs.length;
+  const activeJobs = jobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+  const completedJobs = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
+  const cancelledJobs = jobs.filter(job => job.status === 'cancelled').length;
+
 
   if (isLoading) {
     return (
@@ -178,6 +185,42 @@ const Index = () => {
               </Button>
             )}
           </div>
+        </div>
+
+        {/* Stat Cards Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <StatCard
+            title="Total Jobs"
+            value={totalJobs}
+            icon={Truck}
+            iconColorClass="text-blue-600"
+            valueColorClass="text-blue-800"
+            description="All jobs in the system"
+          />
+          <StatCard
+            title="Active Jobs"
+            value={activeJobs}
+            icon={Truck}
+            iconColorClass="text-yellow-600"
+            valueColorClass="text-yellow-800"
+            description="Jobs currently in progress"
+          />
+          <StatCard
+            title="Completed Jobs"
+            value={completedJobs}
+            icon={CheckCircle2}
+            iconColorClass="text-green-600"
+            valueColorClass="text-green-800"
+            description="Jobs successfully delivered"
+          />
+          <StatCard
+            title="Cancelled Jobs"
+            value={cancelledJobs}
+            icon={XCircle}
+            iconColorClass="text-red-600"
+            valueColorClass="text-red-800"
+            description="Jobs that were cancelled"
+          />
         </div>
 
         <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
