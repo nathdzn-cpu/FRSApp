@@ -31,7 +31,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // Import Dialog components
+} from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { createDailyCheckItem, updateDailyCheckItem, deleteDailyCheckItem, getDailyCheckItems } from '@/lib/api/dailyCheckItems';
 
@@ -54,7 +54,7 @@ const AdminDailyChecks: React.FC = () => {
 
   // State for editing item dialog
   const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control Dialog open/close
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
 
@@ -164,7 +164,7 @@ const AdminDailyChecks: React.FC = () => {
 
   const handleEditItem = (item: DailyCheckItem) => {
     setEditingItem({ ...item });
-    setIsEditDialogOpen(true); // Open the Dialog
+    setIsEditDialogOpen(true);
   };
 
   const handleUpdateItem = async () => {
@@ -188,7 +188,7 @@ const AdminDailyChecks: React.FC = () => {
       }
       toast.success("Item updated successfully!");
       setEditingItem(null);
-      setIsEditDialogOpen(false); // Close the Dialog
+      setIsEditDialogOpen(false);
       await loadItems();
     } catch (e: any) {
       console.error("Error updating item:", e);
