@@ -16,7 +16,7 @@ Supabase integration is set up, but all backend interactions (database, RLS, Edg
     Create a file named `.env.local` in the root of this project (next to `package.json`).
     Add your Supabase Anon Key to it:
     ```
-    VITE_SUPABASE_KEY="YOUR_ACTUAL_SUPABASE_ANON_KEY"
+    VITE_SUPABASE_ANON_KEY="YOUR_ACTUAL_SUPABASE_ANON_KEY"
     ```
     (Replace `"YOUR_ACTUAL_SUPABASE_ANON_KEY"` with your real Supabase public (anon) key. This file is ignored by Git.)
 
