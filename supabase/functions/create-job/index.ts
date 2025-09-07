@@ -29,6 +29,7 @@ function userClient(authHeader: string | null) {
 }
 
 serve(async (req) => {
+  console.log("DEBUG: create-job function started."); // Added this line
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
