@@ -2,7 +2,7 @@ import React from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Truck, Package, CheckCircle, FileText, MapPin } from 'lucide-react';
+import { Clock, Truck, Package, CheckCircle, FileText, MapPin, XCircle } from 'lucide-react'; // Added XCircle
 
 interface JobProgressTimelineProps {
   progressLogs: JobProgressLog[];
@@ -20,7 +20,7 @@ const statusIconMap: Record<JobProgressLog['status'], React.ElementType> = {
   at_delivery: MapPin,
   delivered: CheckCircle,
   pod_received: FileText,
-  cancelled: XCircle, // Assuming XCircle is imported or defined
+  cancelled: XCircle,
 };
 
 const JobProgressTimeline: React.FC<JobProgressTimelineProps> = ({ progressLogs, profiles }) => {
