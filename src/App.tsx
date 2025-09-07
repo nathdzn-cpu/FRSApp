@@ -67,7 +67,9 @@ const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Arra
 
 // MainLayout component for authenticated users
 const MainLayout = () => {
-  // useScrollKeeper is called at the App level, so no need to call it here.
+  // Call the route-specific scroll restoration hook here
+  useScrollKeeper();
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -86,8 +88,7 @@ function App() {
   const user = useUser();
   const supabaseClient = useSupabaseClient();
 
-  // Call the route-specific scroll restoration hook here
-  useScrollKeeper();
+  // Removed: useScrollKeeper() from here
 
   console.log("Supabase Session State:", session); // Added for debugging
 
