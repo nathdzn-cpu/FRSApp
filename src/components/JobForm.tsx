@@ -114,6 +114,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
     form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
     form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2);
     form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
+    form.setValue(`${fieldNamePrefix}.county`, address.county); // Added county
     form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
     form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
     form.trigger(`${fieldNamePrefix}.city`);
@@ -294,7 +295,12 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Supplier Warehouse" {...stopField} />
+                          <AddressSearchInput
+                            placeholder="e.g., Supplier Warehouse"
+                            value={stopField.value || ''}
+                            onValueChange={stopField.onChange}
+                            onAddressSelect={(address) => handleAddressSelect(index, 'collections', address)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -307,11 +313,9 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
-                          <AddressSearchInput
-                            placeholder="Start typing address or postcode..."
-                            value={stopField.value}
-                            onValueChange={stopField.onChange}
-                            onAddressSelect={(address) => handleAddressSelect(index, 'collections', address)}
+                          <Input
+                            placeholder="e.g., 123 High Street"
+                            {...stopField}
                           />
                         </FormControl>
                         <FormMessage />
@@ -455,7 +459,12 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Customer Site" {...stopField} />
+                          <AddressSearchInput
+                            placeholder="e.g., Customer Site"
+                            value={stopField.value || ''}
+                            onValueChange={stopField.onChange}
+                            onAddressSelect={(address) => handleAddressSelect(index, 'deliveries', address)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -468,11 +477,9 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
-                          <AddressSearchInput
-                            placeholder="Start typing address or postcode..."
-                            value={stopField.value}
-                            onValueChange={stopField.onChange}
-                            onAddressSelect={(address) => handleAddressSelect(index, 'deliveries', address)}
+                          <Input
+                            placeholder="e.g., 123 High Street"
+                            {...stopField}
                           />
                         </FormControl>
                         <FormMessage />
