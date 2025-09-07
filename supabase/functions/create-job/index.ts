@@ -40,7 +40,11 @@ serve(async (req) => {
     const user = userClient(req.headers.get("authorization"));
 
     // 1) Authenticate and authorize caller
-    const { data: authUser } = await user.auth.getUser();
+    const { data: authUser, error: authUserError } = await user.auth.getUser();
+    if (authUserError) {
+      console.error("Auth user fetch error:", authUserError);
+      throw new Error("Authentication failed: " + authUserError.message);
+    }
     if (!authUser?.user?.id) {
       throw new Error("Not signed in or no auth user ID.");
     }
@@ -51,7 +55,10 @@ serve(async (req) => {
       .eq("id", authUser.user.id)
       .single();
 
-    if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
+    if (meErr) {
+      console.error("Profile lookup error:", meErr);
+      throw new Error("Profile lookup failed: " + meErr.message);
+    }
     if (!me || !me.org_id || !['admin', 'office'].includes(me.role)) {
       throw new Error("Access denied (admin or office role required and org_id must be set).");
     }
@@ -87,7 +94,10 @@ serve(async (req) => {
         .eq("org_id", org_id)
         .like("ref", "FRS-%");
 
-      if (refsError) throw new Error("Failed to fetch existing job references: " + refsError.message);
+      if (refsError) {
+        console.error("Error fetching existing job references:", refsError);
+        throw new Error("Failed to fetch existing job references: " + refsError.message);
+      }
 
       const existingRefNumbers = new Set(
         (existingRefsData || [])
@@ -124,7 +134,10 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (jobInsertError) throw new Error("Failed to create job: " + jobInsertError.message);
+    if (jobInsertError) {
+      console.error("Error inserting job:", jobInsertError);
+      throw new Error("Failed to create job: " + jobInsertError.message);
+    }
 
     // 6) Prepare and insert stops
     const stopsToInsert = stopsData.map((stop: any, index: number) => ({
@@ -150,14 +163,15 @@ serve(async (req) => {
         .insert(stopsToInsert);
 
       if (stopsInsertError) {
+        console.error("Error inserting job stops:", stopsInsertError);
         // If stops fail, consider rolling back job creation
-        await admin.from("jobs").delete().eq("id", insertedJob.id);
+        await admin.from("jobs").delete().eq("id", insertedJob.id); // Rollback job
         throw new Error("Failed to create job stops: " + stopsInsertError.message);
       }
     }
 
-    // 7) Audit log (removed await to allow it to run non-blocking, chained .catch directly)
-    admin.from("audit_logs").insert({
+    // 7) Audit log (this can run non-blocking, but still use explicit error check)
+    const { error: auditError } = await admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,
       entity: "jobs",
@@ -166,7 +180,11 @@ serve(async (req) => {
       before: null,
       after: insertedJob,
       created_at: new Date().toISOString(),
-    }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+    });
+    if (auditError) {
+      console.error("DEBUG: audit insert failed", auditError.message);
+      // Do not throw here, as audit logs are secondary to job creation
+    }
 
     return new Response(
       JSON.stringify(insertedJob),
