@@ -83,7 +83,7 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
 
     if (isJobCancelled || isJobDelivered) {
       return (
-        <Button variant="outline" disabled className="w-full text-gray-500">
+        <Button variant="outline" disabled className="w-full text-gray-500" data-testid="driver-next-action-btn">
           <CheckCircle className="h-4 w-4 mr-2" /> Job {getDisplayStatus(job.status)}
         </Button>
       );
@@ -97,6 +97,7 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => { setDialogAction({ status: 'on_route_collection', label: 'On Route to Collection' }); setIsProgressDialogOpen(true); }}
               disabled={isUpdatingProgress}
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="driver-next-action-btn"
             >
               <Truck className="h-4 w-4 mr-2" /> On Route to Collection
             </Button>
@@ -107,6 +108,7 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => { setDialogAction({ status: 'at_collection', label: 'Arrived at Collection' }); setIsProgressDialogOpen(true); }}
               disabled={isUpdatingProgress}
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="driver-next-action-btn"
             >
               <MapPin className="h-4 w-4 mr-2" /> Arrived at Collection
             </Button>
@@ -117,13 +119,14 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => { setDialogAction({ status: 'loaded', label: 'Loaded' }); setIsProgressDialogOpen(true); }}
               disabled={isUpdatingProgress}
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="driver-next-action-btn"
             >
               <Package className="h-4 w-4 mr-2" /> Loaded
             </Button>
           );
         case 'loaded':
           return (
-            <Button variant="outline" disabled className="w-full text-green-600">
+            <Button variant="outline" disabled className="w-full text-green-600" data-testid="driver-next-action-btn">
               <CheckCircle className="h-4 w-4 mr-2" /> Collection Complete
             </Button>
           );
@@ -136,6 +139,7 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => { setDialogAction({ status: 'on_route_delivery', label: 'On Route to Delivery' }); setIsProgressDialogOpen(true); }}
               disabled={isUpdatingProgress}
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="driver-next-action-btn"
             >
               <Truck className="h-4 w-4 mr-2" /> On Route to Delivery
             </Button>
@@ -146,6 +150,7 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => { setDialogAction({ status: 'at_delivery', label: 'Arrived at Delivery' }); setIsProgressDialogOpen(true); }}
               disabled={isUpdatingProgress}
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="driver-next-action-btn"
             >
               <MapPin className="h-4 w-4 mr-2" /> Arrived at Delivery
             </Button>
@@ -156,13 +161,14 @@ const DriverJobStopCard: React.FC<DriverJobStopCardProps> = ({
               onClick={() => setIsPodUploadDialogOpen(true)}
               disabled={isUpdatingProgress}
               className="w-full bg-green-600 text-white hover:bg-green-700"
+              data-testid="driver-pod-upload"
             >
               <UploadCloud className="h-4 w-4 mr-2" /> Upload POD
             </Button>
           );
         case 'pod_uploaded':
           return (
-            <Button variant="outline" disabled className="w-full text-green-600">
+            <Button variant="outline" disabled className="w-full text-green-600" data-testid="driver-next-action-btn">
               <CheckCircle className="h-4 w-4 mr-2" /> Delivery Complete (POD Uploaded)
             </Button>
           );

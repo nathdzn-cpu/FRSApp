@@ -132,6 +132,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
             <div
               className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors"
               onClick={() => fileInputRef.current?.click()}
+              data-testid="driver-pod-upload-area"
             >
               <div className="space-y-1 text-center">
                 <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />

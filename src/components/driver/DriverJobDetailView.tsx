@@ -9,6 +9,7 @@ import { Job, JobStop, Profile, JobProgressLog } from '@/utils/mockData';
 import DriverJobStopCard from './DriverJobStopCard';
 import { updateJobProgress } from '@/lib/api/jobs'; // Using jobs API for consistency
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Import Tabs components
 
 interface DriverJobDetailViewProps {
   job: Job;
@@ -84,25 +85,33 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
             </div>
 
             <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Stops</h3>
-            <div className="space-y-4">
-              {sortedStops.length === 0 ? (
-                <p className="text-gray-600">No stops defined for this job.</p>
-              ) : (
-                sortedStops.map(stop => (
-                  <DriverJobStopCard
-                    key={stop.id}
-                    job={job}
-                    stop={stop}
-                    progressLogs={progressLogs}
-                    currentProfile={currentProfile}
-                    currentOrgId={currentOrgId}
-                    onUpdateProgress={handleUpdateProgress}
-                    onPodUploadSuccess={handlePodUploadSuccess}
-                    isUpdatingProgress={isUpdatingProgress}
-                  />
-                ))
-              )}
-            </div>
+            {sortedStops.length === 0 ? (
+              <p className="text-gray-600">No stops defined for this job.</p>
+            ) : (
+              <Tabs defaultValue={sortedStops[0].id} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 bg-gray-100 p-1 rounded-lg">
+                  {sortedStops.map((stop) => (
+                    <TabsTrigger key={stop.id} value={stop.id} data-testid="driver-stop-tab">
+                      {stop.type === 'collection' ? 'Collection' : 'Delivery'} {stop.seq}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {sortedStops.map((stop) => (
+                  <TabsContent key={stop.id} value={stop.id} className="mt-4">
+                    <DriverJobStopCard
+                      job={job}
+                      stop={stop}
+                      progressLogs={progressLogs}
+                      currentProfile={currentProfile}
+                      currentOrgId={currentOrgId}
+                      onUpdateProgress={handleUpdateProgress}
+                      onPodUploadSuccess={handlePodUploadSuccess}
+                      isUpdatingProgress={isUpdatingProgress}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>

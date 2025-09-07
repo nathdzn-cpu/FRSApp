@@ -193,6 +193,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
                   placeholder="HH:MM (e.g., 09:00)"
                   className="w-full"
                   disabled={isLoading}
+                  data-testid="driver-time-input"
                 />
               </div>
               {timeError && (
