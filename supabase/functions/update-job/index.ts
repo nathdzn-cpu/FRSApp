@@ -231,16 +231,20 @@ serve(async (req) => {
 
     // 6) Audit log for job and stop changes
     if (Object.keys(auditAfterJob).length > 0 || auditBeforeStops.length > 0 || auditAfterStops.length > 0) {
-      await admin.from("audit_logs").insert({
-        org_id: org_id,
-        actor_id: actor_id,
-        entity: "jobs",
-        entity_id: job_id,
-        action: "update",
-        before: { job: auditBeforeJob, stops: auditBeforeStops },
-        after: { job: auditAfterJob, stops: auditAfterStops },
-        created_at: new Date().toISOString(),
-      }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+      try {
+        await admin.from("audit_logs").insert({
+          org_id: org_id,
+          actor_id: actor_id,
+          entity: "jobs",
+          entity_id: job_id,
+          action: "update",
+          before: { job: auditBeforeJob, stops: auditBeforeStops },
+          after: { job: auditAfterJob, stops: auditAfterStops },
+          created_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.log("DEBUG: audit insert failed", (e as Error).message);
+      }
     }
 
     return new Response(

@@ -133,15 +133,19 @@ serve(async (req) => {
           throw new Error("Profile update failed after auth user creation: " + uErr.message);
         }
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "profiles",
-          entity_id: newAuthId,
-          action: "create",
-          after: { role, full_name, email },
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "profiles",
+            entity_id: newAuthId,
+            action: "create",
+            after: { role, full_name, email },
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = updatedProfile;
         break;
@@ -169,16 +173,20 @@ serve(async (req) => {
 
         if (updateError) throw updateError;
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "profiles",
-          entity_id: profile_id,
-          action: "update",
-          before: oldProfile, // Simplified, ideally full old profile
-          after: updatedProfileData,
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "profiles",
+            entity_id: profile_id,
+            action: "update",
+            before: oldProfile, // Simplified, ideally full old profile
+            after: updatedProfileData,
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = updatedProfileData;
         break;
@@ -209,15 +217,19 @@ serve(async (req) => {
 
         if (deleteProfileError) throw new Error("Failed to delete profile: " + deleteProfileError.message);
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "profiles",
-          entity_id: profile_id,
-          action: "delete",
-          before: { full_name: profileToDelete.full_name, user_id: profileToDelete.user_id },
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "profiles",
+            entity_id: profile_id,
+            action: "delete",
+            before: { full_name: profileToDelete.full_name, user_id: profileToDelete.user_id },
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = { message: "User deleted successfully." };
         break;
@@ -242,15 +254,19 @@ serve(async (req) => {
 
         if (resetError) throw new Error("Failed to send password reset email: " + resetError.message);
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "auth",
-          entity_id: user_id,
-          action: "reset_password",
-          notes: `Password reset email sent to ${userToReset.email}.`,
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "auth",
+            entity_id: user_id,
+            action: "reset_password",
+            notes: `Password reset email sent to ${userToReset.email}.`,
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = { message: "Password reset email sent." };
         break;
@@ -271,14 +287,18 @@ serve(async (req) => {
           removedCount++;
         }
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "profiles",
-          action: "purge_demo",
-          notes: `Purged ${removedCount} demo user(s).`,
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "profiles",
+            action: "purge_demo",
+            notes: `Purged ${removedCount} demo user(s).`,
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = { ok: true, removed: removedCount };
         break;
@@ -299,14 +319,18 @@ serve(async (req) => {
           nonAdminRemovedCount++;
         }
 
-        await admin.from("audit_logs").insert({
-          org_id: effective_org_id,
-          actor_id: me.id,
-          entity: "profiles",
-          action: "purge_all_non_admin",
-          notes: `Purged ${nonAdminRemovedCount} non-admin user(s).`,
-          created_at: new Date().toISOString(),
-        }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: effective_org_id,
+            actor_id: me.id,
+            entity: "profiles",
+            action: "purge_all_non_admin",
+            notes: `Purged ${nonAdminRemovedCount} non-admin user(s).`,
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.log("DEBUG: audit insert failed", (e as Error).message);
+        }
 
         resultData = { ok: true, removed: nonAdminRemovedCount };
         break;
