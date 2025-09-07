@@ -34,14 +34,15 @@ const JobProgressTimeline: React.FC<JobProgressTimelineProps> = ({ progressLogs,
     return <p className="text-gray-600">No progress updates recorded for this job yet.</p>;
   }
 
-  // Sort logs by timestamp descending (newest first)
-  const sortedLogs = [...progressLogs].sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+  // Sort logs by timestamp ascending (oldest first) for chronological order
+  const sortedLogs = [...progressLogs].sort((a, b) => parseISO(a.timestamp).getTime() - parseISO(b.timestamp).getTime());
 
   return (
     <div className="relative pl-8">
       <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
       {sortedLogs.map((log, index) => {
         const Icon = statusIconMap[log.status] || Clock;
+        const logDate = parseISO(log.timestamp);
         return (
           <div key={log.id} className="mb-6 relative">
             <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
@@ -52,9 +53,10 @@ const JobProgressTimeline: React.FC<JobProgressTimelineProps> = ({ progressLogs,
                 <Badge variant="secondary" className="capitalize">
                   {getDisplayStatus(log.status)}
                 </Badge>
-                <span className="text-sm text-gray-500">
-                  {format(parseISO(log.timestamp), 'MMM dd, yyyy HH:mm')}
-                </span>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">{format(logDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-sm font-bold text-gray-700">{format(logDate, 'HH:mm')}</p>
+                </div>
               </div>
               <p className="text-gray-800 mb-1">
                 <span className="font-medium text-gray-900">{getActorName(log.actor_id)}</span>{' '}
