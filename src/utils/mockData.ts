@@ -77,7 +77,7 @@ export interface Job {
   id: string;
   org_id: string;
   order_number: string; // Changed from 'ref'
-  status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received'; // Added new statuses
+  status: 'planned' | 'assigned' | 'accepted' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received'; // Renamed 'in_progress' to 'accepted'
   date_created: string; // New field
   price: number | null; // New field
   assigned_driver_id?: string | null; // New field

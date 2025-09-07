@@ -32,7 +32,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DateTimePicker from '@/components/DateTimePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import new component
+import AssignDriverDialog from '@/components/AssignDriverDialog';
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
 
 interface JobFormValues {
   order_number?: string | null;
@@ -40,7 +41,7 @@ interface JobFormValues {
   price: number | null;
   assigned_driver_id: string | null;
   notes: string | null;
-  status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
+  status: 'planned' | 'assigned' | 'accepted' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received';
   collections: Array<{
     id?: string;
     name: string;
@@ -75,8 +76,8 @@ const JobDetail: React.FC = () => {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
-  const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false); // New state for assign driver dialog
-  const [isAssigningDriver, setIsAssigningDriver] = useState(false); // New state for assign driver loading
+  const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
+  const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
   const [selectedProgressStatus, setSelectedProgressStatus] = useState<Job['status'] | ''>('');
   const [progressUpdateDateTime, setProgressUpdateDateTime] = useState<Date | undefined>(new Date());
@@ -86,11 +87,11 @@ const JobDetail: React.FC = () => {
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
 
-  // Define all possible job statuses for the dropdown
+  // Define all possible job statuses for the dropdown (using snake_case for values)
   const jobStatuses: Array<Job['status']> = [
     'planned',
     'assigned',
-    'in_progress',
+    'accepted',
     'on_route_collection',
     'at_collection',
     'loaded',
@@ -328,7 +329,7 @@ const JobDetail: React.FC = () => {
 
       const promise = updateJobProgress(payload);
       toast.promise(promise, {
-        loading: `Updating job progress to ${selectedProgressStatus.replace(/_/g, ' ')}...`,
+        loading: `Updating job progress to ${getDisplayStatus(selectedProgressStatus)}...`,
         success: 'Job progress updated successfully!',
         error: (err) => `Failed to update job progress: ${err.message}`,
       });
@@ -397,7 +398,7 @@ const JobDetail: React.FC = () => {
                 variant={
                   job.status === 'planned'
                     ? 'secondary'
-                    : job.status === 'in_progress' || job.status === 'assigned'
+                    : job.status === 'accepted' || job.status === 'assigned'
                     ? 'default'
                     : job.status === 'delivered'
                     ? 'outline'
@@ -405,7 +406,7 @@ const JobDetail: React.FC = () => {
                 }
                 className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
               >
-                {job.status.replace(/_/g, ' ')}
+                {getDisplayStatus(job.status)}
               </Badge>
             </CardTitle>
             <div className="flex space-x-2">
@@ -464,7 +465,7 @@ const JobDetail: React.FC = () => {
                             <SelectContent className="bg-white shadow-sm rounded-xl">
                               {progressUpdateStatuses.map(status => (
                                 <SelectItem key={status} value={status}>
-                                  {status.replace(/_/g, ' ')}
+                                  {getDisplayStatus(status)}
                                 </SelectItem>
                               ))}
                             </SelectContent>

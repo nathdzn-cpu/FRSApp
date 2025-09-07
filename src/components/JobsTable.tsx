@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { Job, Profile } from '@/utils/mockData';
 import { format } from 'date-fns';
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
 
 interface JobsTableProps {
   jobs: Job[];
@@ -14,9 +15,9 @@ interface JobsTableProps {
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
   const { userRole } = useAuth();
 
-  // Sort jobs: active (in_progress, assigned) first, then by created_at descending
+  // Sort jobs: active (accepted, assigned) first, then by created_at descending
   const sortedJobs = [...jobs].sort((a, b) => {
-    const statusOrder = { 'in_progress': 1, 'assigned': 2, 'planned': 3, 'delivered': 4, 'cancelled': 5 };
+    const statusOrder = { 'accepted': 1, 'assigned': 2, 'planned': 3, 'delivered': 4, 'cancelled': 5 };
     const statusA = statusOrder[a.status] || 99;
     const statusB = statusOrder[b.status] || 99;
 
@@ -37,8 +38,8 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
           <TableRow>
             <TableHead>Order Number</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Collection</TableHead> {/* New column */}
-            <TableHead>Delivery</TableHead>   {/* New column */}
+            <TableHead>Collection</TableHead>
+            <TableHead>Delivery</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
@@ -52,7 +53,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   variant={
                     job.status === 'planned'
                       ? 'secondary' // Gray
-                      : job.status === 'in_progress' || job.status === 'assigned'
+                      : job.status === 'accepted' || job.status === 'assigned'
                       ? 'default' // Blue
                       : job.status === 'delivered'
                       ? 'outline' // Green for delivered
@@ -60,7 +61,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   }
                   className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
                 >
-                  {job.status.replace(/_/g, ' ')}
+                  {getDisplayStatus(job.status)}
                 </Badge>
               </TableCell>
               <TableCell>

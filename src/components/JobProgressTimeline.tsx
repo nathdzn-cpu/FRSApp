@@ -2,7 +2,8 @@ import React from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Truck, Package, CheckCircle, FileText, MapPin, XCircle } from 'lucide-react'; // Added XCircle
+import { Clock, Truck, Package, CheckCircle, FileText, MapPin, XCircle } from 'lucide-react';
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
 
 interface JobProgressTimelineProps {
   progressLogs: JobProgressLog[];
@@ -12,7 +13,7 @@ interface JobProgressTimelineProps {
 const statusIconMap: Record<JobProgressLog['status'], React.ElementType> = {
   planned: Clock,
   assigned: Truck,
-  in_progress: Truck,
+  accepted: Truck, // Renamed from in_progress
   on_route_collection: Truck,
   at_collection: MapPin,
   loaded: Package,
@@ -49,7 +50,7 @@ const JobProgressTimeline: React.FC<JobProgressTimelineProps> = ({ progressLogs,
             <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-1">
                 <Badge variant="secondary" className="capitalize">
-                  {log.status.replace(/_/g, ' ')}
+                  {getDisplayStatus(log.status)}
                 </Badge>
                 <span className="text-sm text-gray-500">
                   {format(parseISO(log.timestamp), 'MMM dd, yyyy HH:mm')}
@@ -57,7 +58,7 @@ const JobProgressTimeline: React.FC<JobProgressTimelineProps> = ({ progressLogs,
               </div>
               <p className="text-gray-800 mb-1">
                 <span className="font-medium text-gray-900">{getActorName(log.actor_id)}</span>{' '}
-                updated the job status to <span className="font-semibold">{log.status.replace(/_/g, ' ')}</span>.
+                updated the job status to <span className="font-semibold">{getDisplayStatus(log.status)}</span>.
               </p>
               {log.notes && (
                 <p className="text-xs text-gray-600 mt-1">Notes: {log.notes}</p>

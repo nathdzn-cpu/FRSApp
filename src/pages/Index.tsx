@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 

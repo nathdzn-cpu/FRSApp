@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Job, JobStop, Profile } from '@/utils/mockData';
 import { useAuth } from '@/context/AuthContext';
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
 
 // Helper to format time input to HH:MM
 const formatTimeInput = (value: string) => {
@@ -60,7 +61,7 @@ const formSchema = z.object({
   ),
   assigned_driver_id: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  status: z.enum(['planned', 'assigned', 'in_progress', 'delivered', 'cancelled'], { required_error: 'Status is required.' }),
+  status: z.enum(['planned', 'assigned', 'accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received', 'cancelled'], { required_error: 'Status is required.' }),
   collections: z.array(stopSchema).min(0),
   deliveries: z.array(stopSchema).min(1, { message: 'At least one delivery point is required.' }),
 });
@@ -160,11 +161,11 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-white shadow-sm rounded-xl">
-                      <SelectItem value="planned">Planned</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      {['planned', 'assigned', 'accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received', 'cancelled'].map(status => (
+                        <SelectItem key={status} value={status}>
+                          {getDisplayStatus(status as Job['status'])}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -594,10 +595,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Save Changes
-        </Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
       </form>
     </Form>
   );
