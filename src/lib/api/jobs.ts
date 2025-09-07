@@ -3,11 +3,24 @@ import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' = 'active'): Promise<Job[]> => {
-  let query = supabase
-    .from('jobs_with_stop_details') // Query the new view
-    .select('*')
-    .eq('org_id', orgId)
-    .order('created_at', { ascending: false });
+  let query;
+
+  if (role === 'driver') {
+    // Drivers query the base 'jobs' table directly to ensure RLS is enforced.
+    // The 'jobs' table does not have denormalized stop details, so those fields will be undefined.
+    query = supabase
+      .from('jobs')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false });
+  } else {
+    // Admin and Office roles query the view for denormalized stop details.
+    query = supabase
+      .from('jobs_with_stop_details') // Query the new view
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false });
+  }
 
   // Apply status filter
   if (statusFilter === 'active') {
@@ -39,13 +52,25 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
 };
 
 export const getJobById = async (orgId: string, jobId: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
-  let query = supabase
-    .from('jobs_with_stop_details') // Query the new view
-    .select('*')
-    .eq('id', jobId)
-    .eq('org_id', orgId)
-    // .is('deleted_at', null) // Removed filter to include cancelled jobs
-    .single();
+  let query;
+
+  if (role === 'driver') {
+    // Drivers query the base 'jobs' table directly to ensure RLS is enforced.
+    query = supabase
+      .from('jobs')
+      .select('*')
+      .eq('id', jobId)
+      .eq('org_id', orgId)
+      .single();
+  } else {
+    // Admin and Office roles query the view for denormalized stop details.
+    query = supabase
+      .from('jobs_with_stop_details') // Query the new view
+      .select('*')
+      .eq('id', jobId)
+      .eq('org_id', orgId)
+      .single();
+  }
 
   const { data, error } = await query;
 
