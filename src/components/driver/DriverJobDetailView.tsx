@@ -174,15 +174,17 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
                       {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                       {nextAction.label}
                     </Button>
-                    <Button
-                      onClick={() => setIsImageUploadDialogOpen(true)}
-                      disabled={isUpdatingProgress || isUploadingImage}
-                      variant="outline"
-                      className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
-                    >
-                      {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
-                      Upload Image
-                    </Button>
+                    {nextAction.nextStatus !== 'pod_received' && ( // Only show Upload Image if not the POD step
+                      <Button
+                        onClick={() => setIsImageUploadDialogOpen(true)}
+                        disabled={isUpdatingProgress || isUploadingImage}
+                        variant="outline"
+                        className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                      >
+                        {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
+                        Upload Image
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : (

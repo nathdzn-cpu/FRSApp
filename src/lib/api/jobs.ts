@@ -412,8 +412,7 @@ export const uploadDocument = async (
   logActionType: 'pod_uploaded' | 'image_uploaded', // New parameter to specify action_type for log
   stopId?: string,
 ): Promise<Document> => {
-  const newDocument: Document = {
-    id: uuidv4(),
+  const newDocument: Omit<Document, 'id'> = { // Omit id as it's auto-generated
     org_id: orgId,
     job_id: jobId,
     stop_id: stopId,
@@ -442,7 +441,7 @@ export const uploadDocument = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      actor_role: 'driver',
+      actor_role: 'driver', // Driver role
       action_type: logActionType, // Use the new logActionType parameter
       notes: `${type.replace(/_/g, ' ')} uploaded.`,
       timestamp: new Date().toISOString(),
