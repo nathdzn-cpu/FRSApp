@@ -33,10 +33,21 @@ serve(async (req) => {
     const user = userClient(req.headers.get("authorization"));
 
     // 1) Caller must be signed in and an admin
-    const { data: me, error: meErr } = await user
-      .from("profiles")
-      .select("id, role, tenant_id")
-      .single();
+const { data: authUser } = await user.auth.getUser();
+
+if (!authUser?.user?.id) {
+  throw new Error("Not signed in or no auth user ID");
+}
+
+const { data: me, error: meErr } = await user
+  .from("profiles")
+  .select("id, role, tenant_id")
+  .eq("id", authUser.user.id)
+  .single();
+
+if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
+if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
+
 
     console.log("DEBUG: profile lookup", { me, meErr });
 

@@ -2,22 +2,22 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { getProfiles, createJob } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import JobForm from '@/components/JobForm';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 import { format } from 'date-fns';
 
 interface JobFormValues {
-  ref?: string; // Now optional
-  override_ref?: boolean; // New field
-  manual_ref?: string; // New field
+  ref?: string;
+  override_ref?: boolean;
+  manual_ref?: string;
   scheduled_date: Date;
-  price?: number | null; // Allow null
+  price?: number | null;
   notes?: string;
   assigned_driver_id?: string;
   collections: Array<{
@@ -44,15 +44,16 @@ interface JobFormValues {
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const queryClient = useQueryClient(); // Initialize useQueryClient
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
-  const currentProfile = profile; // Use profile from AuthContext
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id';
+  const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
-  const canSeePrice = canAccess; // Price visibility is tied to access for this page
+  const canSeePrice = canAccess;
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || !canAccess) {
       toast.error("You do not have permission to access this page.");
@@ -64,7 +65,7 @@ const CreateJob: React.FC = () => {
     queryKey: ['profiles', currentTenantId],
     queryFn: () => getProfiles(currentTenantId),
     staleTime: 5 * 60 * 1000,
-    enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth, // Only fetch if user has access and auth is loaded
+    enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
   });
 
   const handleSubmit = async (values: JobFormValues) => {
@@ -75,9 +76,9 @@ const CreateJob: React.FC = () => {
 
     try {
       const newJobData = {
-        ref: values.override_ref ? values.manual_ref : undefined, // Use manual_ref if override is checked, otherwise undefined for auto-generation
+        ref: values.override_ref ? values.manual_ref : undefined,
         scheduled_date: format(values.scheduled_date, 'yyyy-MM-dd'),
-        price: canSeePrice ? values.price : undefined, // Only include price if user can see it
+        price: canSeePrice ? values.price : undefined,
         notes: values.notes,
         assigned_driver_id: values.assigned_driver_id || undefined,
       };
@@ -93,6 +94,7 @@ const CreateJob: React.FC = () => {
       toast.promise(promise, {
         loading: 'Creating job...',
         success: (newJob) => {
+          queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs query cache
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },
@@ -125,7 +127,7 @@ const CreateJob: React.FC = () => {
   }
 
   if (!user || !canAccess) {
-    return null; // Render nothing if access is denied, as a redirect will happen
+    return null;
   }
 
   return (

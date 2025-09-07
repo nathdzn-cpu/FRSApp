@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
@@ -14,88 +16,85 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [selectedTenantId, setSelectedTenantId] = useState<string | undefined>(undefined);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
-  const [error, setError] = useState<string | null>(null);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
-  const currentProfile = profile; // Use profile from AuthContext
+  const currentTenantId = profile?.tenant_id || 'demo-tenant-id';
+  const currentProfile = profile;
   const canCreateJob = userRole === 'admin' || userRole === 'office';
   const canAccessAdminUsers = userRole === 'admin';
 
-  const fetchData = async () => {
-    if (!user || !currentProfile) {
-      setLoadingData(false);
-      return;
+  // Fetch tenants
+  const { data: tenants = [], isLoading: isLoadingTenants, error: tenantsError } = useQuery<Tenant[], Error>({
+    queryKey: ['tenants'],
+    queryFn: getTenants,
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user && !!currentProfile && !isLoadingAuth,
+  });
+
+  // Set selectedTenantId once tenants and profile are loaded
+  useEffect(() => {
+    if (tenants.length > 0 && currentProfile && !selectedTenantId) {
+      setSelectedTenantId(currentProfile.tenant_id || tenants[0]?.id);
     }
+  }, [tenants, currentProfile, selectedTenantId]);
 
-    setLoadingData(true);
-    setError(null);
-    try {
-      const fetchedTenants = await getTenants();
-      setTenants(fetchedTenants);
-      // Ensure selectedTenantId is set, ideally from user's profile or a default
-      const defaultTenantId = currentProfile.tenant_id || fetchedTenants[0]?.id;
-      setSelectedTenantId(defaultTenantId);
+  // Determine date filters for jobs query
+  const getJobDateFilters = () => {
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+    const now = dayjs();
 
-      if (defaultTenantId) {
-        const fetchedProfiles = await getProfiles(defaultTenantId);
-        setProfiles(fetchedProfiles);
-
-        let startDate: string | undefined;
-        let endDate: string | undefined;
-        const now = dayjs();
-
-        if (filterRange === 'today') {
-          startDate = now.startOf('day').toISOString();
-          endDate = now.endOf('day').toISOString();
-        } else if (filterRange === 'week') {
-          startDate = now.startOf('week').toISOString();
-          endDate = now.endOf('week').toISOString();
-        } else if (filterRange === 'month') {
-          startDate = now.startOf('month').toISOString();
-          endDate = now.endOf('month').toISOString();
-        } else if (filterRange === 'year') {
-          startDate = now.startOf('year').toISOString();
-          endDate = now.endOf('year').toISOString();
-        } else if (filterRange === 'custom' && customStartDate && customEndDate) {
-          startDate = dayjs(customStartDate).startOf('day').toISOString();
-          endDate = dayjs(customEndDate).endOf('day').toISOString();
-        }
-
-        const fetchedJobs = await getJobs(defaultTenantId, userRole!, currentProfile?.id, startDate, endDate); // userRole is guaranteed here
-        setJobs(fetchedJobs);
-      }
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-      setError("Failed to load data. Please try again.");
-    } finally {
-      setLoadingData(false);
+    if (filterRange === 'today') {
+      startDate = now.startOf('day').toISOString();
+      endDate = now.endOf('day').toISOString();
+    } else if (filterRange === 'week') {
+      startDate = now.startOf('week').toISOString();
+      endDate = now.endOf('week').toISOString();
+    } else if (filterRange === 'month') {
+      startDate = now.startOf('month').toISOString();
+      endDate = now.endOf('month').toISOString();
+    } else if (filterRange === 'year') {
+      startDate = now.startOf('year').toISOString();
+      endDate = now.endOf('year').toISOString();
+    } else if (filterRange === 'custom' && customStartDate && customEndDate) {
+      startDate = dayjs(customStartDate).startOf('day').toISOString();
+      endDate = dayjs(customEndDate).endOf('day').toISOString();
     }
+    return { startDate, endDate };
   };
 
-  useEffect(() => {
-    if (user && profile) { // Only fetch data if user and profile are loaded
-      fetchData();
-    } else if (!isLoadingAuth && !user) {
-      // If not loading auth and no user, it means we're not logged in, AuthContext will redirect
-      setLoadingData(false);
-    }
-  }, [user, profile, userRole, filterRange, customStartDate, customEndDate, isLoadingAuth]);
+  const { startDate, endDate } = getJobDateFilters();
 
-  if (isLoadingAuth || loadingData) {
+  // Fetch profiles
+  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
+    queryKey: ['profiles', selectedTenantId],
+    queryFn: () => getProfiles(selectedTenantId!),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!selectedTenantId && !!user && !!currentProfile && !isLoadingAuth,
+  });
+
+  // Fetch jobs
+  const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
+    queryKey: ['jobs', selectedTenantId, userRole, currentProfile?.id, startDate, endDate],
+    queryFn: () => getJobs(selectedTenantId!, userRole!, currentProfile?.id, startDate, endDate),
+    staleTime: 60 * 1000, // Cache jobs for 1 minute
+    enabled: !!selectedTenantId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
+  });
+
+  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;
+  const error = tenantsError || profilesError || jobsError;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -107,14 +106,13 @@ const Index = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error.message}</p>
       </div>
     );
   }
 
   if (!user) {
-    // This case should ideally be handled by PrivateRoute or AuthContext redirect
-    return null;
+    return null; // Should be handled by PrivateRoute or AuthContext redirect
   }
 
   // If user is logged in but no profile/role is found
@@ -145,7 +143,6 @@ const Index = () => {
                 <PlusCircle className="h-4 w-4 mr-2" /> Create New Job
               </Button>
             )}
-            {/* Role switcher removed */}
           </div>
         </div>
 
