@@ -17,12 +17,12 @@ export const getDailyCheckItems = async (orgId: string): Promise<DailyCheckItem[
 
 export const createDailyCheckItem = async (orgId: string, itemData: Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>): Promise<DailyCheckItem> => {
   const { data: authUser } = await supabase.auth.getUser();
-  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role').eq('id', authUser?.user?.id).single();
+  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role, full_name').eq('id', authUser?.user?.id).single(); // Fetch full_name
   if (profileError) throw new Error("Failed to fetch user role for daily check item creation.");
 
   const { data, error } = await supabase.functions.invoke('admin-daily-check-items', {
     method: 'POST',
-    body: JSON.stringify({ op: "create", org_id: orgId, actor_role: profileData.role, ...itemData }), // Added actor_role to payload
+    body: JSON.stringify({ op: "create", org_id: orgId, actor_role: profileData.role, actor_name: profileData.full_name, ...itemData }), // Added actor_name to payload
   });
 
   if (error) {
@@ -34,12 +34,12 @@ export const createDailyCheckItem = async (orgId: string, itemData: Omit<DailyCh
 
 export const updateDailyCheckItem = async (orgId: string, itemId: string, updates: Partial<Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>>): Promise<DailyCheckItem> => {
   const { data: authUser } = await supabase.auth.getUser();
-  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role').eq('id', authUser?.user?.id).single();
+  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role, full_name').eq('id', authUser?.user?.id).single(); // Fetch full_name
   if (profileError) throw new Error("Failed to fetch user role for daily check item update.");
 
   const { data, error } = await supabase.functions.invoke(`admin-daily-check-items/${itemId}`, {
     method: 'PUT',
-    body: JSON.stringify({ op: "update", org_id: orgId, actor_role: profileData.role, changes: updates }), // Added actor_role to payload
+    body: JSON.stringify({ op: "update", org_id: orgId, actor_role: profileData.role, actor_name: profileData.full_name, changes: updates }), // Added actor_name to payload
   });
 
   if (error) {
@@ -51,12 +51,12 @@ export const updateDailyCheckItem = async (orgId: string, itemId: string, update
 
 export const deleteDailyCheckItem = async (orgId: string, itemId: string): Promise<void> => {
   const { data: authUser } = await supabase.auth.getUser();
-  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role').eq('id', authUser?.user?.id).single();
+  const { data: profileData, error: profileError } = await supabase.from('profiles').select('role, full_name').eq('id', authUser?.user?.id).single(); // Fetch full_name
   if (profileError) throw new Error("Failed to fetch user role for daily check item deletion.");
 
   const { data, error } = await supabase.functions.invoke(`admin-daily-check-items/${itemId}`, {
     method: 'DELETE',
-    body: JSON.stringify({ op: "delete", org_id: orgId, actor_role: profileData.role }), // Added actor_role to payload
+    body: JSON.stringify({ op: "delete", org_id: orgId, actor_role: profileData.role, actor_name: profileData.full_name }), // Added actor_name to payload
   });
 
   if (error) {

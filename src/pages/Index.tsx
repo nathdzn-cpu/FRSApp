@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
 import JobsTable from '@/components/JobsTable';
-import { Loader2, PlusCircle, Users, CalendarIcon } from 'lucide-react';
+import { Loader2, PlusCircle, Users, CalendarIcon, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -18,14 +18,17 @@ import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { Input } from '@/components/ui/input'; // Import Input for the search bar
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
+type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 
 const Index = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active'); // New state for job status filter
+  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
@@ -89,8 +92,8 @@ const Index = () => {
 
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate],
-    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate), // Pass userRole to getJobs
+    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter, searchTerm], // Add jobStatusFilter and searchTerm to queryKey
+    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate, jobStatusFilter, searchTerm), // Pass new filters to getJobs
     staleTime: 60 * 1000, // Cache jobs for 1 minute
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
     onError: (err) => console.error("Jobs query failed", err),
@@ -162,12 +165,58 @@ const Index = () => {
         </div>
 
         <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="flex flex-row justify-between items-center p-0 pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">Active Jobs</CardTitle>
+          <CardHeader className="p-0 pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 -mx-6 px-6 pt-0"> {/* Sticky header */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+              <CardTitle className="text-2xl font-bold text-gray-900">Jobs</CardTitle>
+              <div className="flex space-x-2 p-1 bg-gray-100 rounded-full"> {/* Pill-shaped toggle buttons */}
+                <Button
+                  variant={jobStatusFilter === 'active' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setJobStatusFilter('active')}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-medium",
+                    jobStatusFilter === 'active' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                  )}
+                >
+                  Active
+                </Button>
+                <Button
+                  variant={jobStatusFilter === 'completed' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setJobStatusFilter('completed')}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-medium",
+                    jobStatusFilter === 'completed' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                  )}
+                >
+                  Completed
+                </Button>
+                <Button
+                  variant={jobStatusFilter === 'cancelled' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setJobStatusFilter('cancelled')}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-medium",
+                    jobStatusFilter === 'cancelled' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                  )}
+                >
+                  Cancelled
+                </Button>
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative w-full sm:w-auto flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search jobs by order number, driver, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                />
+              </div>
               <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only text-gray-500">Filter by date:</Label>
               <Select value={filterRange} onValueChange={(value: DateRangeFilter) => setFilterRange(value)}>
-                <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px]">
+                <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px] rounded-full">
                   <SelectValue placeholder="Select date range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,7 +236,7 @@ const Index = () => {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-left font-normal rounded-full",
                           !customStartDate && "text-muted-foreground"
                         )}
                       >
@@ -210,7 +259,7 @@ const Index = () => {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-left font-normal rounded-full",
                           !customEndDate && "text-muted-foreground"
                         )}
                       >

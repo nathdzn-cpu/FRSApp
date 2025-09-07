@@ -6,9 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { Job, Profile } from '@/utils/mockData';
 import { format } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, User, Truck } from 'lucide-react'; // Added User and Truck icons
 import { cn } from '@/lib/utils';
-import { formatAddressPart } from '@/lib/utils/formatUtils'; // Import new utility
+import { formatAddressPart } from '@/lib/utils/formatUtils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Import Avatar components
 
 interface JobsTableProps {
   jobs: Job[];
@@ -34,12 +35,15 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
 
   const getDriverInfo = (assignedDriverId: string | null | undefined) => {
     if (!assignedDriverId) {
-      return { name: 'Unassigned', reg: '' };
+      return { name: 'Unassigned', reg: '', initials: 'NA' };
     }
     const driver = profiles.find(p => p.id === assignedDriverId && p.role === 'driver');
+    const fullName = driver?.full_name || 'Unknown Driver';
+    const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     return {
-      name: driver?.full_name || 'Unknown Driver',
+      name: fullName,
       reg: driver?.truck_reg || 'N/A',
+      initials: initials,
     };
   };
 
@@ -85,12 +89,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
   };
 
   return (
-    <div className="rounded-md border overflow-hidden">
+    <div className="rounded-lg border border-gray-200 overflow-hidden"> {/* Subtle border */}
       <Table>
-        <TableHeader>
-          <TableRow>
+        <TableHeader className="bg-gray-50"> {/* Light background for header */}
+          <TableRow className="border-b border-gray-200"> {/* Subtle divider */}
             <TableHead
-              className="cursor-pointer hover:bg-gray-100"
+              className="cursor-pointer text-gray-700 font-semibold py-3 px-4"
               onClick={() => handleSort('driver')}
             >
               <div className="flex items-center">
@@ -99,7 +103,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer hover:bg-gray-100"
+              className="cursor-pointer text-gray-700 font-semibold py-3 px-4"
               onClick={() => handleSort('order_number')}
             >
               <div className="flex items-center">
@@ -108,7 +112,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer hover:bg-gray-100"
+              className="cursor-pointer text-gray-700 font-semibold py-3 px-4"
               onClick={() => handleSort('status')}
             >
               <div className="flex items-center">
@@ -116,60 +120,68 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                 {renderSortIcon('status')}
               </div>
             </TableHead>
-            <TableHead>Collection</TableHead>
-            <TableHead>Delivery</TableHead>
-            <TableHead className="text-center">Actions</TableHead>
+            <TableHead className="text-gray-700 font-semibold py-3 px-4">Collection</TableHead>
+            <TableHead className="text-gray-700 font-semibold py-3 px-4">Delivery</TableHead>
+            <TableHead className="text-center text-gray-700 font-semibold py-3 px-4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedJobs.map((job, index) => {
             const driverInfo = getDriverInfo(job.assigned_driver_id);
             const isCancelled = job.status === 'cancelled';
+            const isDelivered = job.status === 'delivered' || job.status === 'pod_received';
+            const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
+            const isUnassigned = job.status === 'planned' && !job.assigned_driver_id;
+
             return (
               <TableRow key={job.id} className={cn(
-                index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100',
-                isCancelled && 'bg-red-50 hover:bg-red-100 opacity-70' // Light red background for cancelled jobs
+                "border-b border-gray-100 last:border-b-0 transition-colors hover:bg-blue-50", // Subtle divider, hover highlight
+                isCancelled && 'bg-red-50' // Light red background for cancelled jobs
               )}>
-                <TableCell>
-                  {driverInfo.name}
-                  {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
-                    <span className="block text-xs text-gray-500">{driverInfo.reg}</span>
-                  )}
+                <TableCell className="py-3 px-4">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
+                        {driverInfo.initials !== 'NA' ? driverInfo.initials : <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-gray-900">{driverInfo.name}</p>
+                      {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
+                        <p className="text-xs text-gray-500 flex items-center">
+                          <Truck className="h-3 w-3 mr-1" /> {driverInfo.reg}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
-                <TableCell className="font-medium">{job.order_number}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium text-gray-900 py-3 px-4">{job.order_number}</TableCell>
+                <TableCell className="py-3 px-4">
                   <Badge
-                    variant={
-                      isCancelled
-                        ? 'destructive' // Red badge for cancelled
-                        : job.status === 'planned'
-                        ? 'secondary'
-                        : job.status === 'accepted' || job.status === 'assigned'
-                        ? 'default'
-                        : job.status === 'delivered'
-                        ? 'outline'
-                        : 'default' // Fallback for other statuses
-                    }
                     className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium",
                       isCancelled && 'bg-red-500 text-white hover:bg-red-600',
-                      job.status === 'delivered' && 'bg-green-500 text-white hover:bg-green-600'
+                      isDelivered && 'bg-green-500 text-white hover:bg-green-600',
+                      isInProgress && 'bg-blue-500 text-white hover:bg-blue-600',
+                      isUnassigned && 'bg-gray-400 text-white hover:bg-gray-500',
+                      !isCancelled && !isDelivered && !isInProgress && !isUnassigned && 'bg-gray-600 text-white hover:bg-gray-700' // Default for other statuses
                     )}
                   >
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-gray-700 py-3 px-4">
                   {job.collection_name && job.collection_city
                     ? `${formatAddressPart(job.collection_name)}, ${formatAddressPart(job.collection_city)}`
                     : '-'}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-gray-700 py-3 px-4">
                   {job.delivery_name && job.delivery_city
                     ? `${formatAddressPart(job.delivery_name)}, ${formatAddressPart(job.delivery_city)}`
                     : '-'}
                 </TableCell>
-                <TableCell className="text-center">
-                  <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline">
+                <TableCell className="text-center py-3 px-4">
+                  <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline font-medium">
                     Open
                   </Link>
                 </TableCell>

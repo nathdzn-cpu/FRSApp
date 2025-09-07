@@ -12,6 +12,26 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 
 const AdminChecklists: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +42,7 @@ const AdminChecklists: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isSaving, setIsSaving] = useState(false); // New state for saving busy status
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -87,6 +108,7 @@ const AdminChecklists: React.FC = () => {
   const handleSave = async () => {
     if (!selectedChecklist || !currentProfile) return;
 
+    setIsSaving(true);
     try {
       const promise = updateDailyChecklist(currentOrgId, selectedChecklist.id, editingItems, currentProfile.id);
       toast.promise(promise, {
@@ -102,6 +124,8 @@ const AdminChecklists: React.FC = () => {
     } catch (err) {
       console.error("Error saving checklist:", err);
       toast.error("An unexpected error occurred while saving.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -118,7 +142,7 @@ const AdminChecklists: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">{error}</p>
-        <Button onClick={() => navigate('/')} variant="outline">
+        <Button onClick={() => navigate('/')} variant="outline" className="bg-white hover:bg-gray-50">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
@@ -132,7 +156,7 @@ const AdminChecklists: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <Button onClick={() => navigate('/')} variant="outline" className="mb-6 bg-white hover:bg-gray-50">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
@@ -144,10 +168,10 @@ const AdminChecklists: React.FC = () => {
             <div className="mb-4">
               <Label htmlFor="select-checklist" className="text-gray-700">Select Checklist</Label>
               <Select onValueChange={handleChecklistSelect} value={selectedChecklist?.id || ''}>
-                <SelectTrigger id="select-checklist" className="w-full md:w-[300px]">
+                <SelectTrigger id="select-checklist" className="w-full md:w-[300px] bg-white hover:bg-gray-50">
                   <SelectValue placeholder="Select a checklist" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white shadow-sm rounded-xl">
                   {checklists.map(cl => (
                     <SelectItem key={cl.id} value={cl.id}>{cl.name}</SelectItem>
                   ))}
@@ -158,38 +182,43 @@ const AdminChecklists: React.FC = () => {
             {selectedChecklist ? (
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">{selectedChecklist.name} Items</h3>
-                <div className="space-y-4">
-                  {editingItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-md">
-                      <Input
-                        value={item.text}
-                        onChange={(e) => handleItemChange(index, 'text', e.target.value)}
-                        placeholder="Checklist item text"
-                        className="flex-grow"
-                      />
-                      <Select
-                        value={item.type}
-                        onValueChange={(value) => handleItemChange(index, 'type', value as 'checkbox' | 'text')}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="checkbox">Checkbox</SelectItem>
-                          <SelectItem value="text">Text Input</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" onClick={handleAddItem}>
-                    <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-                  </Button>
-                </div>
-                <Button onClick={handleSave} className="mt-6 bg-blue-600 text-white hover:bg-blue-700">
-                  <Save className="h-4 w-4 mr-2" /> Save Checklist
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4"> {/* Added ScrollArea */}
+                  <div className="space-y-4">
+                    {editingItems.map((item, index) => (
+                      <div key={item.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-md">
+                        <Input
+                          value={item.text}
+                          onChange={(e) => handleItemChange(index, 'text', e.target.value)}
+                          placeholder="Checklist item text"
+                          className="flex-grow"
+                          disabled={isSaving}
+                        />
+                        <Select
+                          value={item.type}
+                          onValueChange={(value) => handleItemChange(index, 'type', value as 'checkbox' | 'text')}
+                          disabled={isSaving}
+                        >
+                          <SelectTrigger className="w-[120px] bg-white hover:bg-gray-50">
+                            <SelectValue placeholder="Type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white shadow-sm rounded-xl">
+                            <SelectItem value="checkbox">Checkbox</SelectItem>
+                            <SelectItem value="text">Text Input</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button variant="destructive" size="icon" onClick={() => handleRemoveItem(index)} disabled={isSaving} className="bg-red-600 text-white hover:bg-red-700">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" onClick={handleAddItem} disabled={isSaving} className="bg-blue-600 text-white hover:bg-blue-700">
+                      <PlusCircle className="h-4 w-4 mr-2" /> Add Item
+                    </Button>
+                  </div>
+                </ScrollArea>
+                <Button onClick={handleSave} className="mt-6 w-full bg-blue-600 text-white hover:bg-blue-700" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Save Checklist
                 </Button>
               </div>
             ) : (

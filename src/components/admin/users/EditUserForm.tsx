@@ -76,7 +76,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                   <FormLabel className="text-gray-700">Role</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white hover:bg-gray-50">
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                     </FormControl>
@@ -102,7 +102,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal bg-white hover:bg-gray-50",
                             !field.value && "text-muted-foreground"
                           )}
                         >

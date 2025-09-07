@@ -28,6 +28,52 @@ function userClient(authHeader: string | null) {
   });
 }
 
+// Helper to get display status (mimicking frontend for consistent notes)
+function getDisplayStatus(status: string): string {
+  switch (status) {
+    case 'planned': return 'Planned';
+    case 'assigned': return 'Assigned';
+    case 'accepted': return 'Accepted';
+    case 'on_route_collection': return 'On Route Collection';
+    case 'at_collection': return 'At Collection';
+    case 'loaded': return 'Loaded';
+    case 'on_route_delivery': return 'On Route Delivery';
+    case 'at_delivery': return 'At Delivery';
+    case 'delivered': return 'Delivered';
+    case 'pod_received': return 'POD Received';
+    case 'cancelled': return 'Cancelled';
+    case 'job_created': return 'Job Created';
+    case 'job_cloned': return 'Job Cloned';
+    case 'job_confirmed': return 'Job Confirmed';
+    case 'eta_set': return 'ETA Set';
+    case 'pod_requested': return 'POD Requested';
+    case 'pod_uploaded': return 'POD Uploaded';
+    case 'document_uploaded': return 'Document Uploaded';
+    case 'location_ping': return 'Location Ping';
+    case 'note_added': return 'Note Added';
+    case 'status_changed': return 'Status Changed';
+    case 'driver_reassigned': return 'Driver Reassigned';
+    case 'stop_added': return 'Stop Added';
+    case 'stop_updated': return 'Stop Updated';
+    case 'stop_deleted': return 'Stop Deleted';
+    case 'stop_details_updated': return 'Stop Details Updated';
+    case 'daily_check_submitted': return 'Daily Check Submitted';
+    case 'daily_check_item_created': return 'Daily Check Item Created';
+    case 'daily_check_item_updated': return 'Daily Check Item Updated';
+    case 'daily_check_item_deleted': return 'Daily Check Item Deleted';
+    case 'user_created': return 'User Created';
+    case 'user_updated': return 'User Updated';
+    case 'user_deleted': return 'User Deleted';
+    case 'password_reset_sent': return 'Password Reset Sent';
+    case 'purge_demo_users': return 'Purge Demo Users';
+    case 'purge_all_non_admin_users': return 'Purge All Non-Admin Users';
+    case 'timeline_event_removed_from_timeline': return 'Removed from Timeline';
+    case 'timeline_event_restored_to_timeline': return 'Restored to Timeline';
+    default:
+      return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -50,7 +96,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name") // Fetch full_name for audit logs
       .eq("id", authUser.user.id)
       .single();
 
@@ -118,6 +164,7 @@ serve(async (req) => {
     }
 
     // 5) Insert into job_progress_log table
+    const progressNotes = notes || `${me.full_name} marked job as '${getDisplayStatus(new_status)}'.`;
     const { data: insertedLog, error: insertLogError } = await admin
       .from("job_progress_log")
       .insert({
@@ -128,7 +175,7 @@ serve(async (req) => {
         actor_role: actor_role, // Added actor_role
         action_type: new_status, // Renamed from status
         timestamp: timestamp,
-        notes: notes || null,
+        notes: progressNotes,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -149,7 +196,7 @@ serve(async (req) => {
       action: "update_progress",
       before: { status: oldJob.status },
       after: { status: new_status, last_status_update_at: timestamp },
-      notes: `Job progress updated to: ${new_status}`,
+      notes: progressNotes,
       created_at: new Date().toISOString(),
     });
     if (auditError) {

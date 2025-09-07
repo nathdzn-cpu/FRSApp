@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name") // Fetch full_name for audit logs
       .eq("id", authUser.user.id)
       .single();
 
@@ -145,6 +145,7 @@ serve(async (req) => {
     }
 
     // 6) Log job creation to job_progress_log
+    const currentTimestamp = new Date().toISOString();
     const { error: progressLogError } = await admin
       .from('job_progress_log')
       .insert({
@@ -153,8 +154,8 @@ serve(async (req) => {
         actor_id: actor_id,
         actor_role: actor_role,
         action_type: 'job_created',
-        notes: `Job ${insertedJob.order_number} created.`,
-        timestamp: new Date().toISOString(),
+        notes: `${me.full_name} created job '${insertedJob.order_number}' with ${stopsToInsert.filter((s: any) => s.type === 'collection').length} collection(s) and ${stopsToInsert.filter((s: any) => s.type === 'delivery').length} delivery(ies).`,
+        timestamp: currentTimestamp,
       });
     if (progressLogError) {
       console.error("DEBUG: progress log insert failed for job creation", progressLogError.message);
@@ -169,7 +170,7 @@ serve(async (req) => {
       action: "create",
       before: null,
       after: insertedJob,
-      created_at: new Date().toISOString(),
+      created_at: currentTimestamp,
     });
     if (auditError) {
       console.error("DEBUG: audit insert failed", auditError.message);

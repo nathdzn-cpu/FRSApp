@@ -76,7 +76,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                     <FormLabel className="text-gray-700">Year</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white hover:bg-gray-50">
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
                       </FormControl>
@@ -98,7 +98,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                     <FormLabel className="text-gray-700">Month</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white hover:bg-gray-50">
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
                       </FormControl>
@@ -120,7 +120,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                     <FormLabel className="text-gray-700">Day</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white hover:bg-gray-50">
                           <SelectValue placeholder="Day" />
                         </SelectTrigger>
                       </FormControl>
