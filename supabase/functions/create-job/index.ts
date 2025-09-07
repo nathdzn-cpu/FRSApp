@@ -34,24 +34,24 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, tenant_id")
+      .select("id, role, org_id")
       .eq("id", authUser.user.id)
       .single();
 
     if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
-    if (!me || !me.tenant_id || !['admin', 'office'].includes(me.role)) {
-      throw new Error("Access denied (admin or office role required and tenant_id must be set).");
+    if (!me || !me.org_id || !['admin', 'office'].includes(me.role)) {
+      throw new Error("Access denied (admin or office role required and org_id must be set).");
     }
 
     // 2) Parse body
     const body = await req.json().catch(() => ({}));
-    const { jobData, stopsData, tenant_id, actor_id } = body;
+    const { jobData, stopsData, org_id, actor_id } = body;
 
-    if (!jobData || !stopsData || !tenant_id || !actor_id) {
-      throw new Error("Missing jobData, stopsData, tenant_id, or actor_id in request body.");
+    if (!jobData || !stopsData || !org_id || !actor_id) {
+      throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body.");
     }
 
-    if (tenant_id !== me.tenant_id) {
+    if (org_id !== me.org_id) {
       throw new Error("Tenant ID mismatch. User can only create jobs in their own tenant.");
     }
     if (actor_id !== me.id) {
@@ -65,7 +65,7 @@ serve(async (req) => {
       const { data: existingRefsData, error: refsError } = await admin
         .from("jobs")
         .select("ref")
-        .eq("tenant_id", tenant_id)
+        .eq("org_id", org_id)
         .like("ref", "FRS-%");
 
       if (refsError) throw new Error("Failed to fetch existing job references: " + refsError.message);
@@ -87,7 +87,7 @@ serve(async (req) => {
     const newJobId = uuidv4();
     const jobToInsert = {
       id: newJobId,
-      tenant_id: tenant_id,
+      org_id: org_id,
       ref: newJobRef,
       price: jobData.price || null,
       status: jobData.status || 'planned',
@@ -111,7 +111,7 @@ serve(async (req) => {
     // 6) Prepare and insert stops
     const stopsToInsert = stopsData.map((stop: any, index: number) => ({
       id: uuidv4(),
-      tenant_id: tenant_id,
+      org_id: org_id,
       job_id: insertedJob.id,
       seq: index + 1, // Ensure sequence is set
       type: stop.type,
@@ -140,7 +140,7 @@ serve(async (req) => {
 
     // 7) Audit log
     await admin.from("audit_logs").insert({
-      tenant_id: tenant_id,
+      org_id: org_id,
       actor_id: actor_id,
       entity: "jobs",
       entity_id: insertedJob.id,

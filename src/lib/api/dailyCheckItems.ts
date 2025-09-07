@@ -15,7 +15,7 @@ export const getDailyCheckItems = async (): Promise<DailyCheckItem[]> => {
   return data;
 };
 
-export const createDailyCheckItem = async (itemData: Omit<DailyCheckItem, 'id' | 'tenant_id' | 'created_at'>): Promise<DailyCheckItem> => {
+export const createDailyCheckItem = async (itemData: Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>): Promise<DailyCheckItem> => {
   const { data, error } = await supabase.functions.invoke('admin-daily-check-items', {
     method: 'POST',
     body: JSON.stringify(itemData),
@@ -28,7 +28,7 @@ export const createDailyCheckItem = async (itemData: Omit<DailyCheckItem, 'id' |
   return data;
 };
 
-export const updateDailyCheckItem = async (itemId: string, updates: Partial<Omit<DailyCheckItem, 'id' | 'tenant_id' | 'created_at'>>): Promise<DailyCheckItem> => {
+export const updateDailyCheckItem = async (itemId: string, updates: Partial<Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>>): Promise<DailyCheckItem> => {
   const { data, error } = await supabase.functions.invoke(`admin-daily-check-items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify(updates),

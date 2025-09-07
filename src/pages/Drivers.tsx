@@ -16,7 +16,7 @@ const Drivers: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
   const [error, setError] = useState<string | null>(null);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   useEffect(() => {
     if (!user || !profile) {
@@ -30,7 +30,7 @@ const Drivers: React.FC = () => {
       try {
         const fetchedTenants = await getTenants();
         // Ensure selectedTenantId is set, ideally from user's profile or a default
-        const defaultTenantId = profile.tenant_id || fetchedTenants[0]?.id;
+        const defaultTenantId = profile.org_id || fetchedTenants[0]?.id;
 
         if (defaultTenantId) {
           const fetchedProfiles = await getProfiles(defaultTenantId);

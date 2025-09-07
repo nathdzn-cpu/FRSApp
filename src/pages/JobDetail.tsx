@@ -41,7 +41,7 @@ const JobDetail: React.FC = () => {
   const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>(undefined);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
   const canSeePrice = userRole === 'admin' || userRole === 'office';
 

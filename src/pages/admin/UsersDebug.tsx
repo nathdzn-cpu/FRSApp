@@ -12,7 +12,7 @@ export default function UsersDebug() {
     (async () => {
       setErr(null);
       const { data: auth } = await supabase.auth.getUser();
-      const { data: fetchedProfiles, error } = await supabase.from("profiles").select("id, role, tenant_id, full_name"); // Removed .single()
+      const { data: fetchedProfiles, error } = await supabase.from("profiles").select("id, role, org_id, full_name"); // Removed .single()
       if (error) {
         setErr(error.message);
         setProfiles(null); // Ensure profiles is null on error
@@ -42,7 +42,7 @@ export default function UsersDebug() {
       const res: any = await callFn("admin-users-create", payload);
       setLog(JSON.stringify(res, null, 2));
       // After creating, refresh the profiles list
-      const { data: updatedProfiles, error: updateError } = await supabase.from("profiles").select("id, role, tenant_id, full_name");
+      const { data: updatedProfiles, error: updateError } = await supabase.from("profiles").select("id, role, org_id, full_name");
       if (updateError) {
         console.error("Error refreshing profiles after creation:", updateError);
       } else {
@@ -85,7 +85,7 @@ export default function UsersDebug() {
       </section>
 
       <p style={{ opacity: 0.7, marginTop: 12 }}>
-        This page proves your JWT (admin), tenant_id, and the Edge Function wiring. Any failure shows the exact error.
+        This page proves your JWT (admin), org_id, and the Edge Function wiring. Any failure shows the exact error.
       </p>
     </main>
   );

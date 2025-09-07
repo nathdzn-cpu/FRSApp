@@ -23,7 +23,7 @@ const AdminChecklists: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const AdminChecklists: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = currentProfile?.tenant_id || fetchedTenants[0]?.id;
+        const defaultTenantId = currentProfile?.org_id || fetchedTenants[0]?.id;
 
         if (defaultTenantId) {
           const fetchedProfiles = await getProfiles(defaultTenantId);

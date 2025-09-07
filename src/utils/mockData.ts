@@ -77,14 +77,14 @@ export interface Job {
   id: string;
   tenant_id: string;
   ref: string;
-  price: number | null; -- Changed to allow null
+  price: number | null; // Changed to allow null
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
   scheduled_date: string; // YYYY-MM-DD
-  notes?: string | null; -- Changed to allow null
+  notes?: string | null; // Changed to allow null
   created_by: string; // profile_id
-  assigned_driver_id?: string | null; // profile_id -- Changed to allow null
+  assigned_driver_id?: string | null; // profile_id // Changed to allow null
   created_at: string;
-  deleted_at?: string | null; -- Added for soft deletion
+  deleted_at?: string | null; // Added for soft deletion
 }
 
 export interface JobStop {
@@ -95,24 +95,24 @@ export interface JobStop {
   type: 'collection' | 'delivery';
   name: string;
   address_line1: string;
-  address_line2?: string | null; -- Changed to allow null
+  address_line2?: string | null; // Changed to allow null
   city: string;
   postcode: string;
-  window_from?: string | null; // HH:MM -- Changed to allow null
-  window_to?: string | null; // HH:MM -- Changed to allow null
-  notes?: string | null; -- Changed to allow null
+  window_from?: string | null; // HH:MM // Changed to allow null
+  window_to?: string | null; // HH:MM // Changed to allow null
+  notes?: string | null; // Changed to allow null
 }
 
 export interface JobEvent {
   id: string;
   tenant_id: string;
   job_id: string;
-  stop_id?: string | null; -- Changed to allow null
+  stop_id?: string | null; // Changed to allow null
   actor_id: string; // profile_id
   event_type: 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'pod_requested' | 'pod_uploaded' | 'location_ping' | 'status_changed' | 'job_cancelled' | 'note_added';
-  notes?: string | null; -- Changed to allow null
-  lat?: number | null; -- Changed to allow null
-  lon?: number | null; -- Changed to allow null
+  notes?: string | null; // Changed to allow null
+  lat?: number | null; // Changed to allow null
+  lon?: number | null; // Changed to allow null
   created_at: string;
 }
 
@@ -120,7 +120,7 @@ export interface Document {
   id: string;
   tenant_id: string;
   job_id: string;
-  stop_id?: string | null; -- Changed to allow null
+  stop_id?: string | null; // Changed to allow null
   type: 'pod' | 'cmr' | 'damage' | 'check_signature';
   storage_path: string;
   uploaded_by: string; // profile_id
@@ -143,9 +143,9 @@ export interface AuditLog {
   entity: string;
   entity_id: string;
   action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password';
-  before?: Record<string, any> | null; -- Changed to allow null
-  after?: Record<string, any> | null; -- Changed to allow null
-  notes?: string | null; -- Changed to allow null
+  before?: Record<string, any> | null; // Changed to allow null
+  after?: Record<string, any> | null; // Changed to allow null
+  notes?: string | null; // Changed to allow null
   created_at: string;
 }
 

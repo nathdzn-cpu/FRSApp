@@ -41,7 +41,7 @@ if (!authUser?.user?.id) {
 
 const { data: me, error: meErr } = await user
   .from("profiles")
-  .select("id, role, tenant_id")
+  .select("id, role, org_id")
   .eq("id", authUser.user.id)
   .single();
 
@@ -97,7 +97,7 @@ if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
     const user_id = `${kind}_${slugify(full_name)}`;
     const profile: Record<string, any> = {
       id: authId,
-      tenant_id: me.tenant_id ?? null,
+      org_id: me.org_id ?? null,
       full_name,
       phone,
       role: kind,
@@ -122,7 +122,7 @@ if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
 
     // 6) Audit (optional)
     await admin.from("audit_logs").insert({
-      tenant_id: me.tenant_id ?? null,
+      org_id: me.org_id ?? null,
       actor_id: me.id,
       entity: "profiles",
       entity_id: authId,

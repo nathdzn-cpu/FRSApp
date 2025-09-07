@@ -28,7 +28,7 @@ const Index = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id';
+  const currentTenantId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canCreateJob = userRole === 'admin' || userRole === 'office';
   const canAccessAdminUsers = userRole === 'admin';
@@ -44,7 +44,7 @@ const Index = () => {
   // Set selectedTenantId once tenants and profile are loaded
   useEffect(() => {
     if (tenants.length > 0 && currentProfile && !selectedTenantId) {
-      setSelectedTenantId(currentProfile.tenant_id || tenants[0]?.id);
+      setSelectedTenantId(currentProfile.org_id || tenants[0]?.id);
     }
   }, [tenants, currentProfile, selectedTenantId]);
 

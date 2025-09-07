@@ -4,7 +4,7 @@ import { delay } from '../utils/apiUtils';
 
 export const getProfiles = async (tenantId: string): Promise<Profile[]> => {
   await delay(200);
-  return mockProfiles.filter(p => p.tenant_id === tenantId);
+  return mockProfiles.filter(p => p.org_id === tenantId);
 };
 
 export const getProfileByAuthId = async (authUserId: string): Promise<Profile | undefined> => {
@@ -14,7 +14,7 @@ export const getProfileByAuthId = async (authUserId: string): Promise<Profile | 
 
 export const getUsersForAdmin = async (tenantId: string): Promise<Profile[]> => {
   await delay(200);
-  return mockProfiles.filter(p => p.tenant_id === tenantId);
+  return mockProfiles.filter(p => p.org_id === tenantId);
 };
 
 interface CreateUserData {
@@ -52,7 +52,7 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
 
   const newUser: Profile = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     created_at: new Date().toISOString(),
     full_name: userData.full_name,
     dob: userData.dob,
@@ -66,7 +66,7 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
   mockProfiles.push(newUser);
   mockAuditLogs.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     actor_id: actorId,
     entity: 'profiles',
     entity_id: newUser.id,
@@ -79,13 +79,13 @@ export const createUser = async (tenantId: string, userData: CreateUserData, act
 
 export const updateUser = async (tenantId: string, profileId: string, updates: Partial<Profile>, actorId: string): Promise<Profile | undefined> => {
   await delay(500);
-  const profileIndex = mockProfiles.findIndex(p => p.id === profileId && p.tenant_id === tenantId);
+  const profileIndex = mockProfiles.findIndex(p => p.id === profileId && p.org_id === tenantId);
   if (profileIndex > -1) {
     const oldProfile = { ...mockProfiles[profileIndex] };
     mockProfiles[profileIndex] = { ...oldProfile, ...updates };
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'profiles',
       entity_id: profileId,
@@ -101,7 +101,7 @@ export const updateUser = async (tenantId: string, profileId: string, updates: P
 
 export const resetUserPassword = async (tenantId: string, userId: string, actorId: string): Promise<boolean> => {
   await delay(500);
-  const userProfile = mockProfiles.find(p => p.user_id === userId && p.tenant_id === tenantId);
+  const userProfile = mockProfiles.find(p => p.user_id === userId && p.org_id === tenantId);
   if (!userProfile) throw new Error("User not found.");
 
   // Simulate Supabase Auth Admin API call to send password reset email
@@ -115,7 +115,7 @@ export const resetUserPassword = async (tenantId: string, userId: string, actorI
 
   mockAuditLogs.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     actor_id: actorId,
     entity: 'auth',
     entity_id: userId,
@@ -128,7 +128,7 @@ export const resetUserPassword = async (tenantId: string, userId: string, actorI
 
 export const deleteUser = async (tenantId: string, profileId: string, actorId: string): Promise<boolean> => {
   await delay(500);
-  const profileIndex = mockProfiles.findIndex(p => p.id === profileId && p.tenant_id === tenantId);
+  const profileIndex = mockProfiles.findIndex(p => p.id === profileId && p.org_id === tenantId);
   if (profileIndex > -1) {
     const deletedProfile = mockProfiles.splice(profileIndex, 1)[0];
     // Simulate Supabase Auth Admin API call to delete user
@@ -136,7 +136,7 @@ export const deleteUser = async (tenantId: string, profileId: string, actorId: s
 
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'profiles',
       entity_id: profileId,
@@ -157,7 +157,7 @@ export const purgeDemoUsers = async (tenantId: string, actorId: string): Promise
 
   // Filter out demo users for the given tenant
   const updatedProfiles = mockProfiles.filter(p => {
-    if (p.tenant_id === tenantId && p.is_demo) {
+    if (p.org_id === tenantId && p.is_demo) {
       removedProfiles.push(p);
       return false; // Remove this profile
     }
@@ -175,7 +175,7 @@ export const purgeDemoUsers = async (tenantId: string, actorId: string): Promise
 
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'profiles',
       entity_id: actorId, // Actor is performing the purge
@@ -197,7 +197,7 @@ export const purgeAllNonAdminUsers = async (tenantId: string, actorId: string): 
 
   // Filter out all non-admin users for the given tenant
   const updatedProfiles = mockProfiles.filter(p => {
-    if (p.tenant_id === tenantId && p.role !== 'admin') {
+    if (p.org_id === tenantId && p.role !== 'admin') {
       removedProfiles.push(p);
       return false; // Remove this profile
     }
@@ -215,7 +215,7 @@ export const purgeAllNonAdminUsers = async (tenantId: string, actorId: string): 
 
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'profiles',
       entity_id: actorId, // Actor is performing the purge

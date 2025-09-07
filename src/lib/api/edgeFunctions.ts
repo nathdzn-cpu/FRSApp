@@ -8,7 +8,7 @@ export const requestPod = async (jobId: string, tenantId: string, actorId: strin
   // Simulate inserting job_event
   mockJobEvents.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     actor_id: actorId,
     event_type: 'pod_requested',
@@ -43,7 +43,7 @@ export const generateJobPdf = async (jobId: string, tenantId: string, actorId: s
 
 export const cloneJob = async (jobId: string, tenantId: string, actorId: string): Promise<Job | undefined> => {
   await delay(1000);
-  const originalJob = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId);
+  const originalJob = mockJobs.find(j => j.id === jobId && j.org_id === tenantId);
   if (!originalJob) return undefined;
 
   const newJobId = uuidv4();
@@ -71,7 +71,7 @@ export const cloneJob = async (jobId: string, tenantId: string, actorId: string)
 
   mockAuditLogs.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     actor_id: actorId,
     entity: 'jobs',
     entity_id: newJobId,
@@ -86,13 +86,13 @@ export const cloneJob = async (jobId: string, tenantId: string, actorId: string)
 
 export const cancelJob = async (jobId: string, tenantId: string, actorId: string): Promise<Job | undefined> => {
   await delay(500);
-  const jobIndex = mockJobs.findIndex(j => j.id === jobId && j.tenant_id === tenantId);
+  const jobIndex = mockJobs.findIndex(j => j.id === jobId && j.org_id === tenantId);
   if (jobIndex > -1) {
     const oldJob = { ...mockJobs[jobIndex] };
     mockJobs[jobIndex] = { ...oldJob, status: 'cancelled', created_at: new Date().toISOString() };
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'jobs',
       entity_id: jobId,
@@ -108,13 +108,13 @@ export const cancelJob = async (jobId: string, tenantId: string, actorId: string
 
 export const assignDriverToJob = async (jobId: string, tenantId: string, driverId: string, actorId: string): Promise<Job | undefined> => {
   await delay(500);
-  const jobIndex = mockJobs.findIndex(j => j.id === jobId && j.tenant_id === tenantId);
+  const jobIndex = mockJobs.findIndex(j => j.id === jobId && j.org_id === tenantId);
   if (jobIndex > -1) {
     const oldJob = { ...mockJobs[jobIndex] };
     mockJobs[jobIndex] = { ...oldJob, assigned_driver_id: driverId, status: 'assigned', created_at: new Date().toISOString() };
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: actorId,
       entity: 'jobs',
       entity_id: jobId,

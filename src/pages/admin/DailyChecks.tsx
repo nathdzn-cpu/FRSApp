@@ -46,7 +46,7 @@ const AdminDailyChecks: React.FC = () => {
   // State for editing item dialog
   const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   const loadItems = async () => {
     if (!user || userRole !== 'admin' || !currentTenantId) {
@@ -61,7 +61,7 @@ const AdminDailyChecks: React.FC = () => {
       const { data, error: dbError } = await supabase
         .from("daily_check_items")
         .select("id, title, description, is_active")
-        .eq("tenant_id", currentTenantId) // Filter by tenant_id
+        .eq("org_id", currentTenantId) // Filter by org_id
         .order("created_at", { ascending: false });
 
       if (dbError) {
@@ -102,12 +102,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "create", title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive, tenant_id: currentTenantId };
+      const payload = { op: "create", title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive, org_id: currentTenantId };
       try {
         await callFn("admin-daily-check-items", payload);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").insert({ ...payload, tenant_id: currentTenantId });
+          const { error: dbError } = await supabase.from("daily_check_items").insert({ ...payload, org_id: currentTenantId });
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -131,12 +131,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "update", id, changes: { is_active: !is_active }, tenant_id: currentTenantId };
+      const payload = { op: "update", id, changes: { is_active: !is_active }, org_id: currentTenantId };
       try {
         await callFn("admin-daily-check-items", payload);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").update({ is_active: !is_active }).eq("id", id).eq("tenant_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").update({ is_active: !is_active }).eq("id", id).eq("org_id", currentTenantId);
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -165,12 +165,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "update", id: editingItem.id, changes: { title: editingItem.title, description: editingItem.description?.trim() || null }, tenant_id: currentTenantId };
+      const payload = { op: "update", id: editingItem.id, changes: { title: editingItem.title, description: editingItem.description?.trim() || null }, org_id: currentTenantId };
       try {
         await callFn("admin-daily-check-items", payload);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").update({ title: editingItem.title, description: editingItem.description?.trim() || null }).eq("id", editingItem.id).eq("tenant_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").update({ title: editingItem.title, description: editingItem.description?.trim() || null }).eq("id", editingItem.id).eq("org_id", currentTenantId);
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -192,12 +192,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "delete", id, tenant_id: currentTenantId };
+      const payload = { op: "delete", id, org_id: currentTenantId };
       try {
         await callFn("admin-daily-check-items", payload);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("tenant_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("org_id", currentTenantId);
           if (dbError) throw dbError;
         } else {
           throw e;

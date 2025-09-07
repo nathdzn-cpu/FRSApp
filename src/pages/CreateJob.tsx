@@ -47,7 +47,7 @@ const CreateJob: React.FC = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient(); // Initialize useQueryClient
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id';
+  const currentTenantId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
   const canSeePrice = canAccess;

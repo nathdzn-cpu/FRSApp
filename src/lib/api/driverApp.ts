@@ -15,7 +15,7 @@ import { delay } from '../utils/apiUtils';
 
 export const confirmJob = async (jobId: string, tenantId: string, driverId: string, eta: string): Promise<JobEvent[]> => {
   await delay(500);
-  const job = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId && j.assigned_driver_id === driverId);
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === tenantId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
   const events: JobEvent[] = [];
@@ -23,7 +23,7 @@ export const confirmJob = async (jobId: string, tenantId: string, driverId: stri
   // Add job_confirmed event
   const confirmedEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     actor_id: driverId,
     event_type: 'job_confirmed',
@@ -36,7 +36,7 @@ export const confirmJob = async (jobId: string, tenantId: string, driverId: stri
   // Add eta_set event
   const etaEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     actor_id: driverId,
     event_type: 'eta_set',
@@ -51,7 +51,7 @@ export const confirmJob = async (jobId: string, tenantId: string, driverId: stri
     job.status = 'in_progress';
     mockJobEvents.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       job_id: jobId,
       actor_id: driverId,
       event_type: 'status_changed',
@@ -74,7 +74,7 @@ export const updateJobStage = async (
   lon?: number,
 ): Promise<JobEvent | undefined> => {
   await delay(500);
-  const job = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId && j.assigned_driver_id === driverId);
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === tenantId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
   // Update job status based on event type
@@ -86,7 +86,7 @@ export const updateJobStage = async (
 
   const newEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     stop_id: stopId,
     actor_id: driverId,
@@ -120,7 +120,7 @@ export const uploadDocument = async (
 
   const newDocument: Document = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     stop_id: stopId,
     type: type,
@@ -133,7 +133,7 @@ export const uploadDocument = async (
   // Add a job event for document upload
   mockJobEvents.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     stop_id: stopId,
     actor_id: driverId,
@@ -148,12 +148,12 @@ export const uploadDocument = async (
 
 export const addJobNote = async (jobId: string, tenantId: string, driverId: string, note: string): Promise<JobEvent> => {
   await delay(300);
-  const job = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId && j.assigned_driver_id === driverId);
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === tenantId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
   const newEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     actor_id: driverId,
     event_type: 'note_added',
@@ -166,12 +166,12 @@ export const addJobNote = async (jobId: string, tenantId: string, driverId: stri
 
 export const recordLocationPing = async (jobId: string, tenantId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => {
   await delay(100); // Very quick for frequent pings
-  const job = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId && j.assigned_driver_id === driverId);
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === tenantId && j.assigned_driver_id === driverId);
   if (!job || job.status !== 'in_progress') throw new Error("Job not in progress or not assigned to this driver.");
 
   const newEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     job_id: jobId,
     actor_id: driverId,
     event_type: 'location_ping',
@@ -199,7 +199,7 @@ export const registerPushToken = async (profileId: string, tenantId: string, pla
 
   const newDevice: ProfileDevice = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     profile_id: profileId,
     platform: platform,
     expo_push_token: expoPushToken,
@@ -235,7 +235,7 @@ export const submitDailyCheck = async (
 
   const newDailyCheck: DailyCheck = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     driver_id: driverId,
     checklist_id: checklistId,
     vehicle_reg: vehicleReg,
@@ -255,7 +255,7 @@ export const submitDailyCheck = async (
   if (signatureBase64 && newDailyCheck.signature_path) {
     mockDocuments.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       job_id: 'N/A', // Daily checks are not tied to a specific job_id in this schema
       type: 'check_signature',
       storage_path: newDailyCheck.signature_path,
@@ -271,7 +271,7 @@ export const submitDailyCheck = async (
     if (trailerNo) driverProfile.trailer_no = trailerNo;
     mockAuditLogs.push({
       id: uuidv4(),
-      tenant_id: tenantId,
+      org_id: tenantId,
       actor_id: driverId,
       entity: 'profiles',
       entity_id: driverId,

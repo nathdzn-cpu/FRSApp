@@ -48,7 +48,7 @@ const DriverDailyCheck: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +78,7 @@ const DriverDailyCheck: React.FC = () => {
         const { data: itemsData, error: itemsError } = await supabase
           .from("daily_check_items")
           .select("id, title, description, is_active")
-          .eq("tenant_id", currentTenantId)
+          .eq("org_id", currentTenantId)
           .eq("is_active", true)
           .order("created_at", { ascending: true });
 
@@ -187,7 +187,7 @@ const DriverDailyCheck: React.FC = () => {
         duration_seconds: duration_seconds,
         signature: signature,
         items: itemsPayload,
-        tenant_id: currentTenantId, // Include tenant_id for direct insert fallback
+        org_id: currentTenantId, // Include org_id for direct insert fallback
         driver_id: currentProfile.id, // Include driver_id for direct insert fallback
       };
 

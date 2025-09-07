@@ -30,7 +30,7 @@ const EditUser: React.FC = () => {
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined); // This will be the admin's profile
   const [isResetPasswordBusy, setIsResetPasswordBusy] = useState(false);
 
-  const currentTenantId = profile?.tenant_id || 'demo-tenant-id'; // Use profile's tenant_id
+  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   useEffect(() => {
     if (isLoadingAuth) return; // Wait for auth to load
@@ -46,7 +46,7 @@ const EditUser: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = profile?.tenant_id || fetchedTenants[0]?.id;
+        const defaultTenantId = profile?.org_id || fetchedTenants[0]?.id;
         if (defaultTenantId && user) {
           const allProfiles = await getProfiles(defaultTenantId);
           setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id)); // Set the admin's profile

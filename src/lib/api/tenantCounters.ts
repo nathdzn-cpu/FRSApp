@@ -4,7 +4,7 @@ import { delay } from '../utils/apiUtils';
 
 // Simulated tenant_counters table
 interface TenantCounter {
-  tenant_id: string;
+  org_id: string;
   lock: number; // Used for simulating a lock mechanism
 }
 
@@ -14,16 +14,16 @@ export const allocateJobRef = async (tenantId: string, actorId: string): Promise
   await delay(300); // Simulate database transaction delay
 
   // Simulate transaction with FOR UPDATE on a tenant scoped locking row
-  let counter = mockTenantCounters.find(tc => tc.tenant_id === tenantId);
+  let counter = mockTenantCounters.find(tc => tc.org_id === tenantId);
   if (!counter) {
-    counter = { tenant_id: tenantId, lock: 0 };
+    counter = { org_id: tenantId, lock: 0 };
     mockTenantCounters.push(counter);
   }
   counter.lock++; // Simulate incrementing lock
 
   // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
   const existingRefs = mockJobs
-    .filter(job => job.tenant_id === tenantId && job.ref.startsWith('FRS-'))
+    .filter(job => job.org_id === tenantId && job.ref.startsWith('FRS-'))
     .map(job => parseInt(job.ref.substring(4), 10))
     .filter(num => !isNaN(num));
 
@@ -39,7 +39,7 @@ export const allocateJobRef = async (tenantId: string, actorId: string): Promise
   // Simulate audit log for allocation (optional, could be part of job creation)
   mockAuditLogs.push({
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: tenantId,
     actor_id: actorId,
     entity: 'jobs',
     entity_id: 'N/A', // No job ID yet
