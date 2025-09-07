@@ -8,18 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Generate years for DOB dropdown (e.g., 1900 to current year)
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => (1900 + i).toString()).reverse();
+const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 const driverFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
-  dob: z.date({ required_error: 'Date of Birth is required.' }),
+  dob_year: z.string().min(1, { message: 'Year is required.' }),
+  dob_month: z.string().min(1, { message: 'Month is required.' }),
+  dob_day: z.string().min(1, { message: 'Day is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
-  truck_reg: z.string().optional().or(z.literal('')),
-  trailer_no: z.string().optional().or(z.literal('')),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
@@ -35,10 +37,10 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
     resolver: zodResolver(driverFormSchema),
     defaultValues: {
       full_name: '',
-      dob: undefined,
+      dob_year: '',
+      dob_month: '',
+      dob_day: '',
       phone: '',
-      truck_reg: '',
-      trailer_no: '',
       email: '',
       password: '',
     },
@@ -65,47 +67,74 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="dob"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-gray-700">Date of Birth</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+            <div className="grid grid-cols-3 gap-2">
+              <FormField
+                control={form.control}
+                name="dob_year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Year</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Year" />
+                        </SelectTrigger>
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        captionLayout="dropdown"
-                        fromYear={1900}
-                        toYear={new Date().getFullYear()}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      <SelectContent className="bg-white shadow-sm rounded-xl max-h-60 overflow-y-auto">
+                        {years.map((year) => (
+                          <SelectItem key={year} value={year}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dob_month"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Month</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white shadow-sm rounded-xl">
+                        {months.map((month) => (
+                          <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dob_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Day</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Day" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white shadow-sm rounded-xl">
+                        {days.map((day) => (
+                          <SelectItem key={day} value={day}>{day}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="phone"
@@ -114,32 +143,6 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                   <FormLabel className="text-gray-700">Contact Number</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., +447123456789" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="truck_reg"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Initial Truck Registration (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., AB12 CDE" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="trailer_no"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Initial Trailer Number (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., TRL-001" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

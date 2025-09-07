@@ -56,9 +56,12 @@ const CreateDriver: React.FC = () => {
     }
 
     try {
+      // Construct DOB string from dropdown values
+      const dobString = `${values.dob_year}-${values.dob_month}-${values.dob_day}`;
+
       const newDriverData: any = {
         full_name: values.full_name,
-        dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
+        dob: dobString, // Use the constructed DOB string
         phone: values.phone,
         role: 'driver' as const,
         email: values.email,
@@ -66,12 +69,7 @@ const CreateDriver: React.FC = () => {
         is_demo: false, // Default to non-demo for manual creation
       };
 
-      if (values.truck_reg) {
-        newDriverData.truck_reg = values.truck_reg;
-      }
-      if (values.trailer_no) {
-        newDriverData.trailer_no = values.trailer_no;
-      }
+      // truck_reg and trailer_no are no longer part of the form, so no need to pass them here.
 
       const promise = createUser(currentOrgId, newDriverData, currentAdminProfile.id);
       toast.promise(promise, {
