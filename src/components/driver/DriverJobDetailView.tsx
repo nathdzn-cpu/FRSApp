@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, MapPin, CheckCircle } from 'lucide-react';
-import { Job, JobStop, Profile, JobProgressLog } from '@/utils/mockData';
+import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
 import ProgressActionDialog from './ProgressActionDialog';
@@ -13,11 +13,13 @@ import PodUploadDialog from './PodUploadDialog';
 import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction'; // Import the new utility
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import DriverCompletedJobView from './DriverCompletedJobView'; // Import the new component
 
 interface DriverJobDetailViewProps {
   job: Job;
   stops: JobStop[];
   progressLogs: JobProgressLog[];
+  documents: Document[]; // Pass documents to driver view
   currentProfile: Profile;
   currentOrgId: string;
   userRole: 'driver';
@@ -28,6 +30,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   job,
   stops,
   progressLogs,
+  documents, // Receive documents
   currentProfile,
   currentOrgId,
   userRole,
@@ -96,7 +99,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <MapPin className={`h-4 w-4 ${stop.type === 'collection' ? 'text-blue-600' : 'text-green-600'}`} />
-          <h4 className="font-semibold text-lg text-gray-900">{formatAddressPart(stop.name)} ({stop.type === 'collection' ? 'Collection' : 'Delivery'} {stop.seq})</h4>
+          <h4 className="font-semibold text-lg text-gray-900">{formatAddressPart(stop.name)} ({stop.seq})</h4>
         </div>
       </div>
       <p className="text-gray-700">{formatAddressPart(stop.address_line1)}</p>
@@ -113,6 +116,9 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
 
   const currentStopForAction = nextAction ? stops.find(s => s.id === nextAction.stopId) : undefined;
 
+  // Check if the job is completed (delivered or POD received)
+  const isJobCompleted = job.status === 'delivered' || job.status === 'pod_received';
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
@@ -120,45 +126,56 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="p-0 pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pt-4 space-y-4">
-            <div>
-              <p className="font-medium text-gray-900">Notes:</p>
-              <p className="text-gray-700">{job.notes || '-'}</p>
-            </div>
-
-            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
-
-            {nextAction ? (
-              <>
-                {nextAction.stopId && (
-                  <p className="text-sm text-gray-600 mb-2">
-                    Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
-                  </p>
-                )}
-                {currentStopForAction && renderStopDetails(currentStopForAction)}
-                <Button
-                  onClick={handleNextActionButtonClick}
-                  disabled={isUpdatingProgress}
-                  className="w-full mt-4 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                  data-testid="driver-next-action-btn"
-                >
-                  {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                  {nextAction.label}
-                </Button>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
-                <p className="text-gray-600">All stops have been processed.</p>
+        {isJobCompleted ? (
+          <DriverCompletedJobView
+            job={job}
+            progressLogs={progressLogs}
+            documents={documents}
+            currentProfile={currentProfile}
+            currentOrgId={currentOrgId}
+            refetchJobData={refetchJobData}
+          />
+        ) : (
+          <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+            <CardHeader className="p-0 pb-4">
+              <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 pt-4 space-y-4">
+              <div>
+                <p className="font-medium text-gray-900">Notes:</p>
+                <p className="text-gray-700">{job.notes || '-'}</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
+
+              {nextAction ? (
+                <>
+                  {nextAction.stopId && (
+                    <p className="text-sm text-gray-600 mb-2">
+                      Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
+                    </p>
+                  )}
+                  {currentStopForAction && renderStopDetails(currentStopForAction)}
+                  <Button
+                    onClick={handleNextActionButtonClick}
+                    disabled={isUpdatingProgress}
+                    className="w-full mt-4 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                    data-testid="driver-next-action-btn"
+                  >
+                    {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                    {nextAction.label}
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
+                  <p className="text-gray-600">All stops have been processed.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {nextAction && nextAction.nextStatus !== 'pod_received' && (
@@ -182,6 +199,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           currentProfile={currentProfile}
           onUploadSuccess={handlePodUploadSuccess}
           isLoading={isUpdatingProgress}
+          setIsLoading={setIsUpdatingProgress} // Pass setter for internal loading state
         />
       )}
     </div>

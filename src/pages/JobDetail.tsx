@@ -338,6 +338,7 @@ const JobDetail: React.FC = () => {
         job={job}
         stops={stops}
         progressLogs={progressLogs}
+        documents={documents} // Pass documents to driver view
         currentProfile={currentProfile!}
         currentOrgId={currentOrgId}
         userRole={userRole}

@@ -27,6 +27,7 @@ interface PodUploadDialogProps {
   currentProfile: Profile;
   onUploadSuccess: () => void;
   isLoading: boolean;
+  setIsLoading: (loading: boolean) => void; // New prop to control external loading state
 }
 
 const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
@@ -37,17 +38,18 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   currentProfile,
   onUploadSuccess,
   isLoading,
+  setIsLoading, // Use the new prop
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setSelectedFile(null);
-      setIsUploading(false);
+      // Reset internal loading state if dialog is opened
+      setIsLoading(false);
     }
-  }, [open]);
+  }, [open, setIsLoading]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -66,16 +68,17 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       return;
     }
 
-    setIsUploading(true);
+    setIsLoading(true); // Use external loading state
     try {
-      const fileName = `pods/${job.id}/${stopId || 'general'}/${crypto.randomUUID()}-${selectedFile.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage.from("documents").upload(fileName, selectedFile, { upsert: false });
+      const timestamp = new Date().toISOString();
+      const fileName = `${currentProfile.org_id}/${job.id}/${timestamp}-${selectedFile.name}`; // Path: {org_id}/{job_id}/{timestamp}-{filename}
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("pods").upload(fileName, selectedFile, { upsert: false });
 
       if (uploadError) {
         throw uploadError;
       }
 
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fileName);
       const publicUrl = urlData?.publicUrl;
 
       if (!publicUrl) {
@@ -85,16 +88,20 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       // Log document upload
       await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, stopId);
 
-      // Update job status to 'pod_received' and log progress
-      await updateJobProgress({
-        job_id: job.id,
-        org_id: currentProfile.org_id,
-        actor_id: currentProfile.id,
-        actor_role: currentProfile.role,
-        new_status: 'pod_received',
-        timestamp: new Date().toISOString(),
-        notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
-      });
+      // Only update job status to 'pod_received' if it's part of the progression flow (i.e., stopId is provided)
+      // For additional PODs on completed jobs, we don't change the job's overall status.
+      if (stopId) {
+        await updateJobProgress({
+          job_id: job.id,
+          org_id: currentProfile.org_id,
+          actor_id: currentProfile.id,
+          actor_role: currentProfile.role,
+          new_status: 'pod_received',
+          timestamp: new Date().toISOString(),
+          notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
+          stop_id: stopId, // Ensure stop_id is passed for progress log
+        });
+      }
 
       toast.success("POD uploaded successfully!");
       onUploadSuccess();
@@ -103,14 +110,14 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       console.error("Error uploading POD:", e);
       toast.error(`Failed to upload POD: ${e.message || String(e)}`);
     } finally {
-      setIsUploading(false);
+      setIsLoading(false); // Use external loading state
     }
   };
 
   const handleClose = (openState: boolean) => {
     if (!openState) {
       setSelectedFile(null);
-      setIsUploading(false);
+      setIsLoading(false); // Ensure loading state is reset on close
     }
     onOpenChange(openState);
   };
@@ -121,7 +128,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Upload Proof of Delivery</AlertDialogTitle>
           <AlertDialogDescription>
-            Please upload the POD document for this job.
+            Please select the POD document to upload.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex-1 overflow-y-auto p-4">
@@ -152,19 +159,19 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
               className="sr-only"
               onChange={handleFileChange}
               accept="image/png, image/jpeg, image/gif"
-              disabled={isUploading || isLoading}
+              disabled={isLoading}
             />
             {selectedFile && (
               <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-gray-50">
                 <div className="flex items-center">
                   <ImageIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-gray-800">{selectedFile.name}</span>
+                  <span className="text-sm font-medium text-gray-800 truncate">{selectedFile.name}</span>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedFile(null)}
-                  disabled={isUploading || isLoading}
+                  disabled={isLoading}
                 >
                   <XCircle className="h-4 w-4 text-red-500" />
                 </Button>
@@ -173,9 +180,9 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
           </div>
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => handleClose(false)} disabled={isUploading || isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleUpload} disabled={isUploading || isLoading || !selectedFile}>
-            {isUploading || isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          <AlertDialogCancel onClick={() => handleClose(false)} disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleUpload} disabled={isLoading || !selectedFile}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Upload POD
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -50,6 +50,9 @@ export const computeNextDriverAction = (
   // Sort stops by sequence number
   const sortedStops = [...stops].sort((a, b) => a.seq - b.seq);
 
+  const collectionStops = sortedStops.filter(s => s.type === 'collection');
+  const deliveryStops = sortedStops.filter(s => s.type === 'delivery');
+
   for (const stop of sortedStops) {
     const stopLogs = progressLogs.filter(log => log.stop_id === stop.id);
     let currentStopStatus: Job['status'] | 'pending' = 'pending';
@@ -89,7 +92,16 @@ export const computeNextDriverAction = (
     }
 
     if (nextStatus) {
-      const stopContext = `${formatAddressPart(stop.name)} (${stop.type === 'collection' ? 'Collection' : 'Delivery'} ${stop.seq})`;
+      let stopContext = formatAddressPart(stop.name);
+      const stopIndex = sortedStops.filter(s => s.type === stop.type).findIndex(s => s.id === stop.id) + 1;
+      const totalStopsOfType = stop.type === 'collection' ? collectionStops.length : deliveryStops.length;
+
+      if (totalStopsOfType > 1) {
+        stopContext += ` (${stop.type === 'collection' ? 'Collection' : 'Delivery'} ${stopIndex}/${totalStopsOfType})`;
+      } else {
+        stopContext += ` (${stop.type === 'collection' ? 'Collection' : 'Delivery'})`;
+      }
+
       return {
         label: driverActionLabels[nextStatus],
         nextStatus: nextStatus,
