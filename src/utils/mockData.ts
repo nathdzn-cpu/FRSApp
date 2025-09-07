@@ -9,7 +9,7 @@ export interface Tenant {
 
 export interface Profile {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   full_name: string;
   dob?: string;
   phone?: string;
@@ -25,7 +25,7 @@ export interface Profile {
 
 export interface DailyChecklist {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   name: string;
   items: { id: string; text: string; type: 'checkbox' | 'text' }[];
   active: boolean;
@@ -35,7 +35,7 @@ export interface DailyChecklist {
 // New interfaces for Daily HGV Checks
 export interface DailyCheckItem {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   title: string;
   description?: string;
   is_active: boolean;
@@ -44,7 +44,7 @@ export interface DailyCheckItem {
 
 export interface DailyCheckResponse {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   driver_id: string;
   truck_reg: string;
   trailer_no?: string;
@@ -58,7 +58,7 @@ export interface DailyCheckResponse {
 
 export interface DailyCheck {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   driver_id: string;
   checklist_id: string;
   vehicle_reg: string;
@@ -75,52 +75,49 @@ export interface DailyCheck {
 
 export interface Job {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   ref: string;
-  price: number | null; // Changed to allow null
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
-  scheduled_date: string; // YYYY-MM-DD
-  notes?: string | null; // Changed to allow null
-  created_by: string; // profile_id
-  assigned_driver_id?: string | null; // profile_id // Changed to allow null
+  pickup_eta?: string | null; // ISO string or HH:MM
+  delivery_eta?: string | null; // ISO string or HH:MM
   created_at: string;
   deleted_at?: string | null; // Added for soft deletion
 }
 
 export interface JobStop {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   job_id: string;
   seq: number;
   type: 'collection' | 'delivery';
   name: string;
   address_line1: string;
-  address_line2?: string | null; // Changed to allow null
+  address_line2?: string | null;
   city: string;
   postcode: string;
-  window_from?: string | null; // HH:MM // Changed to allow null
-  window_to?: string | null; // HH:MM // Changed to allow null
-  notes?: string | null; // Changed to allow null
+  window_from?: string | null; // HH:MM
+  window_to?: string | null; // HH:MM
+  notes?: string | null;
 }
 
 export interface JobEvent {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   job_id: string;
-  stop_id?: string | null; // Changed to allow null
+  stop_id?: string | null;
   actor_id: string; // profile_id
   event_type: 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'pod_requested' | 'pod_uploaded' | 'location_ping' | 'status_changed' | 'job_cancelled' | 'note_added';
-  notes?: string | null; // Changed to allow null
-  lat?: number | null; // Changed to allow null
-  lon?: number | null; // Changed to allow null
+  notes?: string | null;
+  lat?: number | null;
+  lon?: number | null;
   created_at: string;
 }
 
 export interface Document {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   job_id: string;
-  stop_id?: string | null; // Changed to allow null
+  stop_id?: string | null;
   type: 'pod' | 'cmr' | 'damage' | 'check_signature';
   storage_path: string;
   uploaded_by: string; // profile_id
@@ -129,7 +126,7 @@ export interface Document {
 
 export interface ProfileDevice {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   profile_id: string;
   platform: 'ios' | 'android';
   expo_push_token: string;
@@ -138,14 +135,14 @@ export interface ProfileDevice {
 
 export interface AuditLog {
   id: string;
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
   action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password';
-  before?: Record<string, any> | null; // Changed to allow null
-  after?: Record<string, any> | null; // Changed to allow null
-  notes?: string | null; // Changed to allow null
+  before?: Record<string, any> | null;
+  after?: Record<string, any> | null;
+  notes?: string | null;
   created_at: string;
 }
 
@@ -163,7 +160,7 @@ export const mockTenants: Tenant[] = [
 export let mockProfiles: Profile[] = [ // Made mutable
   {
     id: aliceAdminId,
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     full_name: 'Alice Admin',
     role: 'admin',
     user_id: 'auth_user_alice', // Placeholder for Supabase auth.users.id
@@ -172,7 +169,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
   },
   {
     id: daveDriverId,
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     full_name: 'Dave Driver',
     role: 'driver',
     user_id: 'auth_user_dave',
@@ -188,7 +185,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
 export const mockDailyChecklists: DailyChecklist[] = [
   {
     id: checklist1Id,
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     name: 'Pre-shift Vehicle Check',
     items: [
       { id: 'lights', text: 'All lights working?', type: 'checkbox' },
@@ -207,7 +204,7 @@ export const mockDailyChecklists: DailyChecklist[] = [
 export const mockDailyCheckItems: DailyCheckItem[] = [
   {
     id: uuidv4(),
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     title: "Brakes",
     description: "Check brake fluid, pads, and general function.",
     is_active: true,
@@ -215,7 +212,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     title: "Lights",
     description: "Check all exterior lights (headlights, tail lights, indicators, brake lights).",
     is_active: true,
@@ -223,7 +220,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     title: "Tires",
     description: "Check tire pressure, tread depth, and for any damage.",
     is_active: true,
@@ -231,7 +228,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    org_id: demoTenantId, // Changed from tenant_id
+    org_id: demoTenantId,
     title: "Windscreen Wipers",
     description: "Check wiper blades for wear and washer fluid level.",
     is_active: false,

@@ -2,26 +2,22 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { Job, Profile } from '@/utils/mockData';
 import { format } from 'date-fns';
-import { formatGBP } from '@/lib/money'; // Import the new currency formatter
 
 interface JobsTableProps {
   jobs: Job[];
-  profiles: Profile[];
+  profiles: Profile[]; // Profiles are still needed for displaying driver names if a driver is associated with a job stop
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
-  const { userRole } = useAuth(); // Use useAuth hook
-  const canSeePrice = userRole === 'admin' || userRole === 'office';
+  const { userRole } = useAuth();
+  // Removed canSeePrice as price is no longer in Job interface
 
-  const getDriverName = (driverId?: string) => {
-    const driver = profiles.find(p => p.id === driverId);
-    return driver ? driver.full_name : 'Unassigned';
-  };
+  // Removed getDriverName as assigned_driver_id is no longer in Job interface
 
-  // Sort jobs: active (assigned, in_progress) first, then by date, then unallocated highlighted
+  // Sort jobs: active (in_progress, assigned) first, then by created_at descending
   const sortedJobs = [...jobs].sort((a, b) => {
     const statusOrder = { 'in_progress': 1, 'assigned': 2, 'planned': 3, 'delivered': 4, 'cancelled': 5 };
     const statusA = statusOrder[a.status] || 99;
@@ -31,9 +27,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
       return statusA - statusB;
     }
 
-    // Then by date (newest first)
-    const dateA = new Date(a.scheduled_date).getTime();
-    const dateB = new Date(b.scheduled_date).getTime();
+    // Then by created_at (newest first)
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
     return dateB - dateA;
   });
 
@@ -43,18 +39,17 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
         <TableHeader>
           <TableRow>
             <TableHead>Ref</TableHead>
-            <TableHead>Date</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Assigned Driver</TableHead>
-            {canSeePrice && <TableHead className="text-right">Price</TableHead>}
+            <TableHead>Pickup ETA</TableHead>
+            <TableHead>Delivery ETA</TableHead>
+            <TableHead>Created At</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedJobs.map((job) => (
-            <TableRow key={job.id} className={job.assigned_driver_id === undefined ? 'bg-yellow-50/50 dark:bg-yellow-950/20' : ''}>
+            <TableRow key={job.id}>
               <TableCell className="font-medium">{job.ref}</TableCell>
-              <TableCell>{format(new Date(job.scheduled_date), 'PPP')}</TableCell>
               <TableCell>
                 <Badge
                   variant={
@@ -70,12 +65,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   {job.status.replace(/_/g, ' ')}
                 </Badge>
               </TableCell>
-              <TableCell>{getDriverName(job.assigned_driver_id)}</TableCell>
-              {canSeePrice && (
-                <TableCell className="text-right">
-                  {formatGBP(job.price)}
-                </TableCell>
-              )}
+              <TableCell>{job.pickup_eta || '-'}</TableCell>
+              <TableCell>{job.delivery_eta || '-'}</TableCell>
+              <TableCell>{format(new Date(job.created_at), 'PPP')}</TableCell>
               <TableCell className="text-center">
                 <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline">
                   Open

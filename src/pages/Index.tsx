@@ -22,13 +22,13 @@ type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const Index = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined); // Changed from selectedTenantId
+  const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canCreateJob = userRole === 'admin' || userRole === 'office';
   const canAccessAdminUsers = userRole === 'admin';
@@ -48,7 +48,7 @@ const Index = () => {
     }
   }, [tenants, currentProfile, selectedOrgId]);
 
-  // Determine date filters for jobs query
+  // Determine date filters for jobs query (using created_at)
   const getJobDateFilters = () => {
     let startDate: string | undefined;
     let endDate: string | undefined;
@@ -78,15 +78,15 @@ const Index = () => {
   // Fetch profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', selectedOrgId],
-    queryFn: () => getProfiles(selectedOrgId!), // Pass orgId
+    queryFn: () => getProfiles(selectedOrgId!),
     staleTime: 5 * 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth,
   });
 
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedOrgId, userRole, currentProfile?.id, startDate, endDate],
-    queryFn: () => getJobs(selectedOrgId!, userRole!, currentProfile?.id, startDate, endDate), // Pass orgId
+    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate], // Removed currentProfile?.id as driverId filter is removed
+    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate),
     staleTime: 60 * 1000, // Cache jobs for 1 minute
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
   });

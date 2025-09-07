@@ -2,25 +2,20 @@ import { supabase } from '../supabaseClient';
 import { Job, JobStop, JobEvent, Document } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
-export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', driverId?: string, startDate?: string, endDate?: string): Promise<Job[]> => {
+export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
   let query = supabase
     .from('jobs')
     .select('*')
-    .eq('org_id', orgId) // Changed from tenant_id
-    .is('deleted_at', null) // Filter out soft-deleted jobs
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
-    // Removed .limit(50) as per request
 
-  if (role === 'driver' && driverId) {
-    query = query.eq('assigned_driver_id', driverId);
-  }
-
-  // Apply date filters
+  // Apply date filters based on created_at
   if (startDate) {
-    query = query.gte('scheduled_date', startDate.split('T')[0]); // Compare only date part
+    query = query.gte('created_at', startDate);
   }
   if (endDate) {
-    query = query.lte('scheduled_date', endDate.split('T')[0]); // Compare only date part
+    query = query.lte('created_at', endDate);
   }
 
   const { data, error } = await query;
@@ -30,26 +25,18 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
     throw new Error(error.message);
   }
 
-  // Simulate RLS for price if role is driver (though RLS should handle this on DB)
-  if (role === 'driver') {
-    return (data as Job[]).map(({ price, ...rest }) => ({ ...rest, price: null } as Job));
-  }
-
+  // No RLS simulation for price needed as price is removed from Job interface
   return data as Job[];
 };
 
-export const getJobById = async (orgId: string, jobId: string, role: 'admin' | 'office' | 'driver', driverId?: string): Promise<Job | undefined> => {
+export const getJobById = async (orgId: string, jobId: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
   let query = supabase
     .from('jobs')
     .select('*')
     .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
-    .is('deleted_at', null) // Ensure not soft-deleted
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
     .single();
-
-  if (role === 'driver' && driverId) {
-    query = query.eq('assigned_driver_id', driverId);
-  }
 
   const { data, error } = await query;
 
@@ -60,12 +47,7 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
 
   if (!data) return undefined;
 
-  // Simulate RLS for price if role is driver (though RLS should handle this on DB)
-  if (role === 'driver') {
-    const { price, ...rest } = data;
-    return { ...rest, price: null } as Job;
-  }
-
+  // No RLS simulation for price needed as price is removed from Job interface
   return data as Job;
 };
 
@@ -74,7 +56,7 @@ export const getJobStops = async (orgId: string, jobId: string): Promise<JobStop
     .from('job_stops')
     .select('*')
     .eq('job_id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .order('seq', { ascending: true });
 
   if (error) {
@@ -89,7 +71,7 @@ export const getJobEvents = async (orgId: string, jobId: string): Promise<JobEve
     .from('job_events')
     .select('*')
     .eq('job_id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -104,7 +86,7 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
     .from('documents')
     .select('*')
     .eq('job_id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -115,30 +97,27 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
 };
 
 interface CreateJobPayload {
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'created_by' | 'status'> & { status?: Job['status']; };
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>;
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id'>[];
-  org_id: string; // Changed from tenant_id
+  org_id: string;
   actor_id: string;
 }
 
 export const createJob = async (
-  orgId: string, // Changed from tenantId
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'status' | 'created_by'> & { status?: Job['status']; created_by: string; },
+  orgId: string,
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>,
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id'>[],
   actorId: string
 ): Promise<Job> => {
   const payload: CreateJobPayload = {
     jobData: {
       ref: jobData.ref,
-      price: jobData.price,
-      scheduled_date: jobData.scheduled_date,
-      notes: jobData.notes,
-      assigned_driver_id: jobData.assigned_driver_id,
       status: jobData.status,
-      created_by: actorId, // Ensure created_by is passed
+      pickup_eta: jobData.pickup_eta,
+      delivery_eta: jobData.delivery_eta,
     },
     stopsData,
-    org_id: orgId, // Changed from tenant_id
+    org_id: orgId,
     actor_id: actorId,
   };
 
@@ -146,11 +125,11 @@ export const createJob = async (
   return result;
 };
 
-export const requestPod = async (jobId: string, orgId: string, actorId: string): Promise<boolean> => { // Changed from tenantId
+export const requestPod = async (jobId: string, orgId: string, actorId: string): Promise<boolean> => {
   const { data, error } = await supabase
     .from('job_events')
     .insert({
-      org_id: orgId, // Changed from tenant_id
+      org_id: orgId,
       job_id: jobId,
       actor_id: actorId,
       event_type: 'pod_requested',
@@ -164,7 +143,7 @@ export const requestPod = async (jobId: string, orgId: string, actorId: string):
   return true;
 };
 
-export const generateJobPdf = async (jobId: string, orgId: string, actorId: string): Promise<string | undefined> => { // Changed from tenantId
+export const generateJobPdf = async (jobId: string, orgId: string, actorId: string): Promise<string | undefined> => {
   // This would typically call an Edge Function that generates and stores the PDF.
   // For now, return a placeholder URL.
   console.log(`Simulating generate_job_pdf for job ${jobId}`);
@@ -172,12 +151,12 @@ export const generateJobPdf = async (jobId: string, orgId: string, actorId: stri
   return mockPdfUrl;
 };
 
-export const cloneJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => { // Changed from tenantId
+export const cloneJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
   const { data: originalJob, error: jobError } = await supabase
     .from('jobs')
     .select('*')
     .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .is('deleted_at', null)
     .single();
 
@@ -190,7 +169,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     .from('job_stops')
     .select('*')
     .eq('job_id', jobId)
-    .eq('org_id', orgId); // Changed from tenant_id
+    .eq('org_id', orgId);
 
   if (stopsError) {
     console.error("Error fetching original stops for cloning:", stopsError);
@@ -199,14 +178,11 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
 
   const newJobRef = `${originalJob.ref}-CLONE-${Math.floor(Math.random() * 100)}`;
   const newJob: Omit<Job, 'id' | 'created_at'> = {
-    org_id: orgId, // Changed from tenant_id
+    org_id: orgId,
     ref: newJobRef,
-    price: originalJob.price,
     status: 'planned',
-    scheduled_date: new Date().toISOString().split('T')[0],
-    notes: originalJob.notes,
-    created_by: actorId,
-    assigned_driver_id: null,
+    pickup_eta: originalJob.pickup_eta,
+    delivery_eta: originalJob.delivery_eta,
     deleted_at: null,
   };
 
@@ -222,7 +198,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   }
 
   const newStops = originalStops.map(stop => ({
-    org_id: orgId, // Changed from tenant_id
+    org_id: orgId,
     job_id: clonedJobData.id,
     seq: stop.seq,
     type: stop.type,
@@ -249,7 +225,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   }
 
   await supabase.from("audit_logs").insert({
-    org_id: orgId, // Changed from tenant_id
+    org_id: orgId,
     actor_id: actorId,
     entity: "jobs",
     entity_id: clonedJobData.id,
@@ -261,12 +237,12 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   return clonedJobData as Job;
 };
 
-export const cancelJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => { // Changed from tenantId
+export const cancelJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
   const { data: oldJob, error: fetchError } = await supabase
     .from('jobs')
     .select('status')
     .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .is('deleted_at', null)
     .single();
 
@@ -279,7 +255,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
     .from('jobs')
     .update({ status: 'cancelled', deleted_at: new Date().toISOString() }) // Soft delete on cancel
     .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
+    .eq('org_id', orgId)
     .is('deleted_at', null)
     .select()
     .single();
@@ -290,7 +266,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
   }
 
   await supabase.from("audit_logs").insert({
-    org_id: orgId, // Changed from tenant_id
+    org_id: orgId,
     actor_id: actorId,
     entity: "jobs",
     entity_id: jobId,
@@ -302,43 +278,5 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
   return data as Job;
 };
 
-export const assignDriverToJob = async (jobId: string, orgId: string, driverId: string, actorId: string): Promise<Job | undefined> => { // Changed from tenantId
-  const { data: oldJob, error: fetchError } = await supabase
-    .from('jobs')
-    .select('assigned_driver_id, status')
-    .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
-    .is('deleted_at', null)
-    .single();
-
-  if (fetchError || !oldJob) {
-    console.error("Error fetching job for assignment:", fetchError);
-    throw new Error(fetchError?.message || "Job not found.");
-  }
-
-  const { data, error } = await supabase
-    .from('jobs')
-    .update({ assigned_driver_id: driverId, status: 'assigned' })
-    .eq('id', jobId)
-    .eq('org_id', orgId) // Changed from tenant_id
-    .is('deleted_at', null)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error assigning driver to job:", error);
-    throw new Error(error.message);
-  }
-
-  await supabase.from("audit_logs").insert({
-    org_id: orgId, // Changed from tenant_id
-    actor_id: actorId,
-    entity: "jobs",
-    entity_id: jobId,
-    action: "update",
-    before: { assigned_driver_id: oldJob.assigned_driver_id, status: oldJob.status },
-    after: { assigned_driver_id: driverId, status: 'assigned' },
-  }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
-
-  return data as Job;
-};
+// Removed assignDriverToJob as assigned_driver_id is no longer in Job interface
+// If driver assignment is needed, it would require a separate table or a different approach.

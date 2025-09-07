@@ -9,17 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import JobForm from '@/components/JobForm';
-import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
 interface JobFormValues {
   ref?: string;
   override_ref?: boolean;
   manual_ref?: string;
-  scheduled_date: Date;
-  price?: number | null;
-  notes?: string;
-  assigned_driver_id?: string;
+  // Removed scheduled_date, price, notes, assigned_driver_id
+  pickup_eta?: string; // New field
+  delivery_eta?: string; // New field
   collections: Array<{
     name: string;
     address_line1: string;
@@ -45,12 +44,12 @@ interface JobFormValues {
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  const queryClient = useQueryClient(); // Initialize useQueryClient
+  const queryClient = useQueryClient();
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
-  const canSeePrice = canAccess;
+  // Removed canSeePrice as price is no longer in Job interface
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -63,7 +62,7 @@ const CreateJob: React.FC = () => {
 
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId],
-    queryFn: () => getProfiles(currentOrgId), // Pass orgId
+    queryFn: () => getProfiles(currentOrgId),
     staleTime: 5 * 60 * 1000,
     enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
   });
@@ -77,10 +76,9 @@ const CreateJob: React.FC = () => {
     try {
       const newJobData = {
         ref: values.override_ref ? values.manual_ref : undefined,
-        scheduled_date: format(values.scheduled_date, 'yyyy-MM-dd'),
-        price: canSeePrice ? values.price : undefined,
-        notes: values.notes,
-        assigned_driver_id: values.assigned_driver_id || undefined,
+        status: 'planned' as const, // Default status
+        pickup_eta: values.pickup_eta || null,
+        delivery_eta: values.delivery_eta || null,
       };
 
       const newStopsData = [...values.collections, ...values.deliveries].map((stop, index) => ({
@@ -89,12 +87,12 @@ const CreateJob: React.FC = () => {
         seq: index + 1,
       }));
 
-      const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id); // Pass orgId
+      const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id);
 
       toast.promise(promise, {
         loading: 'Creating job...',
         success: (newJob) => {
-          queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs query cache
+          queryClient.invalidateQueries({ queryKey: ['jobs'] });
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },
@@ -139,7 +137,7 @@ const CreateJob: React.FC = () => {
 
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Create New Job</h1>
 
-        <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={canSeePrice} />
+        <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} /> {/* canSeePrice is now always false */}
       </div>
     </div>
   );

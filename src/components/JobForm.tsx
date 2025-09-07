@@ -16,8 +16,8 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
-import { formatGBP } from '@/lib/money';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
+// Removed formatGBP as price is no longer in Job interface
+import { Checkbox } from '@/components/ui/checkbox';
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -31,13 +31,12 @@ const stopSchema = z.object({
 });
 
 const formSchema = z.object({
-  ref: z.string().optional(), // Now optional as it's auto-generated or overridden
-  override_ref: z.boolean().optional(), // New field for override checkbox
-  manual_ref: z.string().optional(), // New field for manual ref input
-  scheduled_date: z.date({ required_error: 'Scheduled date is required.' }),
-  price: z.number().min(0, { message: 'Price must be a positive number.' }).optional().nullable(), // Allow null for optional
-  notes: z.string().optional(),
-  assigned_driver_id: z.string().optional(),
+  ref: z.string().optional(),
+  override_ref: z.boolean().optional(),
+  manual_ref: z.string().optional(),
+  // Removed scheduled_date, price, notes, assigned_driver_id
+  pickup_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
+  delivery_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
   collections: z.array(stopSchema).min(0),
   deliveries: z.array(stopSchema).min(1, { message: 'At least one delivery point is required.' }),
 });
@@ -46,10 +45,10 @@ type JobFormValues = z.infer<typeof formSchema>;
 
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
-  profiles: Profile[];
-  canSeePrice: boolean;
+  profiles: Profile[]; // Still needed for other purposes, but not for assigning driver to job directly
+  canSeePrice: boolean; // Kept for consistency, but will always be false now
   defaultValues?: Partial<JobFormValues>;
-  generatedRef?: string; // New prop for displaying generated ref
+  generatedRef?: string;
 }
 
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
@@ -59,10 +58,8 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
       ref: '',
       override_ref: false,
       manual_ref: '',
-      scheduled_date: new Date(),
-      price: undefined,
-      notes: '',
-      assigned_driver_id: '',
+      pickup_eta: '',
+      delivery_eta: '',
       collections: [],
       deliveries: [],
       ...defaultValues,
@@ -79,7 +76,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
     name: 'deliveries',
   });
 
-  const drivers = profiles.filter(p => p.role === 'driver');
+  // Removed drivers filtering as assigned_driver_id is no longer in Job interface
 
   const overrideOrderNumber = form.watch('override_ref');
 
@@ -126,112 +123,39 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="scheduled_date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Scheduled Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {canSeePrice && (
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price (GBP)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number" // Changed to number type
-                        placeholder="e.g., 250.00"
-                        {...field}
-                        value={field.value === null || field.value === undefined ? '' : field.value} // Handle null/undefined for number input
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          field.onChange(isNaN(value) ? undefined : value); // Set to undefined if not a valid number
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Removed Scheduled Date field */}
 
             <FormField
               control={form.control}
-              name="assigned_driver_id"
+              name="pickup_eta"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assign Driver (Optional)</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(value === "unassigned-driver" ? undefined : value)}
-                    value={field.value || "unassigned-driver"} // Set value to special string if undefined
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a driver" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="unassigned-driver">Unassigned</SelectItem>
-                      {drivers.map(driver => (
-                        <SelectItem key={driver.id} value={driver.id}>
-                          {driver.full_name} ({driver.truck_reg || 'N/A'})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Pickup ETA (HH:MM)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Any special instructions for the job..." {...field} />
+                    <Input placeholder="e.g., 09:00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="delivery_eta"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Delivery ETA (HH:MM)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., 17:00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Removed Price field */}
+            {/* Removed Assign Driver field */}
+            {/* Removed Notes field */}
           </CardContent>
         </Card>
 

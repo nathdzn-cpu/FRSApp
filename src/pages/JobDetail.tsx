@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
-import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, assignDriverToJob } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob } from '@/lib/supabase';
 import { Job, JobStop, JobEvent, Document, Profile } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, FileDown, Copy, XCircle, UserPlus, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText } from 'lucide-react';
 import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
@@ -24,31 +24,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
-import { formatGBP } from '@/lib/money';
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
-  const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
-  const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>(undefined);
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  // Removed isAssignDriverDialogOpen and selectedDriverId as driver assignment is removed from Job interface
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
-  const currentProfile = profile; // Use profile from AuthContext
-  const canSeePrice = userRole === 'admin' || userRole === 'office';
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const currentProfile = profile;
+  // Removed canSeePrice as price is no longer in Job interface
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId],
-    queryFn: () => getProfiles(currentOrgId), // Pass orgId
+    queryFn: () => getProfiles(currentOrgId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!user && !!currentProfile, // Only fetch if user and profile are loaded
   });
@@ -60,20 +51,20 @@ const JobDetail: React.FC = () => {
     events: JobEvent[];
     documents: Document[];
   }, Error>({
-    queryKey: ['jobDetail', id, userRole, currentProfile?.id],
+    queryKey: ['jobDetail', id, userRole], // Removed currentProfile?.id as driverId is removed
     queryFn: async () => {
       if (!id || !currentOrgId || !currentProfile || !userRole) {
-        throw new Error("Missing job ID, tenant ID, current profile, or user role.");
+        throw new Error("Missing job ID, organization ID, current profile, or user role.");
       }
 
-      const fetchedJob = await getJobById(currentOrgId, id, userRole, currentProfile.id); // Pass orgId
+      const fetchedJob = await getJobById(currentOrgId, id, userRole);
       if (!fetchedJob) {
         throw new Error("Job not found or you don't have permission to view it.");
       }
 
-      const fetchedStops = await getJobStops(currentOrgId, id); // Pass orgId
-      const fetchedEvents = await getJobEvents(currentOrgId, id); // Pass orgId
-      const fetchedDocuments = await getJobDocuments(currentOrgId, id); // Pass orgId
+      const fetchedStops = await getJobStops(currentOrgId, id);
+      const fetchedEvents = await getJobEvents(currentOrgId, id);
+      const fetchedDocuments = await getJobDocuments(currentOrgId, id);
 
       return {
         job: fetchedJob,
@@ -94,14 +85,12 @@ const JobDetail: React.FC = () => {
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
-  const getProfileName = (profileId?: string) => {
-    const profile = allProfiles.find(p => p.id === profileId);
-    return profile ? profile.full_name : 'N/A';
-  };
+  // Removed getProfileName as created_by and assigned_driver_id are removed from Job interface.
+  // If needed, this would be for actor_id in events or uploaded_by in documents.
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile) return;
-    const promise = requestPod(job.id, currentOrgId, currentProfile.id); // Pass orgId
+    const promise = requestPod(job.id, currentOrgId, currentProfile.id);
     toast.promise(promise, {
       loading: 'Requesting POD...',
       success: 'POD request sent to driver!',
@@ -113,7 +102,7 @@ const JobDetail: React.FC = () => {
 
   const handleExportPdf = async () => {
     if (!job || !currentProfile) return;
-    const promise = generateJobPdf(job.id, currentOrgId, currentProfile.id); // Pass orgId
+    const promise = generateJobPdf(job.id, currentOrgId, currentProfile.id);
     toast.promise(promise, {
       loading: 'Generating PDF...',
       success: (url) => {
@@ -129,7 +118,7 @@ const JobDetail: React.FC = () => {
 
   const handleCloneJob = async () => {
     if (!job || !currentProfile) return;
-    const promise = cloneJob(job.id, currentOrgId, currentProfile.id); // Pass orgId
+    const promise = cloneJob(job.id, currentOrgId, currentProfile.id);
     toast.promise(promise, {
       loading: 'Cloning job...',
       success: (clonedJob) => {
@@ -145,7 +134,7 @@ const JobDetail: React.FC = () => {
 
   const handleCancelJob = async () => {
     if (!job || !currentProfile) return;
-    const promise = cancelJob(job.id, currentOrgId, currentProfile.id); // Pass orgId
+    const promise = cancelJob(job.id, currentOrgId, currentProfile.id);
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
@@ -155,18 +144,7 @@ const JobDetail: React.FC = () => {
     refetchJobData(); // Refresh job status
   };
 
-  const handleAssignDriver = async () => {
-    if (!job || !currentProfile || !selectedDriverId) return;
-    const promise = assignDriverToJob(job.id, currentOrgId, selectedDriverId, currentProfile.id); // Pass orgId
-    toast.promise(promise, {
-      loading: 'Assigning driver...',
-      success: 'Driver assigned successfully!',
-      error: 'Failed to assign driver.',
-    });
-    await promise;
-    setIsAssignDriverDialogOpen(false);
-    refetchJobData(); // Refresh job details
-  };
+  // Removed handleAssignDriver as assigned_driver_id is no longer in Job interface
 
   if (isLoading) {
     return (
@@ -200,7 +178,7 @@ const JobDetail: React.FC = () => {
   }
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-  const drivers = allProfiles.filter(p => p.role === 'driver');
+  // Removed drivers variable as assigned_driver_id is no longer in Job interface
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -231,9 +209,7 @@ const JobDetail: React.FC = () => {
             <div className="flex space-x-2">
               {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <>
-                  <Button variant="outline" onClick={() => setIsAssignDriverDialogOpen(true)}>
-                    <UserPlus className="h-4 w-4 mr-2" /> Assign Driver
-                  </Button>
+                  {/* Removed Assign Driver Button */}
                   <Button variant="outline" onClick={handleRequestPod}>
                     <FileText className="h-4 w-4 mr-2" /> Request POD
                   </Button>
@@ -269,29 +245,18 @@ const JobDetail: React.FC = () => {
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700 dark:text-gray-300">
               <div>
-                <p className="font-medium">Scheduled Date:</p>
-                <p>{format(new Date(job.scheduled_date), 'PPP')}</p>
+                <p className="font-medium">Pickup ETA:</p>
+                <p>{job.pickup_eta || '-'}</p>
               </div>
               <div>
-                <p className="font-medium">Assigned Driver:</p>
-                <p>{getProfileName(job.assigned_driver_id)}</p>
+                <p className="font-medium">Delivery ETA:</p>
+                <p>{job.delivery_eta || '-'}</p>
               </div>
-              {canSeePrice && (
-                <div>
-                  <p className="font-medium">Price:</p>
-                  <p>{formatGBP(job.price)}</p>
-                </div>
-              )}
               <div>
-                <p className="font-medium">Created By:</p>
-                <p>{getProfileName(job.created_by)}</p>
+                <p className="font-medium">Created At:</p>
+                <p>{format(new Date(job.created_at), 'PPP')}</p>
               </div>
-              {job.notes && (
-                <div className="col-span-full">
-                  <p className="font-medium">Notes:</p>
-                  <p>{job.notes}</p>
-                </div>
-              )}
+              {/* Removed Price, Assigned Driver, and Notes fields */}
             </div>
           </CardContent>
         </Card>
@@ -335,36 +300,7 @@ const JobDetail: React.FC = () => {
         </Tabs>
       </div>
 
-      <AlertDialog open={isAssignDriverDialogOpen} onOpenChange={setIsAssignDriverDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Assign Driver to Job {job.ref}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Select a driver from the list to assign them to this job.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Select onValueChange={setSelectedDriverId} value={selectedDriverId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a driver" />
-              </SelectTrigger>
-              <SelectContent>
-                {drivers.map(driver => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    {driver.full_name} ({driver.truck_reg || 'N/A'})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAssignDriver} disabled={!selectedDriverId}>
-              Assign
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Removed Assign Driver Dialog */}
     </div>
   );
 };

@@ -45,14 +45,14 @@ serve(async (req) => {
 
     // 2) Parse body
     const body = await req.json().catch(() => ({}));
-    const { jobData, stopsData, org_id, actor_id } = body; // Changed tenant_id to org_id
+    const { jobData, stopsData, org_id, actor_id } = body;
 
-    if (!jobData || !stopsData || !org_id || !actor_id) { // Changed tenant_id to org_id
-      throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body."); // Changed tenant_id to org_id
+    if (!jobData || !stopsData || !org_id || !actor_id) {
+      throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body.");
     }
 
-    if (org_id !== me.org_id) { // Changed tenant_id to org_id
-      throw new Error("Organization ID mismatch. User can only create jobs in their own organization."); // Changed Tenant ID to Organization ID
+    if (org_id !== me.org_id) {
+      throw new Error("Organization ID mismatch. User can only create jobs in their own organization.");
     }
     if (actor_id !== me.id) {
       throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
@@ -65,7 +65,7 @@ serve(async (req) => {
       const { data: existingRefsData, error: refsError } = await admin
         .from("jobs")
         .select("ref")
-        .eq("org_id", org_id) // Changed tenant_id to org_id
+        .eq("org_id", org_id)
         .like("ref", "FRS-%");
 
       if (refsError) throw new Error("Failed to fetch existing job references: " + refsError.message);
@@ -87,14 +87,11 @@ serve(async (req) => {
     const newJobId = uuidv4();
     const jobToInsert = {
       id: newJobId,
-      org_id: org_id, // Changed tenant_id to org_id
+      org_id: org_id,
       ref: newJobRef,
-      price: jobData.price || null,
       status: jobData.status || 'planned',
-      scheduled_date: jobData.scheduled_date,
-      notes: jobData.notes || null,
-      created_by: actor_id,
-      assigned_driver_id: jobData.assigned_driver_id || null,
+      pickup_eta: jobData.pickup_eta || null,
+      delivery_eta: jobData.delivery_eta || null,
       created_at: new Date().toISOString(),
       deleted_at: null,
     };
@@ -111,7 +108,7 @@ serve(async (req) => {
     // 6) Prepare and insert stops
     const stopsToInsert = stopsData.map((stop: any, index: number) => ({
       id: uuidv4(),
-      org_id: org_id, // Changed tenant_id to org_id
+      org_id: org_id,
       job_id: insertedJob.id,
       seq: index + 1, // Ensure sequence is set
       type: stop.type,
@@ -140,7 +137,7 @@ serve(async (req) => {
 
     // 7) Audit log
     await admin.from("audit_logs").insert({
-      org_id: org_id, // Changed tenant_id to org_id
+      org_id: org_id,
       actor_id: actor_id,
       entity: "jobs",
       entity_id: insertedJob.id,
