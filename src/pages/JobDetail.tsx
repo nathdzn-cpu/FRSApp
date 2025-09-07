@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase'; // Removed getJobEvents
+import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase';
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData'; // Removed JobEvent
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -117,11 +117,10 @@ const JobDetail: React.FC = () => {
     enabled: !!user && !!currentProfile,
   });
 
-  // Use useQuery for job details, stops, events, and documents
+  // Use useQuery for job details, stops, and documents
   const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
     job: Job | undefined;
     stops: JobStop[];
-    // events: JobEvent[]; // Removed events
     documents: Document[];
     progressLogs: JobProgressLog[];
   }, Error>({
@@ -137,20 +136,17 @@ const JobDetail: React.FC = () => {
       }
 
       const fetchedStops = await getJobStops(currentOrgId, id);
-      // const fetchedEvents = await getJobEvents(currentOrgId, id); // Removed getJobEvents
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
       const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id);
 
       console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
       console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
-      // console.log("DEBUG: JobDetail - fetchedEvents:", fetchedEvents); // Removed events log
       console.log("DEBUG: JobDetail - fetchedDocuments:", fetchedDocuments);
       console.log("DEBUG: JobDetail - fetchedProgressLogs:", fetchedProgressLogs);
 
       return {
         job: fetchedJob,
         stops: fetchedStops,
-        // events: fetchedEvents, // Removed events
         documents: fetchedDocuments,
         progressLogs: fetchedProgressLogs,
       };
@@ -161,7 +157,6 @@ const JobDetail: React.FC = () => {
 
   const job = jobData?.job;
   const stops = jobData?.stops || [];
-  // const events = jobData?.events || []; // Removed events
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
@@ -625,7 +620,6 @@ const JobDetail: React.FC = () => {
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="stops">Stops Table</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
-            {/* Removed Progress Log tab */}
           </TabsList>
           <TabsContent value="timeline" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
@@ -657,7 +651,6 @@ const JobDetail: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          {/* Removed Progress Log tab content */}
         </Tabs>
 
         {/* Assign Driver Dialog */}

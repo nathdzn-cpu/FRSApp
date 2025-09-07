@@ -9,16 +9,17 @@ import {
   Document,
   ProfileDevice,
   DailyCheck,
+  JobProgressLog, // Import JobProgressLog
 } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
 
-export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobEvent[]> => { // Changed tenantId to orgId
+export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobProgressLog[]> => { // Changed return type to JobProgressLog[]
   await delay(500);
-  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  const events: JobEvent[] = []; // Keep for return type, but actual events go to progress log
+  const logs: JobProgressLog[] = [];
 
   // Add job_confirmed event to job_progress_log
   const { data: confirmedLog, error: confirmedLogError } = await supabase
@@ -34,7 +35,7 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
     .select()
     .single();
   if (confirmedLogError) console.error("Error inserting confirmed job log:", confirmedLogError);
-  if (confirmedLog) events.push({ ...confirmedLog, event_type: 'job_confirmed' }); // Mock JobEvent for return
+  if (confirmedLog) logs.push(confirmedLog);
 
   // Add eta_set event to job_progress_log
   const { data: etaLog, error: etaLogError } = await supabase
@@ -50,11 +51,11 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
     .select()
     .single();
   if (etaLogError) console.error("Error inserting ETA log:", etaLogError);
-  if (etaLog) events.push({ ...etaLog, event_type: 'eta_set' }); // Mock JobEvent for return
+  if (etaLog) logs.push(etaLog);
 
-  // Update job status to 'in_progress' if it was 'assigned'
+  // Update job status to 'accepted' if it was 'assigned'
   if (job.status === 'assigned') {
-    job.status = 'accepted'; // Changed to 'accepted'
+    job.status = 'accepted';
     const { data: statusChangeLog, error: statusChangeLogError } = await supabase
       .from('job_progress_log')
       .insert({
@@ -68,32 +69,28 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
       .select()
       .single();
     if (statusChangeLogError) console.error("Error inserting status change log:", statusChangeLogError);
-    if (statusChangeLog) events.push({ ...statusChangeLog, event_type: 'status_changed' }); // Mock JobEvent for return
+    if (statusChangeLog) logs.push(statusChangeLog);
   }
 
-  return events;
+  return logs;
 };
 
 export const updateJobStage = async (
   jobId: string,
-  orgId: string, // Changed tenantId to orgId
+  orgId: string,
   driverId: string,
-  eventType: 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered',
+  eventType: 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'on_route_collection' | 'on_route_delivery' | 'loaded', // Added more specific statuses
   stopId?: string,
   notes?: string,
   lat?: number,
   lon?: number,
-): Promise<JobEvent | undefined> => {
+): Promise<JobProgressLog | undefined> => { // Changed return type to JobProgressLog
   await delay(500);
-  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
   // Update job status based on event type
-  if (eventType === 'delivered') {
-    job.status = 'delivered';
-  } else if (job.status === 'assigned' || job.status === 'planned') {
-    job.status = 'accepted'; // Changed to 'accepted'
-  }
+  job.status = eventType; // Directly set job status to eventType
 
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
@@ -103,7 +100,7 @@ export const updateJobStage = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      status: eventType, // Use eventType as the status for the log
+      status: eventType,
       notes: notes,
       lat: lat,
       lon: lon,
@@ -123,12 +120,12 @@ export const updateJobStage = async (
     driverProfile.last_job_status = job.status;
   }
 
-  return { ...newLog, event_type: eventType }; // Mock JobEvent for return
+  return newLog;
 };
 
 export const uploadDocument = async (
   jobId: string,
-  orgId: string, // Changed tenantId to orgId
+  orgId: string,
   driverId: string,
   type: 'pod' | 'cmr' | 'damage' | 'check_signature',
   base64Image: string, // In a real app, this would be a file or blob
@@ -139,7 +136,7 @@ export const uploadDocument = async (
 
   const newDocument: Document = {
     id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
+    org_id: orgId,
     job_id: jobId,
     stop_id: stopId,
     type: type,
@@ -157,7 +154,7 @@ export const uploadDocument = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      status: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific status for log
+      status: type === 'pod' ? 'pod_uploaded' : 'document_uploaded',
       notes: `${type.replace(/_/g, ' ')} uploaded.`,
       timestamp: new Date().toISOString(),
     });
@@ -167,9 +164,9 @@ export const uploadDocument = async (
   return newDocument;
 };
 
-export const addJobNote = async (jobId: string, orgId: string, driverId: string, note: string): Promise<JobEvent> => { // Changed tenantId to orgId
+export const addJobNote = async (jobId: string, orgId: string, driverId: string, note: string): Promise<JobProgressLog> => { // Changed return type to JobProgressLog
   await delay(300);
-  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
   // Insert into job_progress_log
@@ -179,7 +176,7 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'note_added', // Use 'note_added' as the status for the log
+      status: 'note_added',
       notes: note,
       timestamp: new Date().toISOString(),
     })
@@ -191,13 +188,13 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
     throw new Error(insertError.message);
   }
 
-  return { ...newLog, event_type: 'note_added' }; // Mock JobEvent for return
+  return newLog;
 };
 
-export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => { // Changed tenantId to orgId
+export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobProgressLog> => { // Changed return type to JobProgressLog
   await delay(100); // Very quick for frequent pings
-  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
-  if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver."); // Changed 'in_progress' to 'accepted'
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
+  if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver.");
 
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
@@ -206,7 +203,7 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      status: 'location_ping', // Use 'location_ping' as the status for the log
+      status: 'location_ping',
       lat: lat,
       lon: lon,
       timestamp: new Date().toISOString(),
@@ -220,15 +217,15 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   }
 
   // Update driver's last location
-  const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
+  const driverProfile = mockProfiles.find(p => p.id === driverId);
   if (driverProfile) {
     driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
-  return { ...newLog, event_type: 'location_ping' }; // Mock JobEvent for return
+  return newLog;
 };
 
-export const registerPushToken = async (profileId: string, orgId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => { // Changed tenantId to orgId
+export const registerPushToken = async (profileId: string, orgId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => {
   await delay(300);
   // Check for existing device for this profile and platform
   const existingDeviceIndex = mockProfileDevices.findIndex(
@@ -237,7 +234,7 @@ export const registerPushToken = async (profileId: string, orgId: string, platfo
 
   const newDevice: ProfileDevice = {
     id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
+    org_id: orgId,
     profile_id: profileId,
     platform: platform,
     expo_push_token: expoPushToken,
@@ -258,7 +255,7 @@ export const registerPushToken = async (profileId: string, orgId: string, platfo
 };
 
 export const submitDailyCheck = async (
-  orgId: string, // Changed tenantId to orgId
+  orgId: string,
   driverId: string,
   checklistId: string,
   vehicleReg: string,
@@ -273,7 +270,7 @@ export const submitDailyCheck = async (
 
   const newDailyCheck: DailyCheck = {
     id: uuidv4(),
-    org_id: orgId, // Changed tenant_id to org_id
+    org_id: orgId,
     driver_id: driverId,
     checklist_id: checklistId,
     vehicle_reg: vehicleReg,
@@ -293,7 +290,7 @@ export const submitDailyCheck = async (
   if (signatureBase64 && newDailyCheck.signature_path) {
     mockDocuments.push({
       id: uuidv4(),
-      org_id: orgId, // Changed tenant_id to org_id
+      org_id: orgId,
       job_id: 'N/A', // Daily checks are not tied to a specific job_id in this schema
       type: 'check_signature',
       storage_path: newDailyCheck.signature_path,
@@ -309,7 +306,7 @@ export const submitDailyCheck = async (
     if (trailerNo) driverProfile.trailer_no = trailerNo;
     mockAuditLogs.push({
       id: uuidv4(),
-      org_id: orgId, // Changed tenant_id to org_id
+      org_id: orgId,
       actor_id: driverId,
       entity: 'profiles',
       entity_id: driverId,

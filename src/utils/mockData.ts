@@ -108,8 +108,19 @@ export interface JobStop {
   notes?: string | null;
 }
 
-// JobEvent interface is removed as JobProgressLog will now handle all timeline events.
-// export interface JobEvent { ... }
+// Restored JobEvent interface for driverApp.ts return types
+export interface JobEvent {
+  id: string;
+  org_id: string;
+  job_id: string;
+  stop_id?: string | null;
+  actor_id: string;
+  event_type: string; // e.g., 'at_collection', 'note_added', 'pod_uploaded'
+  notes?: string | null;
+  lat?: number;
+  lon?: number;
+  created_at: string;
+}
 
 export interface Document {
   id: string;
@@ -140,6 +151,9 @@ export interface JobProgressLog {
   timestamp: string;
   notes?: string | null;
   created_at: string;
+  lat?: number; // Added lat/lon for location pings
+  lon?: number; // Added lat/lon for location pings
+  stop_id?: string | null; // Added stop_id for stop-specific events
 }
 
 export interface AuditLog {
