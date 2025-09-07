@@ -3,6 +3,13 @@ import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
 
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Replace with your frontend origin in production
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
+};
+
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -22,6 +29,11 @@ function userClient(authHeader: string | null) {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight request
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const admin = adminClient();
     const user = userClient(req.headers.get("authorization"));
@@ -34,7 +46,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name") // Fetch full_name for audit logs
       .eq("id", authUser.user.id)
       .single();
 
@@ -58,6 +70,11 @@ serve(async (req) => {
       throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
 
+    const currentTimestamp = new Date().toISOString();
+    const formattedCurrentTimestamp = new Date(currentTimestamp).toLocaleString('en-GB', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
     let resultData: any;
     let status = 200;
 
@@ -80,7 +97,7 @@ serve(async (req) => {
           title,
           description: description || null,
           is_active: is_active ?? true,
-          created_at: new Date().toISOString(),
+          created_at: currentTimestamp,
         };
         const { data: createData, error: createError } = await admin
           .from("daily_check_items")
@@ -98,8 +115,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'daily_check_item_created',
-            notes: `Daily check item '${title}' created.`,
-            timestamp: new Date().toISOString(),
+            notes: `${me.full_name} created daily check item '${title}' on ${formattedCurrentTimestamp}.`,
+            timestamp: currentTimestamp,
           });
         if (progressLogErrorCreate) console.error("DEBUG: progress log insert failed for daily check item creation", progressLogErrorCreate.message);
 
@@ -108,6 +125,16 @@ serve(async (req) => {
 
       case "update":
         if (!id || !changes) throw new Error("ID and changes are required for updating a daily check item.");
+
+        const { data: oldItem, error: fetchOldItemError } = await admin
+          .from("daily_check_items")
+          .select("title, description, is_active")
+          .eq("id", id)
+          .eq("org_id", effective_org_id)
+          .single();
+        if (fetchOldItemError) throw new Error("Failed to fetch old item for update: " + fetchOldItemError.message);
+        if (!oldItem) throw new Error("Daily check item not found for update.");
+
         const { data: updateData, error: updateError } = await admin
           .from("daily_check_items")
           .update(changes)
@@ -126,8 +153,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'daily_check_item_updated',
-            notes: `Daily check item '${updateData.title}' updated.`,
-            timestamp: new Date().toISOString(),
+            notes: `${me.full_name} updated daily check item '${oldItem.title}' on ${formattedCurrentTimestamp}.`,
+            timestamp: currentTimestamp,
           });
         if (progressLogErrorUpdate) console.error("DEBUG: progress log insert failed for daily check item update", progressLogErrorUpdate.message);
 
@@ -141,9 +168,10 @@ serve(async (req) => {
           .delete()
           .eq("id", id)
           .eq("org_id", effective_org_id)
-          .select()
+          .select("title") // Select title for logging
           .single();
         if (deleteError) throw deleteError;
+        if (!deletedItem) throw new Error("Daily check item not found for deletion.");
 
         // Log item deletion to job_progress_log
         const { error: progressLogErrorDelete } = await admin
@@ -154,8 +182,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'daily_check_item_deleted',
-            notes: `Daily check item '${deletedItem.title}' deleted.`,
-            timestamp: new Date().toISOString(),
+            notes: `${me.full_name} deleted daily check item '${deletedItem.title}' on ${formattedCurrentTimestamp}.`,
+            timestamp: currentTimestamp,
           });
         if (progressLogErrorDelete) console.error("DEBUG: progress log insert failed for daily check item deletion", progressLogErrorDelete.message);
 
@@ -168,7 +196,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(resultData),
-      { status, headers: { "Content-Type": "application/json" } },
+      { status, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (e) {
     console.error("DEBUG: function error", e);
@@ -176,7 +204,7 @@ serve(async (req) => {
       JSON.stringify({ ok: false, error: (e as Error).message }),
       {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );
   }
