@@ -18,21 +18,22 @@ import AdminDailyChecks from "./pages/admin/DailyChecks";
 import DriverDailyCheck from "./pages/driver/DailyCheck";
 import EnvDebug from './pages/EnvDebug';
 import UsersDebug from "@/pages/admin/UsersDebug";
-import LoginPage from "./pages/Login"; // New import
-import { AuthContextProvider, useAuth } from "./context/AuthContext"; // New import and context
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import LoginPage from "./pages/Login";
+import { AuthContextProvider, useAuth } from "./context/AuthContext";
+import { Loader2 } from 'lucide-react';
+import { useSession } from '@supabase/auth-helpers-react'; // New import
 
 const queryClient = new QueryClient();
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: ('admin' | 'office' | 'driver')[] }) => {
-  const { user, userRole, isLoadingAuth } = useAuth();
+  const { user, userRole, isLoadingAuth } = useAuth(); // This isLoadingAuth is for profile/role
 
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading authentication...</p>
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading user profile...</p>
       </div>
     );
   }
@@ -100,18 +101,45 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthContextProvider>
-          <AppContent />
-        </AuthContextProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const { session, isLoading } = useSession();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading session...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <LoginPage />
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthContextProvider initialSession={session} initialUser={session.user}>
+            <AppContent />
+          </AuthContextProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

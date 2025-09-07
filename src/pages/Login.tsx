@@ -9,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSession } from '@supabase/auth-helpers-react'; // Import useSession
 
 const LoginPage: React.FC = () => {
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoadingAuth, user } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();
+  const { isLoading: isSessionLoading } = useSession(); // Use useSession for global loading state
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,21 +24,14 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const { success, error } = await login(userIdOrEmail, password);
-    if (success) {
-      // Redirection is handled by AuthContext's useEffect
-    } else {
-      // Error message already shown by toast in AuthContext
-    }
+    await login(userIdOrEmail, password);
   };
 
-  // If user is already logged in, AuthContext will redirect.
-  // We can show a loading state or nothing here.
-  if (isLoadingAuth && user) {
+  if (isSessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Redirecting...</p>
+        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading session...</p>
       </div>
     );
   }
@@ -55,12 +49,12 @@ const LoginPage: React.FC = () => {
               <Label htmlFor="userIdOrEmail">User ID / Email</Label>
               <Input
                 id="userIdOrEmail"
-                type="text" // Changed to text to allow both user ID and email
+                type="text"
                 placeholder="e.g., admin@example.com or 1234"
                 value={userIdOrEmail}
                 onChange={(e) => setUserIdOrEmail(e.target.value)}
                 required
-                disabled={isLoadingAuth}
+                disabled={isSessionLoading}
               />
             </div>
             <div className="space-y-2">
@@ -72,11 +66,11 @@ const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoadingAuth}
+                disabled={isSessionLoading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoadingAuth}>
-              {isLoadingAuth && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isSessionLoading}>
+              {isSessionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Log In
             </Button>
           </form>
