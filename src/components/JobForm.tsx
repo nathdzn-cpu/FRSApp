@@ -17,8 +17,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-// Removed: import { useFormStore } from "@/store/formStore";
-// Removed: import { useLocation } from "react-router-dom";
+import { usePersistentForm } from "@/hooks/usePersistentForm"; // Import usePersistentForm
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -47,25 +46,18 @@ interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
   profiles: Profile[];
   canSeePrice: boolean;
-  defaultValues?: Partial<JobFormValues>;
+  defaultValues?: Partial<JobFormValues>; // This will now be used as initial default if no persisted state
   generatedRef?: string;
 }
 
+const formKey = 'create-job-form-state'; // Unique key for this form
+
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
-  // Removed: const { jobForm, setJobForm, clearJobForm } = useFormStore();
-  // Removed: const location = useLocation();
+  const [persistedFormState, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>(formKey, defaultValues || {});
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues || { // Initialize with provided defaultValues or empty defaults
-      ref: '',
-      override_ref: false,
-      manual_ref: '',
-      pickup_eta: '',
-      delivery_eta: '',
-      collections: [],
-      deliveries: [],
-    },
+    defaultValues: persistedFormState, // Initialize with persisted state
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -80,26 +72,29 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
 
   const overrideOrderNumber = form.watch('override_ref');
 
-  // Removed: Effect to persist form state whenever values change
-  // Removed: useEffect(() => {
-  // Removed:   const subscription = form.watch((value) => {
-  // Removed:     setJobForm(value);
-  // Removed:   });
-  // Removed:   return () => subscription.unsubscribe();
-  // Removed: }, [form, setJobForm]);
+  // Re-initialize form with persisted state on mount or when persistedState changes (e.g., parent clears it)
+  useEffect(() => {
+    form.reset(persistedFormState);
+  }, [persistedFormState, form]); // Only reset when persistedState changes
 
-  // Removed: Clear form state when leaving the /jobs/new route
-  // Removed: useEffect(() => {
-  // Removed:   return () => {
-  // Removed:     if (location.pathname !== "/jobs/new") {
-  // Removed:       clearJobForm();
-  // Removed:     }
-  // Removed:   };
-  // Removed: }, [location.pathname, clearJobForm]);
+  // Effect to persist form state whenever values change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      setPersistedFormState(value as Partial<JobFormValues>);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setPersistedFormState]);
+
+  // Modify onSubmit to clear the form after successful submission
+  const handleLocalSubmit = async (values: JobFormValues) => {
+    await onSubmit(values); // Call the parent's onSubmit
+    setPersistedFormState({}); // Clear persisted state
+    form.reset({}); // Reset react-hook-form state to empty
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleLocalSubmit)} className="space-y-6">
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>

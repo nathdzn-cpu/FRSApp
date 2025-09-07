@@ -5,19 +5,19 @@ export function usePersistentForm<T>(key: string, initial: T) {
     if (typeof window === 'undefined') {
       return initial; // Return initial state if not in browser environment
     }
-    const saved = localStorage.getItem(key);
+    const saved = sessionStorage.getItem(key); // Changed to sessionStorage
     try {
       return saved ? JSON.parse(saved) : initial;
     } catch (e) {
       console.error(`Error parsing persisted form state for key "${key}":`, e);
-      localStorage.removeItem(key); // Clear corrupted data
+      sessionStorage.removeItem(key); // Clear corrupted data
       return initial;
     }
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(key, JSON.stringify(state));
+      sessionStorage.setItem(key, JSON.stringify(state)); // Changed to sessionStorage
     }
   }, [key, state]);
 
