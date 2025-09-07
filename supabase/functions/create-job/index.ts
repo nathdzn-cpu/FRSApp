@@ -56,8 +56,14 @@ serve(async (req) => {
     }
 
     // 2) Parse body
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch((e) => {
+      console.error("Error parsing request body:", e);
+      return {};
+    });
+    console.log("Received body:", JSON.stringify(body, null, 2)); // Log the full received body
+
     const { jobData, stopsData, org_id, actor_id } = body;
+    console.log("Destructured values:", { jobData, stopsData, org_id, actor_id }); // Log destructured values
 
     if (!jobData || !stopsData || !org_id || !actor_id) {
       throw new Error("Missing jobData, stopsData, org_id, or actor_id in request body.");
