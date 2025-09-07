@@ -28,6 +28,8 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
     query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled")');
   } else if (statusFilter === 'completed') {
     query = query.in('status', ['delivered', 'pod_received']);
+  } else if (statusFilter === 'cancelled') { // ADDED: Filter for cancelled jobs
+    query = query.eq('status', 'cancelled');
   }
   // 'all' statusFilter means no status filtering applied
 

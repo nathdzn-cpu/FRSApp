@@ -58,8 +58,9 @@ serve(async (req) => {
       console.error("Profile lookup error:", meErr);
       throw new Error("Profile lookup failed: " + meErr.message);
     }
-    if (!me || !me.org_id || !['admin', 'office'].includes(me.role)) {
-      throw new Error("Access denied (admin or office role required and org_id must be set).");
+    // MODIFIED: Allow 'driver' role for job progress updates
+    if (!me || !me.org_id || !['admin', 'office', 'driver'].includes(me.role)) {
+      throw new Error("Access denied (admin, office, or driver role required and org_id must be set).");
     }
 
     // 2) Parse body
@@ -89,16 +90,21 @@ serve(async (req) => {
     // In Deno Edge Functions, direct transactions are not exposed via the client.
     // We perform operations sequentially and handle errors.
 
-    // Fetch current job status for audit log
+    // Fetch current job status for audit log and driver-specific check
     const { data: oldJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status")
+      .select("status, assigned_driver_id") // Fetch assigned_driver_id
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
 
     if (fetchJobError) throw new Error("Failed to fetch existing job: " + fetchJobError.message);
     if (!oldJob) throw new Error("Job not found.");
+
+    // MODIFIED: Driver-specific security check
+    if (me.role === 'driver' && oldJob.assigned_driver_id !== me.id) {
+      throw new Error("Access denied. Driver can only update progress for jobs assigned to them.");
+    }
 
     // 4) Update jobs table
     const { data: updatedJob, error: updateJobError } = await admin
