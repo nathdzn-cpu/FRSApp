@@ -8,4 +8,3 @@ export * from './api/edgeFunctions';
 export * from './api/tenantCounters';
 export * from './api/dailyCheckItems';
 export * from './api/dailyCheckResponses';
-export * from './api/address'; // Export new address API functions
