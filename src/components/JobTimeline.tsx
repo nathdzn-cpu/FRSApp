@@ -3,12 +3,11 @@ import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff } from 'lucide-react'; // Added EyeOff
-import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import coreProgressActionTypes
+import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils'; // Import coreProgressActionTypes
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import { updateJobProgressLogVisibility } from '@/lib/api/jobs'; // Import the new API function
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button'; // Import Button for the X button
-import { cn } from '@/lib/utils'; // Import cn for conditional classnames
 
 interface JobTimelineProps {
   progressLogs: JobProgressLog[];
@@ -43,7 +42,6 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   stop_updated: MapPin, // For stop updates
   stop_deleted: MapPin, // For stop deletions
   stop_details_updated: MapPin, // For driver updating stop details
-  daily_check_submitted: CalendarCheck, // For daily check submissions
 };
 
 const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, currentOrgId, onLogVisibilityChange }) => {
@@ -59,12 +57,12 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
 
   const getActorName = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
-    return actor ? actor.full_name : 'Unknown User';
+    return actor ? actor.full_name : 'Unknown User'; // Only full name
   };
 
   // Filter logs to only include core progress action types AND visible_in_timeline = true
   const filteredAndVisibleLogs = localProgressLogs.filter(log =>
-    ['planned', 'assigned', 'accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received'].includes(log.action_type) && log.visible_in_timeline !== false
+    coreProgressActionTypes.includes(log.action_type) && log.visible_in_timeline !== false
   );
 
   // Sort logs by timestamp descending (newest first)
@@ -125,12 +123,6 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
-        const actorName = getActorName(log.actor_id);
-
-        // Phrasing: "John Smith marked as 'Loaded'"
-        const actionPhrase = log.action_type === 'job_created' ? 'created job' : `marked as '${getDisplayStatus(log.action_type)}'`;
-        const displayMessage = `${actorName} ${actionPhrase}.`;
-
         return (
           <div key={log.id} className="mb-6 relative">
             <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
@@ -147,7 +139,10 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
                 </div>
               </div>
               <p className="text-gray-800 mb-1">
-                <span className="font-medium text-gray-900">{displayMessage}</span>
+                <span className="font-medium text-gray-900 flex items-center gap-1">
+                  <User className="h-3 w-3" /> {getActorName(log.actor_id)}
+                </span>{' '}
+                {log.notes || `Marked as '${getDisplayStatus(log.action_type)}'.`}
               </p>
               {(log.lat && log.lon) && (
                 <p className="text-xs text-gray-600 flex items-center">
@@ -159,7 +154,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-red-500 hover:bg-red-50 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700"
                     onClick={() => handleRemoveFromTimeline(log.id)}
                     disabled={isUpdatingVisibility === log.id}
                   >

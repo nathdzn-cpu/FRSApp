@@ -2,11 +2,12 @@ import { supabase } from '../supabaseClient';
 import { Job, JobStop, Document, JobProgressLog } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
-export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string, statusFilter?: 'all' | 'active' | 'completed' | 'cancelled', searchTerm?: string): Promise<Job[]> => {
+export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
   let query = supabase
     .from('jobs_with_stop_details') // Query the new view
     .select('*')
     .eq('org_id', orgId)
+    // .is('deleted_at', null) // Removed filter to include cancelled jobs
     .order('created_at', { ascending: false });
 
   // Apply date filters based on created_at
@@ -15,33 +16,6 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
   }
   if (endDate) {
     query = query.lte('created_at', endDate);
-  }
-
-  // Apply status filters
-  if (statusFilter === 'active') {
-    query = query.not('status', 'in', '("delivered", "pod_received", "cancelled")');
-    query = query.is('deleted_at', null); // Only show non-deleted active jobs
-  } else if (statusFilter === 'completed') {
-    query = query.in('status', '("delivered", "pod_received")');
-    query = query.is('deleted_at', null); // Only show non-deleted completed jobs
-  } else if (statusFilter === 'cancelled') {
-    query = query.eq('status', 'cancelled');
-    query = query.not('deleted_at', 'is', null); // Only show jobs explicitly marked as cancelled (soft deleted)
-  } else { // 'all' filter
-    // No specific status filter, but still exclude soft-deleted jobs unless explicitly cancelled
-    query = query.or('deleted_at is null, status.eq.cancelled');
-  }
-
-  // Apply search term filter
-  if (searchTerm) {
-    const lowerCaseSearchTerm = `%${searchTerm.toLowerCase()}%`;
-    query = query.or(
-      `order_number.ilike.${lowerCaseSearchTerm},
-       collection_name.ilike.${lowerCaseSearchTerm},
-       collection_city.ilike.${lowerCaseSearchTerm},
-       delivery_name.ilike.${lowerCaseSearchTerm},
-       delivery_city.ilike.${lowerCaseSearchTerm}`
-    );
   }
 
   const { data, error } = await query;
@@ -60,7 +34,7 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    // Removed .is('deleted_at', null) to allow viewing cancelled jobs
+    .is('deleted_at', null)
     .single();
 
   const { data, error } = await query;
@@ -199,27 +173,15 @@ export const updateJobProgressLogVisibility = async (payload: UpdateJobProgressL
 };
 
 export const requestPod = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for POD request:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const { data, error } = await supabase
     .from('job_progress_log')
     .insert({
       org_id: orgId,
       job_id: jobId,
       actor_id: actorId,
-      action_type: 'pod_requested',
-      actor_role: actorRole,
-      notes: `${actorProfile.full_name} requested Proof of Delivery.`,
+      action_type: 'pod_requested', // Renamed from status
+      actor_role: actorRole, // Added actor_role
+      notes: 'POD requested by office.',
       timestamp: new Date().toISOString(),
     });
 
@@ -244,7 +206,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string, ac
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    // .is('deleted_at', null) // Allow cloning cancelled jobs
+    .is('deleted_at', null)
     .single();
 
   if (jobError || !originalJob) {
@@ -313,18 +275,6 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string, ac
     }
   }
 
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for job cloning:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   // Log job creation to job_progress_log
   const { error: progressLogError } = await supabase
     .from('job_progress_log')
@@ -334,7 +284,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string, ac
       actor_id: actorId,
       actor_role: actorRole,
       action_type: 'job_cloned',
-      notes: `${actorProfile.full_name} cloned job from '${originalJob.order_number}'.`,
+      notes: `Job cloned from ${jobId}`,
       timestamp: new Date().toISOString(),
     });
   if (progressLogError) {
@@ -360,10 +310,10 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string, ac
 export const cancelJob = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => { // Added actorRole
   const { data: oldJob, error: fetchError } = await supabase
     .from('jobs_with_stop_details')
-    .select('status, order_number') // Fetch order_number for notes
+    .select('status')
     .eq('id', jobId)
     .eq('org_id', orgId)
-    // .is('deleted_at', null) // Allow cancelling already soft-deleted jobs if needed, though typically not
+    .is('deleted_at', null)
     .single();
 
   if (fetchError || !oldJob) {
@@ -376,25 +326,13 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string, a
     .update({ status: 'cancelled', deleted_at: new Date().toISOString(), last_status_update_at: new Date().toISOString() }) // Soft delete on cancel
     .eq('id', jobId)
     .eq('org_id', orgId)
-    // .is('deleted_at', null) // Only allow cancelling if not already soft-deleted
+    .is('deleted_at', null)
     .select()
     .single();
 
   if (error) {
     console.error("Error cancelling job:", error);
     throw new Error(error.message);
-  }
-
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for job cancellation:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
   }
 
   // Insert into job_progress_log for cancellation
@@ -406,7 +344,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string, a
       actor_id: actorId,
       action_type: 'cancelled', // Renamed from status
       actor_role: actorRole, // Added actor_role
-      notes: `${actorProfile.full_name} cancelled job '${oldJob.order_number}'.`,
+      notes: 'Job cancelled by office.',
       timestamp: new Date().toISOString(),
     });
   if (progressLogError) {

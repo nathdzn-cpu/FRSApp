@@ -12,20 +12,6 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
   if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver."); // Changed 'in_progress' to 'accepted'
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for location ping:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
-  const currentTimestamp = new Date().toISOString();
-
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
     .from('job_progress_log')
@@ -33,12 +19,10 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
       org_id: orgId,
       job_id: jobId,
       actor_id: driverId,
-      actor_role: 'driver',
-      action_type: 'location_ping', // Use 'location_ping' as the status for the log
+      status: 'location_ping', // Use 'location_ping' as the status for the log
       lat: lat,
       lon: lon,
-      notes: `${driverProfile.full_name} reported location at Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}.`,
-      timestamp: currentTimestamp,
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -49,9 +33,9 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   }
 
   // Update driver's last location
-  const driverProfileMock = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
-  if (driverProfileMock) {
-    driverProfileMock.last_location = { lat, lon, timestamp: currentTimestamp };
+  const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
+  if (driverProfile) {
+    driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
   return newLog; // Return the inserted log entry

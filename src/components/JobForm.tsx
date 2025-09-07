@@ -134,7 +134,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-white hover:bg-gray-50",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -199,7 +199,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                   <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
-                      <SelectTrigger className="bg-white hover:bg-gray-50">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select a driver" />
                       </SelectTrigger>
                     </FormControl>
@@ -237,7 +237,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} className="bg-blue-600 text-white hover:bg-blue-700">
+            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
             </Button>
           </CardHeader>
@@ -246,7 +246,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
               <Card key={field.id} className="p-4 border-l-4 border-blue-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Collection #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)} className="bg-red-600 text-white hover:bg-red-700">
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
                 </div>
@@ -383,7 +383,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} className="bg-blue-600 text-white hover:bg-blue-700">
+            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
             </Button>
           </CardHeader>
@@ -392,7 +392,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
               <Card key={field.id} className="p-4 border-l-4 border-green-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Delivery #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)} className="bg-red-600 text-white hover:bg-red-700">
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
                 </div>

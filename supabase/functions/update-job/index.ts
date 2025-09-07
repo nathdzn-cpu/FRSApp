@@ -58,52 +58,6 @@ async function invokeEdgeFunction(functionName: string, payload: any) {
   }
 }
 
-// Helper to get display status (mimicking frontend for consistent notes)
-function getDisplayStatus(status: string): string {
-  switch (status) {
-    case 'planned': return 'Planned';
-    case 'assigned': return 'Assigned';
-    case 'accepted': return 'Accepted';
-    case 'on_route_collection': return 'On Route Collection';
-    case 'at_collection': return 'At Collection';
-    case 'loaded': return 'Loaded';
-    case 'on_route_delivery': return 'On Route Delivery';
-    case 'at_delivery': return 'At Delivery';
-    case 'delivered': return 'Delivered';
-    case 'pod_received': return 'POD Received';
-    case 'cancelled': return 'Cancelled';
-    case 'job_created': return 'Job Created';
-    case 'job_cloned': return 'Job Cloned';
-    case 'job_confirmed': return 'Job Confirmed';
-    case 'eta_set': return 'ETA Set';
-    case 'pod_requested': return 'POD Requested';
-    case 'pod_uploaded': return 'POD Uploaded';
-    case 'document_uploaded': return 'Document Uploaded';
-    case 'location_ping': return 'Location Ping';
-    case 'note_added': return 'Note Added';
-    case 'status_changed': return 'Status Changed';
-    case 'driver_reassigned': return 'Driver Reassigned';
-    case 'stop_added': return 'Stop Added';
-    case 'stop_updated': return 'Stop Updated';
-    case 'stop_deleted': return 'Stop Deleted';
-    case 'stop_details_updated': return 'Stop Details Updated';
-    case 'daily_check_submitted': return 'Daily Check Submitted';
-    case 'daily_check_item_created': return 'Daily Check Item Created';
-    case 'daily_check_item_updated': return 'Daily Check Item Updated';
-    case 'daily_check_item_deleted': return 'Daily Check Item Deleted';
-    case 'user_created': return 'User Created';
-    case 'user_updated': return 'User Updated';
-    case 'user_deleted': return 'User Deleted';
-    case 'password_reset_sent': return 'Password Reset Sent';
-    case 'purge_demo_users': return 'Purge Demo Users';
-    case 'purge_all_non_admin_users': return 'Purge All Non-Admin Users';
-    case 'timeline_event_removed_from_timeline': return 'Removed from Timeline';
-    case 'timeline_event_restored_to_timeline': return 'Restored to Timeline';
-    default:
-      return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -122,7 +76,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id, full_name") // Fetch full_name for audit logs
+      .select("id, role, org_id")
       .eq("id", authUser.user.id)
       .single();
 
@@ -159,7 +113,6 @@ serve(async (req) => {
     if (fetchJobError) throw new Error("Failed to fetch existing job: " + fetchJobError.message);
     if (!existingJob) throw new Error("Job not found.");
 
-    const currentTimestamp = new Date().toISOString();
     const finalJobUpdates: Record<string, any> = {};
     const auditBeforeJob: Record<string, any> = { ...existingJob };
     const auditAfterJob: Record<string, any> = {};
@@ -231,8 +184,8 @@ serve(async (req) => {
             actor_id: actor_id,
             actor_role: actor_role,
             action_type: finalJobUpdates.status, // Use the new status as action_type
-            notes: `${me.full_name} changed job status from '${getDisplayStatus(oldStatus)}' to '${getDisplayStatus(finalJobUpdates.status)}'.`,
-            timestamp: currentTimestamp,
+            notes: `Job status changed from '${oldStatus}' to '${finalJobUpdates.status}' via edit.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogError) {
           console.error("DEBUG: progress log insert failed for status change in update-job", progressLogError.message);
@@ -305,8 +258,8 @@ serve(async (req) => {
             actor_id: actor_id,
             actor_role: actor_role,
             action_type: 'driver_reassigned',
-            notes: `${me.full_name} reassigned driver for job '${existingJob.order_number}' from '${oldDriverName}' to '${newDriverName}'.`,
-            timestamp: currentTimestamp,
+            notes: `Driver reassigned from '${oldDriverName}' to '${newDriverName}' by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (reassignmentLogError) {
           console.error("DEBUG: progress log insert failed for driver reassignment", reassignmentLogError.message);
@@ -360,8 +313,8 @@ serve(async (req) => {
             actor_role: actor_role,
             action_type: 'stop_added',
             stop_id: stop.id,
-            notes: `${me.full_name} added a new ${stop.type} stop: '${stop.name}'.`,
-            timestamp: currentTimestamp,
+            notes: `Added ${stop.type} stop: ${stop.name}.`,
+            timestamp: new Date().toISOString(),
           })));
         if (progressLogError) console.error("DEBUG: progress log insert failed for stop additions", progressLogError.message);
       }
@@ -391,8 +344,8 @@ serve(async (req) => {
               actor_role: actor_role,
               action_type: 'stop_updated',
               stop_id: stopId,
-              notes: `${me.full_name} updated ${oldStop?.type} stop: '${oldStop?.name}'.`,
-              timestamp: currentTimestamp,
+              notes: `Updated ${oldStop?.type} stop: ${oldStop?.name}.`,
+              timestamp: new Date().toISOString(),
             });
           if (progressLogError) console.error("DEBUG: progress log insert failed for stop updates", progressLogError.message);
         }
@@ -419,8 +372,8 @@ serve(async (req) => {
             actor_role: actor_role,
             action_type: 'stop_deleted',
             stop_id: stop.id,
-            notes: `${me.full_name} deleted ${stop.type} stop: '${stop.name}'.`,
-            timestamp: currentTimestamp,
+            notes: `Deleted ${stop.type} stop: ${stop.name}.`,
+            timestamp: new Date().toISOString(),
           })));
         if (progressLogError) console.error("DEBUG: progress log insert failed for stop deletions", progressLogError.message);
       }
@@ -468,8 +421,8 @@ serve(async (req) => {
                 actor_role: actor_role,
                 action_type: 'stop_details_updated',
                 stop_id: stopId,
-                notes: `${me.full_name} updated stop details for '${oldStop?.name}'.`,
-                timestamp: currentTimestamp,
+                notes: `Driver updated stop details for ${oldStop?.name}.`,
+                timestamp: new Date().toISOString(),
               });
             if (progressLogError) console.error("DEBUG: progress log insert failed for driver stop updates", progressLogError.message);
           }
@@ -488,7 +441,7 @@ serve(async (req) => {
           action: "update",
           before: { job: auditBeforeJob, stops: auditBeforeStops },
           after: { job: auditAfterJob, stops: auditAfterStops },
-          created_at: currentTimestamp,
+          created_at: new Date().toISOString(),
         });
       } catch (e) {
         console.log("DEBUG: audit insert failed", (e as Error).message);

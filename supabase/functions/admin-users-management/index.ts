@@ -28,52 +28,6 @@ function userClient(authHeader: string | null) {
   });
 }
 
-// Helper to get display status (mimicking frontend for consistent notes)
-function getDisplayStatus(status: string): string {
-  switch (status) {
-    case 'planned': return 'Planned';
-    case 'assigned': return 'Assigned';
-    case 'accepted': return 'Accepted';
-    case 'on_route_collection': return 'On Route Collection';
-    case 'at_collection': return 'At Collection';
-    case 'loaded': return 'Loaded';
-    case 'on_route_delivery': return 'On Route Delivery';
-    case 'at_delivery': return 'At Delivery';
-    case 'delivered': return 'Delivered';
-    case 'pod_received': return 'POD Received';
-    case 'cancelled': return 'Cancelled';
-    case 'job_created': return 'Job Created';
-    case 'job_cloned': return 'Job Cloned';
-    case 'job_confirmed': return 'Job Confirmed';
-    case 'eta_set': return 'ETA Set';
-    case 'pod_requested': return 'POD Requested';
-    case 'pod_uploaded': return 'POD Uploaded';
-    case 'document_uploaded': return 'Document Uploaded';
-    case 'location_ping': return 'Location Ping';
-    case 'note_added': return 'Note Added';
-    case 'status_changed': return 'Status Changed';
-    case 'driver_reassigned': return 'Driver Reassigned';
-    case 'stop_added': return 'Stop Added';
-    case 'stop_updated': return 'Stop Updated';
-    case 'stop_deleted': return 'Stop Deleted';
-    case 'stop_details_updated': return 'Stop Details Updated';
-    case 'daily_check_submitted': return 'Daily Check Submitted';
-    case 'daily_check_item_created': return 'Daily Check Item Created';
-    case 'daily_check_item_updated': return 'Daily Check Item Updated';
-    case 'daily_check_item_deleted': return 'Daily Check Item Deleted';
-    case 'user_created': return 'User Created';
-    case 'user_updated': return 'User Updated';
-    case 'user_deleted': return 'User Deleted';
-    case 'password_reset_sent': return 'Password Reset Sent';
-    case 'purge_demo_users': return 'Purge Demo Users';
-    case 'purge_all_non_admin_users': return 'Purge All Non-Admin Users';
-    case 'timeline_event_removed_from_timeline': return 'Removed from Timeline';
-    case 'timeline_event_restored_to_timeline': return 'Restored to Timeline';
-    default:
-      return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  }
-}
-
 const slugify = (s: string) =>
   s
     .toLowerCase()
@@ -122,11 +76,6 @@ serve(async (req) => {
     if (actor_role && actor_role !== me.role) {
       throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
-
-    const currentTimestamp = new Date().toISOString();
-    const formattedCurrentTimestamp = new Date(currentTimestamp).toLocaleString('en-GB', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
 
     let resultData: any;
     let status = 200;
@@ -198,8 +147,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'user_created',
-            notes: `${me.full_name} created new ${role} user '${full_name}'.`,
-            timestamp: currentTimestamp,
+            notes: `User '${full_name}' (${role}) created by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorCreate) console.error("DEBUG: progress log insert failed for user creation", progressLogErrorCreate.message);
 
@@ -211,7 +160,7 @@ serve(async (req) => {
             entity_id: newAuthId,
             action: "create",
             after: { role, full_name, email },
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);
@@ -252,8 +201,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'user_updated',
-            notes: `${me.full_name} updated user '${oldProfile.full_name}' (role: ${oldProfile.role} -> ${updates.role || oldProfile.role}).`,
-            timestamp: currentTimestamp,
+            notes: `User '${oldProfile.full_name}' updated by ${me.full_name || me.role}. Role changed from '${oldProfile.role}' to '${updates.role || oldProfile.role}'.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorUpdate) console.error("DEBUG: progress log insert failed for user update", progressLogErrorUpdate.message);
 
@@ -266,7 +215,7 @@ serve(async (req) => {
             action: "update",
             before: oldProfile, // Simplified, ideally full old profile
             after: updatedProfileData,
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);
@@ -310,8 +259,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'user_deleted',
-            notes: `${me.full_name} deleted user '${profileToDelete.full_name}' (role: ${profileToDelete.role}).`,
-            timestamp: currentTimestamp,
+            notes: `User '${profileToDelete.full_name}' (${profileToDelete.role}) deleted by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorDelete) console.error("DEBUG: progress log insert failed for user deletion", progressLogErrorDelete.message);
 
@@ -323,7 +272,7 @@ serve(async (req) => {
             entity_id: profile_id,
             action: "delete",
             before: { full_name: profileToDelete.full_name, user_id: profileToDelete.user_id },
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);
@@ -361,8 +310,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'password_reset_sent',
-            notes: `${me.full_name} sent password reset email to user '${userToReset.full_name}'.`,
-            timestamp: currentTimestamp,
+            notes: `Password reset email sent to user '${userToReset.full_name}' by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorReset) console.error("DEBUG: progress log insert failed for password reset", progressLogErrorReset.message);
 
@@ -374,7 +323,7 @@ serve(async (req) => {
             entity_id: user_id,
             action: "reset_password",
             notes: `Password reset email sent to ${userToReset.email}.`,
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);
@@ -408,8 +357,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'purge_demo_users',
-            notes: `${me.full_name} purged ${removedCount} demo user(s).`,
-            timestamp: currentTimestamp,
+            notes: `Purged ${removedCount} demo user(s) by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorPurgeDemo) console.error("DEBUG: progress log insert failed for purge demo users", progressLogErrorPurgeDemo.message);
 
@@ -420,7 +369,7 @@ serve(async (req) => {
             entity: "profiles",
             action: "purge_demo",
             notes: `Purged ${removedCount} demo user(s).`,
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);
@@ -454,8 +403,8 @@ serve(async (req) => {
             actor_id: me.id,
             actor_role: me.role,
             action_type: 'purge_all_non_admin_users',
-            notes: `${me.full_name} purged ${nonAdminRemovedCount} non-admin user(s).`,
-            timestamp: currentTimestamp,
+            notes: `Purged ${nonAdminRemovedCount} non-admin user(s) by ${me.full_name || me.role}.`,
+            timestamp: new Date().toISOString(),
           });
         if (progressLogErrorPurgeAll) console.error("DEBUG: progress log insert failed for purge all non-admin users", progressLogErrorPurgeAll.message);
 
@@ -466,7 +415,7 @@ serve(async (req) => {
             entity: "profiles",
             action: "purge_all_non_admin",
             notes: `Purged ${nonAdminRemovedCount} non-admin user(s).`,
-            created_at: currentTimestamp,
+            created_at: new Date().toISOString(),
           });
         } catch (e) {
           console.log("DEBUG: audit insert failed", (e as Error).message);

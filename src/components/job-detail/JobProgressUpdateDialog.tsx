@@ -26,7 +26,6 @@ import { format, setHours, setMinutes, setSeconds, parseISO } from 'date-fns'; /
 import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils'; // Added cn utility
-import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 
 interface ProgressUpdateEntry {
   status: Job['status'];
@@ -184,22 +183,22 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
       <AlertDialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
-        <AlertDialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b border-gray-200 -mx-6 px-6 pt-0">
+        <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
           <AlertDialogDescription>
             Log a new status update for this job.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ScrollArea className="flex-1 overflow-y-auto p-4 -mx-6 px-6"> {/* Apply ScrollArea here */}
+        <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="progress-status" className="text-gray-700">New Status</Label>
+              <Label htmlFor="progress-status">New Status</Label>
               <Select
                 value={selectedNewStatus}
                 onValueChange={(value: Job['status']) => setSelectedNewStatus(value)}
                 disabled={isUpdatingProgress}
               >
-                <SelectTrigger id="progress-status" className="bg-white hover:bg-gray-50">
+                <SelectTrigger id="progress-status">
                   <SelectValue placeholder="Select new status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white shadow-sm rounded-xl">
@@ -214,10 +213,10 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
             {progressUpdateEntries.length > 0 && (
               <div className="space-y-4 border-t pt-4 mt-4">
-                <h3 className="text-lg font-semibold text-gray-900">Log Entries:</h3>
+                <h3 className="text-lg font-semibold">Log Entries:</h3>
                 {progressUpdateEntries.map((entry, index) => (
                   <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start"> {/* Align items-start */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                       {/* Status Display */}
                       <div className="flex flex-col sm:col-span-1">
                         <Label className="text-gray-700">Status:</Label>
@@ -232,7 +231,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "w-full justify-start text-left font-normal bg-white hover:bg-gray-50",
+                                "w-full justify-start text-left font-normal",
                                 !entry.dateTime && "text-muted-foreground"
                               )}
                               disabled={isUpdatingProgress}
@@ -295,10 +294,10 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
               </div>
             )}
           </div>
-        </ScrollArea>
-        <AlertDialogFooter className="sticky bottom-0 bg-white z-10 pt-4 border-t border-gray-200 -mx-6 px-6 pb-0">
-          <AlertDialogCancel onClick={() => handleClose(false)} disabled={isUpdatingProgress} className="bg-white hover:bg-gray-50">Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null || !entry.dateTime)} className="bg-blue-600 text-white hover:bg-blue-700">
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => handleClose(false)} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null || !entry.dateTime)}>
             {isUpdatingProgress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save Progress
           </AlertDialogAction>

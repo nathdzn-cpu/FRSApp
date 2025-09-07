@@ -76,7 +76,7 @@ const EditUser: React.FC = () => {
       dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
       phone: values.phone || undefined,
       role: values.role,
-      // user_id: values.user_id || undefined, // user_id cannot be edited
+      user_id: values.user_id || undefined,
       truck_reg: values.truck_reg || undefined,
       trailer_no: values.trailer_no || undefined,
     };
@@ -154,7 +154,7 @@ const EditUser: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
-        <Button onClick={() => navigate('/')} variant="outline" className="bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
@@ -165,7 +165,7 @@ const EditUser: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>
-        <Button onClick={() => navigate('/')} variant="outline" className="bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
@@ -176,7 +176,7 @@ const EditUser: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-gray-700 text-lg mb-4">User not found.</p>
-        <Button onClick={() => navigate('/admin/users')} variant="outline" className="bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/admin/users')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
       </div>
@@ -186,7 +186,7 @@ const EditUser: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6 bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
 
@@ -202,7 +202,7 @@ const EditUser: React.FC = () => {
             <CardTitle className="text-xl font-semibold text-gray-900">User Actions</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <Button variant="outline" className="w-full bg-white hover:bg-gray-50" onClick={() => setIsResetPasswordConfirmOpen(true)} disabled={isResetPasswordBusy}>
+            <Button variant="outline" className="w-full" onClick={() => setIsResetPasswordConfirmOpen(true)} disabled={isResetPasswordBusy}>
               <Mail className="h-4 w-4 mr-2" /> Send Password Reset
             </Button>
           </CardContent>

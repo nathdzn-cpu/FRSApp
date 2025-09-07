@@ -3,13 +3,6 @@ import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
 
-// Define CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // Replace with your frontend origin in production
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
-};
-
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -28,58 +21,7 @@ function userClient(authHeader: string | null) {
   });
 }
 
-// Helper to get display status (mimicking frontend for consistent notes)
-function getDisplayStatus(status: string): string {
-  switch (status) {
-    case 'planned': return 'Planned';
-    case 'assigned': return 'Assigned';
-    case 'accepted': return 'Accepted';
-    case 'on_route_collection': return 'On Route Collection';
-    case 'at_collection': return 'At Collection';
-    case 'loaded': return 'Loaded';
-    case 'on_route_delivery': return 'On Route Delivery';
-    case 'at_delivery': return 'At Delivery';
-    case 'delivered': return 'Delivered';
-    case 'pod_received': return 'POD Received';
-    case 'cancelled': return 'Cancelled';
-    case 'job_created': return 'Job Created';
-    case 'job_cloned': return 'Job Cloned';
-    case 'job_confirmed': return 'Job Confirmed';
-    case 'eta_set': return 'ETA Set';
-    case 'pod_requested': return 'POD Requested';
-    case 'pod_uploaded': return 'POD Uploaded';
-    case 'document_uploaded': return 'Document Uploaded';
-    case 'location_ping': return 'Location Ping';
-    case 'note_added': return 'Note Added';
-    case 'status_changed': return 'Status Changed';
-    case 'driver_reassigned': return 'Driver Reassigned';
-    case 'stop_added': return 'Stop Added';
-    case 'stop_updated': return 'Stop Updated';
-    case 'stop_deleted': return 'Stop Deleted';
-    case 'stop_details_updated': return 'Stop Details Updated';
-    case 'daily_check_submitted': return 'Daily Check Submitted';
-    case 'daily_check_item_created': return 'Daily Check Item Created';
-    case 'daily_check_item_updated': return 'Daily Check Item Updated';
-    case 'daily_check_item_deleted': return 'Daily Check Item Deleted';
-    case 'user_created': return 'User Created';
-    case 'user_updated': return 'User Updated';
-    case 'user_deleted': return 'User Deleted';
-    case 'password_reset_sent': return 'Password Reset Sent';
-    case 'purge_demo_users': return 'Purge Demo Users';
-    case 'purge_all_non_admin_users': return 'Purge All Non-Admin Users';
-    case 'timeline_event_removed_from_timeline': return 'Removed from Timeline';
-    case 'timeline_event_restored_to_timeline': return 'Restored to Timeline';
-    default:
-      return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  }
-}
-
 serve(async (req) => {
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
   try {
     const admin = adminClient();
     const user = userClient(req.headers.get("authorization"));
@@ -92,7 +34,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id, full_name")
+      .select("id, role, org_id")
       .eq("id", authUser.user.id)
       .single();
 
@@ -122,7 +64,6 @@ serve(async (req) => {
 
     const effective_org_id = me.org_id;
     const effective_driver_id = me.id;
-    const currentTimestamp = new Date().toISOString();
 
     // 3) Insert daily_check_response
     const newDailyCheckResponse = {
@@ -136,7 +77,7 @@ serve(async (req) => {
       duration_seconds: Math.round((new Date(finished_at).getTime() - new Date(started_at).getTime()) / 1000),
       signature, // This would ideally be a storage path after upload
       items,
-      created_at: currentTimestamp,
+      created_at: new Date().toISOString(),
     };
 
     const { data: insertedResponse, error: insertError } = await admin
@@ -156,8 +97,8 @@ serve(async (req) => {
         actor_id: effective_driver_id,
         actor_role: actor_role,
         action_type: 'daily_check_submitted',
-        notes: `${me.full_name} submitted a daily HGV check for truck '${truck_reg}'.`,
-        timestamp: currentTimestamp,
+        notes: `Daily HGV check submitted for truck ${truck_reg}.`,
+        timestamp: new Date().toISOString(),
       });
     if (progressLogError) {
       console.error("DEBUG: progress log insert failed for daily check submission", progressLogError.message);
@@ -171,12 +112,12 @@ serve(async (req) => {
       entity_id: insertedResponse.id,
       action: "create",
       after: { truck_reg, status: "completed" },
-      created_at: currentTimestamp,
+      created_at: new Date().toISOString(),
     }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
 
     return new Response(
       JSON.stringify(insertedResponse),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } },
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("DEBUG: function error", e);
@@ -184,7 +125,7 @@ serve(async (req) => {
       JSON.stringify({ ok: false, error: (e as Error).message }),
       {
         status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json" },
       },
     );
   }

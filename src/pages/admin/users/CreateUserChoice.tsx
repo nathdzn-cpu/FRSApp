@@ -35,7 +35,7 @@ const CreateUserChoice: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-xl mx-auto">
-        <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6 bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
 
@@ -50,7 +50,7 @@ const CreateUserChoice: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button
                 variant="outline"
-                className="h-32 flex flex-col items-center justify-center text-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600 bg-white"
+                className="h-32 flex flex-col items-center justify-center text-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600"
                 onClick={() => navigate('/admin/users/new/driver')}
               >
                 <Truck className="h-8 w-8 mb-2" />
@@ -58,7 +58,7 @@ const CreateUserChoice: React.FC = () => {
               </Button>
               <Button
                 variant="outline"
-                className="h-32 flex flex-col items-center justify-center text-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600 bg-white"
+                className="h-32 flex flex-col items-center justify-center text-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600"
                 onClick={() => navigate('/admin/users/new/office')}
               >
                 <Briefcase className="h-8 w-8 mb-2" />

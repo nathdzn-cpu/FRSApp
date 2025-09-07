@@ -2,7 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { mockProfiles, mockAuditLogs, Profile } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { callFn } from '../callFunction'; // Import callFn
-import { supabase } from '../supabaseClient'; // Import supabase client
 
 export const getProfiles = async (orgId: string): Promise<Profile[]> => {
   const result = await callFn<Profile[]>('admin-users-management', { op: "read_all", org_id: orgId });
@@ -42,24 +41,11 @@ interface CreateUserData {
 }
 
 export const createUser = async (orgId: string, userData: CreateUserData, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Profile> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for user creation:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "create",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
     ...userData,
   };
   const result = await callFn<Profile>('admin-users-management', payload);
@@ -67,25 +53,12 @@ export const createUser = async (orgId: string, userData: CreateUserData, actorI
 };
 
 export const updateUser = async (orgId: string, profileId: string, updates: Partial<Profile>, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Profile | undefined> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for user update:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "update",
     org_id: orgId,
     profile_id: profileId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
     updates: updates,
   };
   const result = await callFn<Profile>('admin-users-management', payload);
@@ -93,98 +66,46 @@ export const updateUser = async (orgId: string, profileId: string, updates: Part
 };
 
 export const resetUserPassword = async (orgId: string, userId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for password reset:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "reset_password",
     org_id: orgId,
     user_id: userId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
   };
   await callFn('admin-users-management', payload);
   return true;
 };
 
 export const deleteUser = async (orgId: string, profileId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<boolean> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for user deletion:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "delete",
     org_id: orgId,
     profile_id: profileId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
   };
   await callFn('admin-users-management', payload);
   return true;
 };
 
 export const purgeDemoUsers = async (orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<{ ok: boolean; removed: number }> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for purging demo users:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "purge_demo",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
   };
   const result = await callFn<{ ok: boolean; removed: number }>('admin-users-management', payload);
   return result;
 };
 
 export const purgeAllNonAdminUsers = async (orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<{ ok: boolean; removed: number }> => { // Added actorRole
-  // Fetch actor's full name for the note
-  const { data: actorProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', actorId)
-    .single();
-
-  if (profileError || !actorProfile) {
-    console.error("Error fetching actor profile for purging non-admin users:", profileError);
-    throw new Error(profileError?.message || "Actor profile not found.");
-  }
-
   const payload = {
     op: "purge_all_non_admin",
     org_id: orgId,
     actor_id: actorId, // Passed for audit logging in Edge Function
     actor_role: actorRole, // Pass actor_role
-    actor_name: actorProfile.full_name, // Pass actor's full name
   };
   const result = await callFn<{ ok: boolean; removed: number }>('admin-users-management', payload);
   return result;

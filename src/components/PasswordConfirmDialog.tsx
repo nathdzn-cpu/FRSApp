@@ -18,7 +18,6 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 
 interface PasswordConfirmDialogProps {
   open: boolean;
@@ -95,17 +94,17 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="flex flex-col max-h-[90vh] bg-white p-6 rounded-xl shadow-lg">
-        <AlertDialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b border-gray-200 -mx-6 px-6 pt-0">
-          <AlertDialogTitle className="text-xl font-semibold text-gray-900">{title}</AlertDialogTitle>
+      <AlertDialogContent className="flex flex-col max-h-[90vh]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ScrollArea className="flex-1 overflow-y-auto p-4 -mx-6 px-6"> {/* Apply ScrollArea here */}
+        <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="text-gray-700">Your Password</Label>
+              <Label htmlFor="confirm-password">Your Password</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -117,17 +116,16 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
               {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
             </div>
           </div>
-        </ScrollArea>
-        <AlertDialogFooter className="sticky bottom-0 bg-white z-10 pt-4 border-t border-gray-200 -mx-6 px-6 pb-0">
+        </div>
+        <AlertDialogFooter>
           <AlertDialogCancel asChild>
-            <Button variant="outline" disabled={isAuthenticating || isConfirming} className="bg-white hover:bg-gray-50">Cancel</Button>
+            <Button variant="outline" disabled={isAuthenticating || isConfirming}>Cancel</Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
             <Button
               variant={variant}
               onClick={handlePasswordConfirm}
               disabled={isAuthenticating || isConfirming || !password}
-              className={variant === "destructive" ? "bg-red-600 text-white hover:bg-red-700" : "bg-blue-600 text-white hover:bg-blue-700"}
             >
               {isAuthenticating || isConfirming ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {confirmLabel}

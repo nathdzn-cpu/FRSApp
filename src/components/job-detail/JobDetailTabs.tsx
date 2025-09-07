@@ -21,10 +21,7 @@ interface JobDetailTabsProps {
 
 const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles, stops, documents, currentOrgId, onLogVisibilityChange }) => {
   // Filter logs for the Timeline tab (JobTimeline component will handle its own filtering for visible_in_timeline)
-  // Only include core job status changes for the timeline
-  const timelineLogs = progressLogs.filter(log =>
-    ['planned', 'assigned', 'accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received'].includes(log.action_type)
-  );
+  const timelineLogs = progressLogs.filter(log => coreProgressActionTypes.includes(log.action_type));
 
   return (
     <Tabs defaultValue="timeline" className="w-full">

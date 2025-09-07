@@ -2,9 +2,8 @@ import React from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react';
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react'; // Added EyeOff, Eye
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { cn } from '@/lib/utils'; // Import cn for conditional classnames
 
 interface JobAuditLogProps {
   progressLogs: JobProgressLog[];
@@ -51,8 +50,8 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   password_reset_sent: Mail,
   purge_demo_users: Eraser,
   purge_all_non_admin_users: Eraser,
-  timeline_event_removed_from_timeline: EyeOff,
-  timeline_event_restored_to_timeline: Eye,
+  timeline_event_removed_from_timeline: EyeOff, // New icon for removed from timeline
+  timeline_event_restored_to_timeline: Eye, // New icon for restored to timeline
 };
 
 const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => {
@@ -74,22 +73,20 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
-        const isRemovedOrCancelled = log.action_type === 'cancelled' || log.action_type === 'timeline_event_removed_from_timeline';
+        const isRemovedFromTimeline = log.visible_in_timeline === false; // Check for visibility status
+        const isCancelledJob = log.action_type === 'cancelled'; // Check if the action itself is 'cancelled'
 
         // The notes field now contains the full, human-readable message
         const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred.`;
 
         return (
           <div key={log.id} className="mb-6 relative">
-            <div className={cn(
-              "absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full text-white",
-              isRemovedOrCancelled ? 'bg-red-600' : 'bg-blue-600' // Blue for normal, red for removed/cancelled
-            )}>
+            <div className={`absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full ${isRemovedFromTimeline || isCancelledJob ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
               <Icon size={16} />
             </div>
             <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-1">
-                <Badge variant={isRemovedOrCancelled ? 'destructive' : 'secondary'} className="capitalize">
+                <Badge variant={isRemovedFromTimeline || isCancelledJob ? 'destructive' : 'secondary'} className="capitalize">
                   {getDisplayStatus(log.action_type)}
                 </Badge>
                 <div className="text-right">
@@ -105,7 +102,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                   <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
                 </p>
               )}
-              {log.visible_in_timeline === false && log.action_type !== 'timeline_event_removed_from_timeline' && (
+              {isRemovedFromTimeline && (
                 <p className="text-xs text-red-600 flex items-center mt-1">
                   <EyeOff className="h-3 w-3 mr-1" /> This event is hidden from the main timeline.
                 </p>

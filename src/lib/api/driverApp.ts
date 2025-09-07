@@ -18,20 +18,7 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for job confirmation:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
   const logs: JobProgressLog[] = [];
-  const currentTimestamp = new Date().toISOString();
 
   // Add job_confirmed event to job_progress_log
   const { data: confirmedLog, error: confirmedLogError } = await supabase
@@ -42,8 +29,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: 'job_confirmed',
-      notes: `${driverProfile.full_name} confirmed job '${job.order_number}'.`,
-      timestamp: currentTimestamp,
+      notes: 'Driver confirmed job.',
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -59,8 +46,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: 'eta_set',
-      notes: `${driverProfile.full_name} set ETA to first collection: ${eta}.`,
-      timestamp: currentTimestamp,
+      notes: `ETA to first collection: ${eta}`,
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -78,8 +65,8 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
         actor_id: driverId,
         actor_role: 'driver', // Driver role
         action_type: 'accepted', // Use 'accepted' as the action_type for the log
-        notes: `${driverProfile.full_name} accepted job '${job.order_number}'.`,
-        timestamp: currentTimestamp,
+        notes: 'Job status changed to accepted by driver.',
+        timestamp: new Date().toISOString(),
       })
       .select()
       .single();
@@ -104,21 +91,8 @@ export const updateJobStage = async (
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for job stage update:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
   // Update job status based on actionType
   job.status = actionType; // Directly set job status to actionType
-  const currentTimestamp = new Date().toISOString();
 
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
@@ -130,10 +104,10 @@ export const updateJobStage = async (
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: actionType, // Use actionType as the action_type for the log
-      notes: notes || `${driverProfile.full_name} marked job '${job.order_number}' as '${actionType.replace(/_/g, ' ')}'.`,
+      notes: notes,
       lat: lat,
       lon: lon,
-      timestamp: currentTimestamp,
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -144,9 +118,9 @@ export const updateJobStage = async (
   }
 
   // Update driver's last job status
-  const driverProfileMock = mockProfiles.find(p => p.id === driverId);
-  if (driverProfileMock) {
-    driverProfileMock.last_job_status = job.status;
+  const driverProfile = mockProfiles.find(p => p.id === driverId);
+  if (driverProfile) {
+    driverProfile.last_job_status = job.status;
   }
 
   return newLog;
@@ -175,20 +149,6 @@ export const uploadDocument = async (
   };
   mockDocuments.push(newDocument);
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for document upload:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
-  const currentTimestamp = new Date().toISOString();
-
   // Add a job event for document upload to job_progress_log
   const { error: progressLogError } = await supabase
     .from('job_progress_log')
@@ -199,8 +159,8 @@ export const uploadDocument = async (
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific action_type for log
-      notes: `${driverProfile.full_name} uploaded a ${type.replace(/_/g, ' ')}.`,
-      timestamp: currentTimestamp,
+      notes: `${type.replace(/_/g, ' ')} uploaded.`,
+      timestamp: new Date().toISOString(),
     });
   if (progressLogError) console.error("Error inserting document upload log:", progressLogError);
 
@@ -213,20 +173,6 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job) throw new Error("Job not found or not assigned to this driver.");
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for job note:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
-  const currentTimestamp = new Date().toISOString();
-
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
     .from('job_progress_log')
@@ -236,8 +182,8 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: 'note_added',
-      notes: `${driverProfile.full_name} added a note: "${note}".`,
-      timestamp: currentTimestamp,
+      notes: note,
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -255,20 +201,6 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
   if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver.");
 
-  // Fetch driver's full name for the note
-  const { data: driverProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', driverId)
-    .single();
-
-  if (profileError || !driverProfile) {
-    console.error("Error fetching driver profile for location ping:", profileError);
-    throw new Error(profileError?.message || "Driver profile not found.");
-  }
-
-  const currentTimestamp = new Date().toISOString();
-
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase
     .from('job_progress_log')
@@ -278,10 +210,9 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
       actor_id: driverId,
       actor_role: 'driver', // Driver role
       action_type: 'location_ping',
-      notes: `${driverProfile.full_name} reported location at Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}.`,
       lat: lat,
       lon: lon,
-      timestamp: currentTimestamp,
+      timestamp: new Date().toISOString(),
     })
     .select()
     .single();
@@ -292,9 +223,9 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   }
 
   // Update driver's last location
-  const driverProfileMock = mockProfiles.find(p => p.id === driverId);
-  if (driverProfileMock) {
-    driverProfileMock.last_location = { lat, lon, timestamp: currentTimestamp };
+  const driverProfile = mockProfiles.find(p => p.id === driverId);
+  if (driverProfile) {
+    driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
   return newLog;

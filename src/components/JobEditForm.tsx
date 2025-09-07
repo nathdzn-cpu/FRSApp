@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Job, JobStop, Profile } from '@/utils/mockData';
 import { useAuth } from '@/context/AuthContext';
 import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for new stop IDs
 
 // Helper to format time input to HH:MM
 const formatTimeInput = (value: string) => {
@@ -157,7 +156,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                   <FormLabel className="text-gray-700">Status</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={isSubmitting} className="bg-white hover:bg-gray-50">
+                      <SelectTrigger disabled={isSubmitting}>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
@@ -187,7 +186,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-white hover:bg-gray-50",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                           disabled={disableAllButDriverFields}
@@ -254,7 +253,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                   <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''} disabled={disableAllButDriverFields}>
                     <FormControl>
-                      <SelectTrigger className="bg-white hover:bg-gray-50">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select a driver" />
                       </SelectTrigger>
                     </FormControl>
@@ -294,7 +293,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
             {isOfficeOrAdmin && (
-              <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ id: uuidv4(), name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', type: 'collection' })} disabled={isSubmitting} className="bg-blue-600 text-white hover:bg-blue-700">
+              <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ id: uuidv4(), name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', type: 'collection' })} disabled={isSubmitting}>
                 <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
               </Button>
             )}
@@ -305,7 +304,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Collection #{index + 1}</h4>
                   {isOfficeOrAdmin && (
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)} disabled={isSubmitting} className="bg-red-600 text-white hover:bg-red-700">
+                    <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)} disabled={isSubmitting}>
                       <Trash2 className="h-4 w-4" /> Remove
                     </Button>
                   )}
@@ -447,7 +446,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
             {isOfficeOrAdmin && (
-              <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ id: uuidv4(), name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', type: 'delivery' })} disabled={isSubmitting} className="bg-blue-600 text-white hover:bg-blue-700">
+              <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ id: uuidv4(), name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', type: 'delivery' })} disabled={isSubmitting}>
                 <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
               </Button>
             )}
@@ -458,7 +457,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Delivery #{index + 1}</h4>
                   {isOfficeOrAdmin && (
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)} disabled={isSubmitting} className="bg-red-600 text-white hover:bg-red-700">
+                    <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)} disabled={isSubmitting}>
                       <Trash2 className="h-4 w-4" /> Remove
                     </Button>
                   )}

@@ -208,7 +208,7 @@ const AdminUsersPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
-        <Button onClick={() => navigate('/')} variant="outline" className="bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
@@ -219,7 +219,7 @@ const AdminUsersPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>
-        <Button onClick={() => navigate('/')} variant="outline" className="bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
@@ -229,7 +229,7 @@ const AdminUsersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6 bg-white hover:bg-gray-50">
+        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
@@ -237,7 +237,7 @@ const AdminUsersPage: React.FC = () => {
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Admin: User Management</CardTitle>
             <div className="flex space-x-2">
-              <Button onClick={fetchUsers} variant="outline" className="bg-white hover:bg-gray-50">
+              <Button onClick={fetchUsers} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
               <Button onClick={() => navigate('/admin/users/new')} className="bg-blue-600 text-white hover:bg-blue-700">
@@ -254,7 +254,7 @@ const AdminUsersPage: React.FC = () => {
                 className="flex-grow"
               />
               <Select value={filterRole} onValueChange={(value: 'all' | 'driver' | 'office' | 'admin') => setFilterRole(value)}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-white hover:bg-gray-50">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -276,7 +276,7 @@ const AdminUsersPage: React.FC = () => {
                 variant="destructive"
                 onClick={() => setIsPurgeDemoConfirmOpen(true)}
                 disabled={purging}
-                className="w-full sm:w-auto bg-red-600 text-white hover:bg-red-700"
+                className="w-full sm:w-auto"
               >
                 {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Purge Demo Users
@@ -286,7 +286,7 @@ const AdminUsersPage: React.FC = () => {
                 variant="destructive"
                 onClick={() => setIsPurgeAllNonAdminConfirmOpen(true)}
                 disabled={purgingAll}
-                className="w-full sm:w-auto bg-red-600 text-white hover:bg-red-700"
+                className="w-full sm:w-auto"
               >
                 <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
               </Button>
@@ -323,16 +323,16 @@ const AdminUsersPage: React.FC = () => {
                         <TableCell>{user.is_demo ? <Badge variant="outline">Demo</Badge> : '-'}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => navigate(`/admin/users/${user.id}/edit`)} className="bg-white hover:bg-gray-50">
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/admin/users/${user.id}/edit`)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" disabled={busyId === user.id} className="bg-white hover:bg-gray-50">
+                                <Button variant="outline" size="sm" disabled={busyId === user.id}>
                                   <Mail className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+                              <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Send Password Reset for {user.full_name}?</AlertDialogTitle>
                                   <AlertDialogDescription>
@@ -341,13 +341,13 @@ const AdminUsersPage: React.FC = () => {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel asChild>
-                                    <Button variant="outline" className="bg-white hover:bg-gray-50">Cancel</Button>
+                                    <Button variant="outline">Cancel</Button>
                                   </AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleResetPassword(user)} disabled={busyId === user.id} className="bg-blue-600 text-white hover:bg-blue-700">Send Reset Email</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleResetPassword(user)} disabled={busyId === user.id}>Send Reset Email</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <Button variant="destructive" size="sm" onClick={() => handleInitiateDelete(user)} disabled={busyId === user.id} className="bg-red-600 text-white hover:bg-red-700">
+                            <Button variant="destructive" size="sm" onClick={() => handleInitiateDelete(user)} disabled={busyId === user.id}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
