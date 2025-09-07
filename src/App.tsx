@@ -105,10 +105,10 @@ const AppContent = () => {
 
 const App = () => {
   // Ensure useSession() always returns an object, even if it somehow returns null/undefined
-  const { session, isLoading } = useSession() || { session: null, isLoading: true };
+  const { session, isLoading, user } = useSession() || { session: null, isLoading: true, user: null };
 
   // Add debug log here
-  console.log("App.tsx: useSession state - isLoading:", isLoading, "session:", session);
+  console.log("App.tsx: useSession state - isLoading:", isLoading, "session:", session, "user:", user);
 
   if (isLoading) {
     return (
@@ -125,13 +125,10 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {session ? (
-            <AuthContextProvider initialSession={session} initialUser={session.user}>
-              <AppContent />
-            </AuthContextProvider>
-          ) : (
-            <LoginPage />
-          )}
+          {/* Always render AuthContextProvider, passing the session and user from useSession */}
+          <AuthContextProvider initialSession={session} initialUser={user}>
+            <AppContent />
+          </AuthContextProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
