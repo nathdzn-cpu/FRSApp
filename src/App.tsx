@@ -107,6 +107,9 @@ const App = () => {
   // Ensure useSession() always returns an object, even if it somehow returns null/undefined
   const { session, isLoading } = useSession() || { session: null, isLoading: true };
 
+  // Add debug log here
+  console.log("App.tsx: useSession state - isLoading:", isLoading, "session:", session);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
