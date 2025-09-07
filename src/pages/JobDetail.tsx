@@ -1,41 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase';
-import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle, UserPlus, MapPin } from 'lucide-react';
-import JobTimeline from '@/components/JobTimeline';
-import JobStopsTable from '@/components/JobStopsTable';
-import JobPodsGrid from '@/components/JobPodsGrid';
-import JobStopsList from '@/components/JobStopsList';
-import { format, parseISO, setHours, setMinutes, setSeconds } from 'date-fns';
+import { Card } from '@/components/ui/card';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import JobEditForm from '@/components/JobEditForm';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import DateTimePicker from '@/components/DateTimePicker';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import AssignDriverDialog from '@/components/AssignDriverDialog';
-import { getDisplayStatus, jobStatusOrder, getSkippedStatuses } from '@/lib/utils/statusUtils'; // Import new utilities
-import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
-import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils'; // Import new time utility
+
+// Import new modular components
+import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
+import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
+import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
+import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -74,8 +51,8 @@ interface ProgressUpdateEntry {
   status: Job['status'];
   dateTime: Date;
   notes: string;
-  timeInput: string; // To store raw time input for validation
-  timeError: string | null; // To store time validation error
+  timeInput: string;
+  timeError: string | null;
 }
 
 const JobDetail: React.FC = () => {
@@ -84,37 +61,12 @@ const JobDetail: React.FC = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
 
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
-  const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
-  const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
-  const [selectedNewStatus, setSelectedNewStatus] = useState<Job['status'] | ''>('');
-  const [progressUpdateEntries, setProgressUpdateEntries] = useState<ProgressUpdateEntry[]>([]);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
-
-  // Define all possible job statuses for the dropdown (using snake_case for values)
-  const allJobStatuses: Array<Job['status']> = [
-    'planned',
-    'assigned',
-    'accepted',
-    'on_route_collection',
-    'at_collection',
-    'loaded',
-    'on_route_delivery',
-    'at_delivery',
-    'delivered',
-    'pod_received',
-    'cancelled',
-  ];
-
-  // Filter statuses for the progress update dropdown (exclude 'planned', 'assigned', 'cancelled' as direct updates)
-  const progressUpdateSelectableStatuses = allJobStatuses.filter(status =>
-    !['planned', 'assigned', 'cancelled'].includes(status)
-  );
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
@@ -146,11 +98,6 @@ const JobDetail: React.FC = () => {
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
       const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id);
 
-      console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
-      console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
-      console.log("DEBUG: JobDetail - fetchedDocuments:", fetchedDocuments);
-      console.log("DEBUG: JobDetail - fetchedProgressLogs:", fetchedProgressLogs);
-
       return {
         job: fetchedJob,
         stops: fetchedStops,
@@ -169,59 +116,6 @@ const JobDetail: React.FC = () => {
 
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
-
-  // Effect to generate progress update entries when selectedNewStatus changes
-  useEffect(() => {
-    if (job && selectedNewStatus && jobStatusOrder.includes(job.status) && jobStatusOrder.includes(selectedNewStatus)) {
-      const skipped = getSkippedStatuses(job.status, selectedNewStatus);
-      const allStatusesToLog = [...skipped, selectedNewStatus];
-      
-      const now = new Date();
-      const defaultTime = format(now, 'HH:mm');
-
-      setProgressUpdateEntries(
-        allStatusesToLog.map(status => ({
-          status,
-          dateTime: setSeconds(setMinutes(setHours(new Date(), now.getHours()), now.getMinutes()), 0), // Today's date, current time, seconds to 0
-          notes: '',
-          timeInput: defaultTime,
-          timeError: null,
-        }))
-      );
-    } else {
-      setProgressUpdateEntries([]);
-    }
-  }, [job, selectedNewStatus]);
-
-  const handleProgressUpdateEntryChange = (index: number, field: 'dateTime' | 'notes' | 'timeInput', value: any) => {
-    setProgressUpdateEntries(prevEntries => {
-      const newEntries = [...prevEntries];
-      if (field === 'timeInput') {
-        const { formattedTime, error } = formatAndValidateTimeInput(value);
-        newEntries[index] = {
-          ...newEntries[index],
-          timeInput: value,
-          timeError: error,
-        };
-        if (formattedTime) {
-          // Update dateTime with today's date and the formatted time
-          const [hoursStr, minutesStr] = formattedTime.split(':');
-          const hours = parseInt(hoursStr, 10);
-          const minutes = parseInt(minutesStr, 10);
-          let newDateTime = setHours(new Date(), hours); // Always use today's date
-          newDateTime = setMinutes(newDateTime, minutes);
-          newDateTime = setSeconds(newDateTime, 0);
-          newEntries[index].dateTime = newDateTime;
-        } else {
-          // If time input is invalid, set dateTime to today 00:00:00
-          newEntries[index].dateTime = setSeconds(setMinutes(setHours(new Date(), 0), 0), 0);
-        }
-      } else {
-        newEntries[index] = { ...newEntries[index], [field]: value };
-      }
-      return newEntries;
-    });
-  };
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile || !userRole) return;
@@ -287,7 +181,7 @@ const JobDetail: React.FC = () => {
 
     setIsSubmittingEdit(true);
     try {
-      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
+      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : [])); // Ensure s.id exists
 
       const allNewStops = [...values.collections, ...values.deliveries];
 
@@ -324,7 +218,6 @@ const JobDetail: React.FC = () => {
       await promise;
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       refetchJobData();
-      setIsEditDialogOpen(false);
     } catch (err: any) {
       console.error("Error updating job:", err);
       toast.error("An unexpected error occurred while updating the job.");
@@ -369,23 +262,16 @@ const JobDetail: React.FC = () => {
     }
   };
 
-  const handleProgressUpdate = async () => {
-    if (!job || !currentProfile || !userRole || progressUpdateEntries.length === 0) {
+  const handleUpdateProgress = async (entries: ProgressUpdateEntry[]) => {
+    if (!job || !currentProfile || !userRole || entries.length === 0) {
       toast.error("No status updates to log.");
-      return;
-    }
-
-    // Validate all time inputs before submission
-    const hasTimeErrors = progressUpdateEntries.some(entry => entry.timeError !== null);
-    if (hasTimeErrors) {
-      toast.error("Please fix invalid time entries.");
       return;
     }
 
     setIsUpdatingProgress(true);
     try {
       // Sort entries by dateTime to ensure chronological order
-      const sortedEntries = [...progressUpdateEntries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
 
       for (const entry of sortedEntries) {
         const payload = {
@@ -398,19 +284,16 @@ const JobDetail: React.FC = () => {
           notes: entry.notes.trim() || undefined,
         };
 
-        // Call updateJobProgress for each entry
         await updateJobProgress(payload);
       }
 
       toast.success('Job progress updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       refetchJobData();
-      setIsProgressUpdateDialogOpen(false);
-      setSelectedNewStatus('');
-      setProgressUpdateEntries([]);
     } catch (err: any) {
       console.error("Error updating job progress:", err);
       toast.error("An unexpected error occurred while updating job progress.");
+      throw err; // Re-throw to allow dialog to handle its own error state if needed
     } finally {
       setIsUpdatingProgress(false);
     }
@@ -447,13 +330,6 @@ const JobDetail: React.FC = () => {
     );
   }
 
-  const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-  const isAssignedDriver = userRole === 'driver' && job.assigned_driver_id === user?.id;
-  const canEditJob = isOfficeOrAdmin || isAssignedDriver;
-
-  const collectionStops = stops.filter(s => s.type === 'collection');
-  const deliveryStops = stops.filter(s => s.type === 'delivery');
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -462,293 +338,36 @@ const JobDetail: React.FC = () => {
         </Button>
 
         <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
-            <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Job: {job.order_number}
-              <Badge
-                variant={
-                  job.status === 'planned'
-                    ? 'secondary'
-                    : job.status === 'accepted' || job.status === 'assigned'
-                    ? 'default'
-                    : job.status === 'delivered'
-                    ? 'outline'
-                    : 'destructive'
-                }
-                className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
-              >
-                {getDisplayStatus(job.status)}
-              </Badge>
-            </CardTitle>
-            <div className="flex space-x-2">
-              {isOfficeOrAdmin && (
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Edit className="h-4 w-4 mr-2" /> Edit Job
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl font-semibold text-gray-900">Edit Job: {job.order_number}</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-y-auto p-4">
-                      <JobEditForm
-                        initialJob={job}
-                        initialStops={stops}
-                        drivers={allProfiles.filter(p => p.role === 'driver')}
-                        onSubmit={handleEditSubmit}
-                        isSubmitting={isSubmittingEdit}
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              {isOfficeOrAdmin && (
-                <Button variant="outline" onClick={() => setIsAssignDriverDialogOpen(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" /> Assign Driver
-                </Button>
-              )}
-              {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
-                <>
-                  <AlertDialog open={isProgressUpdateDialogOpen} onOpenChange={setIsProgressUpdateDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <CheckCircle className="h-4 w-4 mr-2" /> Update Progress
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Log a new status update for this job.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="flex-1 overflow-y-auto p-4">
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="progress-status">New Status</Label>
-                            <Select
-                              value={selectedNewStatus}
-                              onValueChange={(value: Job['status']) => setSelectedNewStatus(value)}
-                              disabled={isUpdatingProgress}
-                            >
-                              <SelectTrigger id="progress-status">
-                                <SelectValue placeholder="Select new status" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white shadow-sm rounded-xl">
-                                {progressUpdateSelectableStatuses.map(status => (
-                                  <SelectItem key={status} value={status}>
-                                    {getDisplayStatus(status)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {progressUpdateEntries.length > 0 && (
-                            <div className="space-y-4 border-t pt-4 mt-4">
-                              <h3 className="text-lg font-semibold">Log Entries:</h3>
-                              {progressUpdateEntries.map((entry, index) => (
-                                <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
-                                  <p className="font-medium text-gray-900 mb-2">{getDisplayStatus(entry.status)}</p>
-                                  <DateTimePicker
-                                    label="Date and Time"
-                                    value={entry.dateTime}
-                                    onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
-                                    disabled={isUpdatingProgress}
-                                    timeError={entry.timeError}
-                                    onTimeInputChange={(time) => handleProgressUpdateEntryChange(index, 'timeInput', time)}
-                                  />
-                                  <div className="space-y-2 mt-2">
-                                    <Label htmlFor={`notes-${index}`}>Notes (Optional)</Label>
-                                    <Textarea
-                                      id={`notes-${index}`}
-                                      value={entry.notes}
-                                      onChange={(e) => handleProgressUpdateEntryChange(index, 'notes', e.target.value)}
-                                      placeholder="Add any relevant notes for this update..."
-                                      disabled={isUpdatingProgress}
-                                    />
-                                  </div>
-                                </Card>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => { setIsProgressUpdateDialogOpen(false); setSelectedNewStatus(''); setProgressUpdateEntries([]); }} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleProgressUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null)}>
-                          {isUpdatingProgress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                          Save Progress
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <FileText className="h-4 w-4 mr-2" /> Request POD
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Request Proof of Delivery (POD)?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will send a notification to the assigned driver to upload a Proof of Delivery for this job.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel asChild>
-                          <Button variant="outline">Dismiss</Button>
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleRequestPod}>Request POD</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <Button variant="outline" onClick={handleExportPdf}>
-                    <FileDown className="h-4 w-4 mr-2" /> Export PDF
-                  </Button>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <Copy className="h-4 w-4 mr-2" /> Clone Job
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Clone this Job?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will create a new job with all the same details and stops as this one. You can then edit the new job.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel asChild>
-                          <Button variant="outline">Dismiss</Button>
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCloneJob}>Clone Job</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        <XCircle className="h-4 w-4 mr-2" /> Cancel Job
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently mark the job as cancelled and it will no longer appear in active job lists.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel asChild>
-                          <Button variant="outline">Dismiss</Button>
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancelJob} variant="destructive">Cancel Job</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
-              <div>
-                <p className="font-medium text-gray-900">Date Created:</p>
-                <p>{format(new Date(job.date_created), 'PPP')}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Assigned Driver:</p>
-                <p>{job.assigned_driver_id ? allProfiles.find(p => p.id === job.assigned_driver_id)?.full_name || 'Unknown' : 'Unassigned'}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Price:</p>
-                <p>{job.price ? `£${job.price.toFixed(2)}` : '-'}</p>
-              </div>
-              <div className="lg:col-span-1">
-                <p className="font-medium text-gray-900">Notes:</p>
-                <p>{job.notes || '-'}</p>
-              </div>
-              <div className="lg:col-span-1">
-                <p className="font-medium text-gray-900">Last Status Update:</p>
-                <p className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-gray-500" />
-                  {job.last_status_update_at ? format(parseISO(job.last_status_update_at), 'PPP HH:mm') : 'N/A'}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
-              <div>
-                <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
-                  <MapPin className="h-4 w-4 text-blue-600" /> Collections:
-                </p>
-                <JobStopsList stops={collectionStops} type="collection" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
-                  <MapPin className="h-4 w-4 text-green-600" /> Deliveries:
-                </p>
-                <JobStopsList stops={deliveryStops} type="delivery" />
-              </div>
-            </div>
-          </CardContent>
+          <JobDetailHeader
+            job={job}
+            stops={stops}
+            allProfiles={allProfiles}
+            userRole={userRole!}
+            currentProfile={currentProfile!}
+            currentOrgId={currentOrgId}
+            onEditSubmit={handleEditSubmit}
+            onAssignDriver={handleAssignDriver}
+            onUpdateProgress={handleUpdateProgress}
+            onRequestPod={handleRequestPod}
+            onExportPdf={handleExportPdf}
+            onCloneJob={handleCloneJob}
+            onCancelJob={handleCancelJob}
+            isSubmittingEdit={isSubmittingEdit}
+            isAssigningDriver={isAssigningDriver}
+            isUpdatingProgress={isUpdatingProgress}
+          />
+          <JobOverviewCard
+            job={job}
+            stops={stops}
+            allProfiles={allProfiles}
+          />
         </Card>
 
-        <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1">
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="stops">Stops Table</TabsTrigger>
-            <TabsTrigger value="pods">PODs</TabsTrigger>
-          </TabsList>
-          <TabsContent value="timeline" className="mt-4">
-            <Card className="bg-white shadow-sm rounded-xl p-6">
-              <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 pt-4">
-                <JobTimeline progressLogs={progressLogs} profiles={allProfiles} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="stops" className="mt-4">
-            <Card className="bg-white shadow-sm rounded-xl p-6">
-              <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops Table</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 pt-4">
-                <JobStopsTable stops={stops} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="pods" className="mt-4">
-            <Card className="bg-white shadow-sm rounded-xl p-6">
-              <CardHeader className="p-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Proof of Delivery (PODs)</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 pt-4">
-                <JobPodsGrid documents={documents} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Assign Driver Dialog */}
-        <AssignDriverDialog
-          open={isAssignDriverDialogOpen}
-          onOpenChange={setIsAssignDriverDialogOpen}
-          drivers={allProfiles.filter(p => p.role === 'driver')}
-          currentAssignedDriverId={job.assigned_driver_id}
-          onAssign={handleAssignDriver}
-          isAssigning={isAssigningDriver}
+        <JobDetailTabs
+          progressLogs={progressLogs}
+          allProfiles={allProfiles}
+          stops={stops}
+          documents={documents}
         />
       </div>
     </div>
