@@ -47,6 +47,7 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-sm rounded-xl p-8 bg-white dark:bg-gray-800">
         <CardHeader className="text-center">
+          <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="mx-auto mb-4 h-24 w-auto" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">FRS Haulage Login</CardTitle>
           <CardDescription className="text-gray-500 text-sm">Enter your credentials to access the dashboard.</CardDescription>
         </CardHeader>

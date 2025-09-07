@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom'; // Import Link
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck } from 'lucide-react';
@@ -64,7 +64,9 @@ const Sidebar: React.FC = () => {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px] bg-white">
-          <h2 className="text-xl font-bold p-4 border-b border-gray-200 text-blue-600">FRS Haulage</h2>
+          <Link to="/" className="flex items-center p-4 border-b border-gray-200" onClick={() => setIsOpen(false)}>
+            <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-10 w-auto" />
+          </Link>
           {renderNavLinks()}
         </SheetContent>
       </Sheet>
@@ -74,7 +76,9 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white shadow-md">
       <div className="flex h-14 items-center border-b border-gray-200 px-4 lg:h-[60px] lg:px-6">
-        <span className="font-semibold text-lg text-blue-600">FRS Haulage</span>
+        <Link to="/" className="flex items-center">
+          <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />
+        </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">
         {renderNavLinks()}
