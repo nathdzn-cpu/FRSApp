@@ -1,16 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anon = import.meta.env.VITE_SUPABASE_KEY; // Changed from VITE_SUPABASE_ANON_KEY to VITE_SUPABASE_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY!; // Using VITE_SUPABASE_KEY for consistency with project setup
 
-if (!url) {
+if (!supabaseUrl) {
   throw new Error('VITE_SUPABASE_URL is missing — check .env.local placement and spelling');
 }
-if (!anon) {
-  throw new Error('VITE_SUPABASE_KEY is missing — check .env.local placement and spelling'); // Updated error message
+if (!supabaseAnonKey) {
+  throw new Error('VITE_SUPABASE_KEY is missing — check .env.local placement and spelling');
 }
 
-export const supabase = createClient(url, anon, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

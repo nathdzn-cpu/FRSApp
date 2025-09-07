@@ -1,94 +1,159 @@
--- Create daily_check_items table
-CREATE TABLE public.daily_check_items (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    org_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    title text NOT NULL,
-    description text,
-    is_active boolean DEFAULT TRUE NOT NULL,
-    created_at timestamptz DEFAULT now() NOT NULL
+-- Create daily_check_items table only if it does not already exist
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'daily_check_items'
+  ) then
+    create table public.daily_check_items (
+      id uuid primary key default uuid_generate_v4(),
+      org_id uuid not null,
+      title text not null,
+      description text,
+      is_active boolean default true not null,
+      created_at timestamptz default now() not null
+    );
+  end if;
+end $$;
+
+-- Create daily_check_responses table only if it does not already exist
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'daily_check_responses'
+  ) then
+    create table public.daily_check_responses (
+      id uuid primary key default uuid_generate_v4(),
+      org_id uuid not null,
+      driver_id uuid not null references public.profiles(id) on delete cascade,
+      truck_reg text not null,
+      trailer_no text,
+      started_at timestamptz default now() not null,
+      finished_at timestamptz not null,
+      duration_seconds integer not null,
+      signature text,
+      items jsonb not null,
+      created_at timestamptz default now() not null
+    );
+  end if;
+end $$;
+
+-- Enable Row Level Security
+alter table public.daily_check_items enable row level security;
+alter table public.daily_check_responses enable row level security;
+
+-- Drop old policies if they exist (prevents duplicates)
+drop policy if exists "Admins can manage daily_check_items" on public.daily_check_items;
+drop policy if exists "Drivers and Office can view active daily_check_items" on public.daily_check_items;
+drop policy if exists "Admins can manage daily_check_responses" on public.daily_check_responses;
+drop policy if exists "Drivers can insert their own daily_check_responses" on public.daily_check_responses;
+drop policy if exists "Drivers can view their own daily_check_responses" on public.daily_check_responses;
+
+-- RLS for daily_check_items
+create policy "Admins can manage daily_check_items" on public.daily_check_items
+  for all using (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_items.org_id
+        and profiles.role = 'admin'
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_items.org_id
+        and profiles.role = 'admin'
+    )
+  );
+
+create policy "Drivers and Office can view active daily_check_items" on public.daily_check_items
+  for select using (
+    is_active = true
+    and exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_items.org_id
+        and profiles.role in ('driver','office','admin')
+    )
+  );
+
+-- RLS for daily_check_responses
+create policy "Admins can manage daily_check_responses" on public.daily_check_responses
+  for all using (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_responses.org_id
+        and profiles.role = 'admin'
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_responses.org_id
+        and profiles.role = 'admin'
+    )
+  );
+
+create policy "Drivers can insert their own daily_check_responses" on public.daily_check_responses
+  for insert with check (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_responses.org_id
+        and profiles.role = 'driver'
+        and profiles.id = daily_check_responses.driver_id
+    )
+  );
+
+create policy "Drivers can view their own daily_check_responses" on public.daily_check_responses
+  for select using (
+    exists (
+      select 1 from public.profiles
+      where profiles.user_id = auth.uid()
+        and profiles.org_id = daily_check_responses.org_id
+        and profiles.role = 'driver'
+        and profiles.id = daily_check_responses.driver_id
+    )
+  );
+
+-- Create storage bucket for daily check photos
+insert into storage.buckets (id, name, public)
+values ('daily-checks', 'daily-checks', false)
+on conflict (id) do nothing;
+
+-- Drop old storage policies
+drop policy if exists "Admins can manage daily-checks bucket" on storage.objects;
+drop policy if exists "Drivers can upload and view their own daily-checks" on storage.objects;
+
+-- Policy for admins
+create policy "Admins can manage daily-checks bucket" on storage.objects
+for all using (
+  bucket_id = 'daily-checks'
+  and exists (select 1 from public.profiles where user_id = auth.uid() and role = 'admin')
+)
+with check (
+  bucket_id = 'daily-checks'
+  and exists (select 1 from public.profiles where user_id = auth.uid() and role = 'admin')
 );
 
--- Create daily_check_responses table
-CREATE TABLE public.daily_check_responses (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    org_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    driver_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    truck_reg text NOT NULL,
-    trailer_no text,
-    started_at timestamptz DEFAULT now() NOT NULL,
-    finished_at timestamptz NOT NULL,
-    duration_seconds integer NOT NULL,
-    signature text, -- Base64 string or file reference
-    items jsonb NOT NULL, -- Array of objects: [{ "item_id": "uuid", "ok": true|false, "notes": "string|null", "photo_url": "string|null" }]
-    created_at timestamptz DEFAULT now() NOT NULL
-);
-
--- Enable Row Level Security for daily_check_items
-ALTER TABLE public.daily_check_items ENABLE ROW LEVEL SECURITY;
-
--- RLS policy for daily_check_items: Admins can do anything, others can select active items
-CREATE POLICY "Admins can manage daily_check_items" ON public.daily_check_items
-  FOR ALL USING (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_items.org_id) AND (profiles.role = 'admin')))
-  ) WITH CHECK (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_items.org_id) AND (profiles.role = 'admin')))
-  );
-
-CREATE POLICY "Drivers and Office can view active daily_check_items" ON public.daily_check_items
-  FOR SELECT USING (
-    (is_active = TRUE) AND
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_items.org_id) AND (profiles.role IN ('driver', 'office', 'admin'))))
-  );
-
--- Enable Row Level Security for daily_check_responses
-ALTER TABLE public.daily_check_responses ENABLE ROW LEVEL SECURITY;
-
--- RLS policy for daily_check_responses: Admins full access, Drivers insert/select their own
-CREATE POLICY "Admins can manage daily_check_responses" ON public.daily_check_responses
-  FOR ALL USING (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_responses.org_id) AND (profiles.role = 'admin')))
-  ) WITH CHECK (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_responses.org_id) AND (profiles.role = 'admin')))
-  );
-
-CREATE POLICY "Drivers can insert their own daily_check_responses" ON public.daily_check_responses
-  FOR INSERT WITH CHECK (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_responses.org_id) AND (profiles.role = 'driver') AND (profiles.id = daily_check_responses.driver_id)))
-  );
-
-CREATE POLICY "Drivers can view their own daily_check_responses" ON public.daily_check_responses
-  FOR SELECT USING (
-    (EXISTS ( SELECT 1 FROM public.profiles WHERE (profiles.user_id = auth.uid()) AND (profiles.org_id = daily_check_responses.org_id) AND (profiles.role = 'driver') AND (profiles.id = daily_check_responses.driver_id)))
-  );
-
--- Create a storage bucket for daily check photos
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('daily-checks', 'daily-checks', false)
-ON CONFLICT (id) DO NOTHING;
-
--- RLS for daily-checks bucket:
--- Admins can do anything
--- Drivers can upload to their own folder (simulated by driver_id in path) and view their own uploads
--- (Note: This RLS is simplified for mock. Real RLS for storage is more complex and often involves Edge Functions for signed URLs)
-
--- Policy for admins on daily-checks bucket
-CREATE POLICY "Admins can manage daily-checks bucket" ON storage.objects
-FOR ALL USING (
-  bucket_id = 'daily-checks' AND
-  EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role = 'admin')
-) WITH CHECK (
-  bucket_id = 'daily-checks' AND
-  EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role = 'admin')
-);
-
--- Policy for drivers to upload and view their own files in daily-checks bucket
-CREATE POLICY "Drivers can upload and view their own daily-checks" ON storage.objects
-FOR ALL USING (
-  bucket_id = 'daily-checks' AND
-  EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role = 'driver') AND
-  (storage.foldername(name))[1] = (SELECT id::text FROM public.profiles WHERE user_id = auth.uid() AND role = 'driver')
-) WITH CHECK (
-  bucket_id = 'daily-checks' AND
-  EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role = 'driver') AND
-  (storage.foldername(name))[1] = (SELECT id::text FROM public.profiles WHERE user_id = auth.uid() AND role = 'driver')
+-- Policy for drivers
+create policy "Drivers can upload and view their own daily-checks" on storage.objects
+for all using (
+  bucket_id = 'daily-checks'
+  and exists (select 1 from public.profiles where user_id = auth.uid() and role = 'driver')
+  and (storage.foldername(name))[1] = (
+    select id::text from public.profiles where user_id = auth.uid() and role = 'driver'
+  )
+)
+with check (
+  bucket_id = 'daily-checks'
+  and exists (select 1 from public.profiles where user_id = auth.uid() and role = 'driver')
+  and (storage.foldername(name))[1] = (
+    select id::text from public.profiles where user_id = auth.uid() and role = 'driver'
+  )
 );
