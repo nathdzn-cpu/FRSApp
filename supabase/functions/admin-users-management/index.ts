@@ -58,8 +58,9 @@ serve(async (req) => {
       .single();
 
     if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
-    if (!me || me.role !== "admin" || !me.org_id) {
-      throw new Error("Access denied (admin role required and org_id must be set).");
+    // MODIFIED: Allow 'office' role for read_all operations
+    if (!me || !['admin', 'office'].includes(me.role) || !me.org_id) {
+      throw new Error("Access denied (admin or office role required and org_id must be set).");
     }
 
     // 2) Parse body and determine operation
