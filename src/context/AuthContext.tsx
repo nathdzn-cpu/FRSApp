@@ -45,6 +45,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
 
     // Listen for login/logout events
     const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => { // Add event type
+      console.log("Supabase auth event:", event, session?.user?.id); // Added for debugging
       if (mounted) {
         // Only update session/user state for SIGNED_IN and SIGNED_OUT events
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
