@@ -21,7 +21,8 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/Login';
 import EnvDebug from './pages/EnvDebug';
-import AdminDailyChecks from './pages/admin/DailyChecks'; // Import the new AdminDailyChecks page
+import AdminDailyChecks from './pages/admin/DailyChecks';
+import AdminSavedAddresses from './pages/admin/SavedAddresses'; // Import the new AdminSavedAddresses page
 
 function App() {
   return (
@@ -46,7 +47,8 @@ function App() {
                 <Route path="/admin/users/new/driver" element={<CreateDriver />} />
                 <Route path="/admin/users/new/office" element={<CreateOffice />} />
                 <Route path="/admin/users/:id/edit" element={<EditUser />} />
-                <Route path="/admin/daily-checks" element={<AdminDailyChecks />} /> {/* Add route for AdminDailyChecks */}
+                <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
+                <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} /> {/* New: Saved Addresses Route */}
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/env-debug" element={<EnvDebug />} />
                 <Route path="*" element={<NotFound />} />

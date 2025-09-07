@@ -15,10 +15,11 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Job, JobStop, Profile } from '@/utils/mockData';
+import { Job, JobStop, Profile, SavedAddress } from '@/utils/mockData';
 import { useAuth } from '@/context/AuthContext';
-import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import the new utility
-import { formatGBPDisplay, parseCurrencyInput, formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { formatGBPDisplay, parseCurrencyInput, formatAddressPart, formatPostcode, toTitleCase } from '@/lib/utils/formatUtils';
+import AddressSearchInput from './AddressSearchInput'; // Import new component
 
 // Helper to format time input to HH:MM
 const formatTimeInput = (value: string) => {
@@ -42,7 +43,7 @@ const formatTimeInput = (value: string) => {
 
 const stopSchema = z.object({
   id: z.string().optional(), // Optional for new stops
-  name: z.string().min(1, { message: 'Stop name is required.' }),
+  name: z.string().optional().nullable(), // Name is now optional, can be derived from line_1
   address_line1: z.string().min(1, { message: 'Address line 1 is required.' }),
   address_line2: z.string().optional().nullable(),
   city: z.string().min(1, { message: 'City is required.' }),
@@ -119,12 +120,12 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
     }
   }, [form.watch('price')]); // Watch the form's price field
 
-  const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
+  const { fields: collectionFields, append: appendCollection, remove: removeCollection, update: updateCollection } = useFieldArray({
     control: form.control,
     name: 'collections',
   });
 
-  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery } = useFieldArray({
+  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery, update: updateDelivery } = useFieldArray({
     control: form.control,
     name: 'deliveries',
   });
@@ -132,6 +133,18 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
   // Disable fields based on user role
   const disableAllButDriverFields = isDriver;
   const disableStopDetailsForDriver = isDriver; // Driver can only edit window_from/to and notes
+
+  const handleAddressSelect = (index: number, type: 'collections' | 'deliveries', address: SavedAddress) => {
+    const fieldNamePrefix = `${type}.${index}`;
+    form.setValue(`${fieldNamePrefix}.name`, address.name || toTitleCase(address.line_1));
+    form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
+    form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2);
+    form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
+    form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
+    form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
+    form.trigger(`${fieldNamePrefix}.city`);
+    form.trigger(`${fieldNamePrefix}.postcode`);
+  };
 
   return (
     <Form {...form}>
@@ -338,7 +351,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                     name={`collections.${index}.name`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700">Name</FormLabel>
+                        <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Supplier Warehouse" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
                         </FormControl>
@@ -353,7 +366,13 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 123 Industrial Road" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
+                          <AddressSearchInput
+                            placeholder="Start typing address or postcode..."
+                            value={stopField.value}
+                            onValueChange={stopField.onChange}
+                            onAddressSelect={(address) => handleAddressSelect(index, 'collections', address)}
+                            disabled={disableStopDetailsForDriver || isSubmitting}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -501,7 +520,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                     name={`deliveries.${index}.name`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700">Name</FormLabel>
+                        <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Customer Site" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
                         </FormControl>
@@ -516,7 +535,13 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 456 Retail Street" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
+                          <AddressSearchInput
+                            placeholder="Start typing address or postcode..."
+                            value={stopField.value}
+                            onValueChange={stopField.onChange}
+                            onAddressSelect={(address) => handleAddressSelect(index, 'deliveries', address)}
+                            disabled={disableStopDetailsForDriver || isSubmitting}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -639,10 +664,10 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Job</Button>
       </form>
     </Form>
   );
 };
 
-export default JobEditForm;
+export default JobForm;

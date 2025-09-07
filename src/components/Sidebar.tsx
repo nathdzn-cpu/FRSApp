@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom'; // Import Link
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck } from 'lucide-react';
+import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin } from 'lucide-react'; // Import MapPin icon
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ const navLinks: NavLinkItem[] = [
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
   { to: '/admin/checklists', icon: ClipboardList, label: 'Admin Checklists', roles: ['admin'] },
   { to: '/admin/users', icon: Shield, label: 'Admin Users', roles: ['admin'] },
+  { to: '/admin/saved-addresses', icon: MapPin, label: 'Saved Addresses', roles: ['admin', 'office'] }, // New: Saved Addresses
   { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'office', 'driver'] },
 ];
 

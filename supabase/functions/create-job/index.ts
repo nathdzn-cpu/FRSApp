@@ -28,6 +28,52 @@ function userClient(authHeader: string | null) {
   });
 }
 
+// Helper to auto-save address
+async function autoSaveAddress(admin: any, org_id: string, address: any) {
+  const postcode = address.postcode.toUpperCase();
+  const line_1 = address.address_line1;
+
+  // Check for existing address with same line_1 and postcode (case-insensitive)
+  const { data: existingAddresses, error: searchError } = await admin
+    .from("saved_addresses")
+    .select("id")
+    .eq("org_id", org_id)
+    .ilike("line_1", line_1)
+    .eq("postcode", postcode);
+
+  if (searchError) {
+    console.error("Error searching for existing saved address:", searchError);
+    return; // Don't block job creation if auto-save fails
+  }
+
+  if (existingAddresses && existingAddresses.length > 0) {
+    console.log("Existing saved address found, skipping auto-save.");
+    return;
+  }
+
+  // If not found, insert new saved_address record
+  const newSavedAddress = {
+    org_id: org_id,
+    name: address.name || null, // Use provided name or null
+    line_1: line_1,
+    line_2: address.address_line2 || null,
+    town_or_city: address.city,
+    county: address.county || null, // Assuming county might be available
+    postcode: postcode,
+    favourite: false, // Default to not favourite on auto-save
+  };
+
+  const { error: insertError } = await admin
+    .from("saved_addresses")
+    .insert(newSavedAddress);
+
+  if (insertError) {
+    console.error("Error auto-saving new address:", insertError);
+  } else {
+    console.log("New address auto-saved successfully.");
+  }
+}
+
 serve(async (req) => {
   console.log("DEBUG: create-job function started.");
   // Handle CORS preflight request
@@ -121,7 +167,7 @@ serve(async (req) => {
       job_id: insertedJob.id,
       seq: index + 1,
       type: stop.type,
-      name: stop.name,
+      name: stop.name || null, // Allow name to be null
       address_line1: stop.address_line1,
       address_line2: stop.address_line2 || null,
       city: stop.city,
@@ -141,6 +187,11 @@ serve(async (req) => {
         console.error("Error inserting job stops:", stopsInsertError);
         await admin.from("jobs").delete().eq("id", insertedJob.id);
         throw new Error("Failed to create job stops: " + stopsInsertError.message);
+      }
+
+      // Auto-save new addresses from stops
+      for (const stop of stopsToInsert) {
+        await autoSaveAddress(admin, org_id, stop);
       }
     }
 

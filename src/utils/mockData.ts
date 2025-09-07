@@ -108,9 +108,6 @@ export interface JobStop {
   notes?: string | null;
 }
 
-// JobEvent interface is removed as JobProgressLog will now handle all timeline events.
-// export interface JobEvent { ... }
-
 export interface Document {
   id: string;
   org_id: string;
@@ -153,10 +150,24 @@ export interface AuditLog {
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
-  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress' | 'pod_requested' | 'pod_uploaded' | 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'location_ping' | 'note_added' | 'timeline_event_removed_from_timeline' | 'timeline_event_restored_to_timeline'; // Added common event types
+  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress' | 'pod_requested' | 'pod_uploaded' | 'job_confirmed' | 'eta_set' | 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'location_ping' | 'note_added' | 'timeline_event_removed_from_timeline' | 'timeline_event_restored_to_timeline' | 'saved_address_created' | 'saved_address_updated' | 'saved_address_deleted'; // Added common event types
   before?: Record<string, any> | null;
   after?: Record<string, any> | null;
   notes?: string | null;
+  created_at: string;
+}
+
+// New interface for Saved Addresses
+export interface SavedAddress {
+  id: string;
+  org_id: string;
+  name?: string | null;
+  line_1: string;
+  line_2?: string | null;
+  town_or_city: string;
+  county?: string | null;
+  postcode: string;
+  favourite: boolean;
   created_at: string;
 }
 
@@ -270,3 +281,42 @@ export const mockProfileDevices: ProfileDevice[] = []; // Initially empty
 export const mockDailyChecks: DailyCheck[] = []; // Initially empty
 
 export let mockAuditLogs: AuditLog[] = []; // Made mutable for purgeDemoUsers
+
+export const mockSavedAddresses: SavedAddress[] = [
+  {
+    id: uuidv4(),
+    org_id: demoTenantId,
+    name: "Main Depot",
+    line_1: "123 Main Street",
+    line_2: null,
+    town_or_city: "London",
+    county: "Greater London",
+    postcode: "SW1A 0AA",
+    favourite: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    org_id: demoTenantId,
+    name: "Warehouse North",
+    line_1: "45 Warehouse Road",
+    line_2: "Unit 10",
+    town_or_city: "Manchester",
+    county: "Greater Manchester",
+    postcode: "M1 1AA",
+    favourite: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuidv4(),
+    org_id: demoTenantId,
+    name: "Customer A",
+    line_1: "789 High Street",
+    line_2: null,
+    town_or_city: "Birmingham",
+    county: "West Midlands",
+    postcode: "B1 1BB",
+    favourite: false,
+    created_at: new Date().toISOString(),
+  },
+];

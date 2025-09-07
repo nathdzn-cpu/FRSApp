@@ -58,6 +58,52 @@ async function invokeEdgeFunction(functionName: string, payload: any) {
   }
 }
 
+// Helper to auto-save address
+async function autoSaveAddress(admin: any, org_id: string, address: any) {
+  const postcode = address.postcode.toUpperCase();
+  const line_1 = address.address_line1;
+
+  // Check for existing address with same line_1 and postcode (case-insensitive)
+  const { data: existingAddresses, error: searchError } = await admin
+    .from("saved_addresses")
+    .select("id")
+    .eq("org_id", org_id)
+    .ilike("line_1", line_1)
+    .eq("postcode", postcode);
+
+  if (searchError) {
+    console.error("Error searching for existing saved address:", searchError);
+    return; // Don't block job creation if auto-save fails
+  }
+
+  if (existingAddresses && existingAddresses.length > 0) {
+    console.log("Existing saved address found, skipping auto-save.");
+    return;
+  }
+
+  // If not found, insert new saved_address record
+  const newSavedAddress = {
+    org_id: org_id,
+    name: address.name || null, // Use provided name or null
+    line_1: line_1,
+    line_2: address.address_line2 || null,
+    town_or_city: address.city,
+    county: address.county || null, // Assuming county might be available
+    postcode: postcode,
+    favourite: false, // Default to not favourite on auto-save
+  };
+
+  const { error: insertError } = await admin
+    .from("saved_addresses")
+    .insert(newSavedAddress);
+
+  if (insertError) {
+    console.error("Error auto-saving new address:", insertError);
+  } else {
+    console.log("New address auto-saved successfully.");
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -289,7 +335,7 @@ serve(async (req) => {
           job_id: job_id,
           seq: stop.seq,
           type: stop.type,
-          name: stop.name,
+          name: stop.name || null, // Allow name to be null
           address_line1: stop.address_line1,
           address_line2: stop.address_line2 || null,
           city: stop.city,
@@ -313,10 +359,15 @@ serve(async (req) => {
             actor_role: actor_role,
             action_type: 'stop_added',
             stop_id: stop.id,
-            notes: `Added ${stop.type} stop: ${stop.name}.`,
+            notes: `Added ${stop.type} stop: ${stop.name || stop.address_line1}.`,
             timestamp: new Date().toISOString(),
           })));
         if (progressLogError) console.error("DEBUG: progress log insert failed for stop additions", progressLogError.message);
+
+        // Auto-save new addresses from added stops
+        for (const stop of newStops) {
+          await autoSaveAddress(admin, org_id, stop);
+        }
       }
 
       if (stops_to_update && stops_to_update.length > 0) {
@@ -344,10 +395,13 @@ serve(async (req) => {
               actor_role: actor_role,
               action_type: 'stop_updated',
               stop_id: stopId,
-              notes: `Updated ${oldStop?.type} stop: ${oldStop?.name}.`,
+              notes: `Updated ${oldStop?.type} stop: ${oldStop?.name || oldStop?.address_line1}.`,
               timestamp: new Date().toISOString(),
             });
           if (progressLogError) console.error("DEBUG: progress log insert failed for stop updates", progressLogError.message);
+
+          // Auto-save updated address if it's new
+          await autoSaveAddress(admin, org_id, stopUpdate);
         }
       }
 
@@ -372,7 +426,7 @@ serve(async (req) => {
             actor_role: actor_role,
             action_type: 'stop_deleted',
             stop_id: stop.id,
-            notes: `Deleted ${stop.type} stop: ${stop.name}.`,
+            notes: `Deleted ${stop.type} stop: ${stop.name || stop.address_line1}.`,
             timestamp: new Date().toISOString(),
           })));
         if (progressLogError) console.error("DEBUG: progress log insert failed for stop deletions", progressLogError.message);
@@ -421,7 +475,7 @@ serve(async (req) => {
                 actor_role: actor_role,
                 action_type: 'stop_details_updated',
                 stop_id: stopId,
-                notes: `Driver updated stop details for ${oldStop?.name}.`,
+                notes: `Driver updated stop details for ${oldStop?.name || oldStop?.address_line1}.`,
                 timestamp: new Date().toISOString(),
               });
             if (progressLogError) console.error("DEBUG: progress log insert failed for driver stop updates", progressLogError.message);
