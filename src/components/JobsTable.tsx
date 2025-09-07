@@ -35,7 +35,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Ref</TableHead>
+            <TableHead>Order Number</TableHead> {/* Changed from Ref */}
             <TableHead>Status</TableHead>
             <TableHead>Pickup ETA</TableHead>
             <TableHead>Delivery ETA</TableHead>
@@ -46,7 +46,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
         <TableBody>
           {sortedJobs.map((job, index) => (
             <TableRow key={job.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
-              <TableCell className="font-medium">{job.ref}</TableCell>
+              <TableCell className="font-medium">{job.order_number}</TableCell> {/* Changed from job.ref */}
               <TableCell>
                 <Badge
                   variant={

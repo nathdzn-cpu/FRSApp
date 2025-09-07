@@ -51,8 +51,7 @@ const stopSchema = z.object({
 });
 
 const formSchema = z.object({
-  override_ref: z.boolean().optional(),
-  manual_ref: z.string().optional(),
+  order_number: z.string().optional().or(z.literal('')), // Optional for auto-generation
   date_created: z.date({ required_error: 'Date Created is required.' }),
   price: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
@@ -69,15 +68,13 @@ type JobFormValues = z.infer<typeof formSchema>;
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
   drivers: Profile[]; // Only drivers for assignment
-  generatedRef: string; // The auto-generated order number
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, generatedRef }) => {
+const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      override_ref: false,
-      manual_ref: '',
+      order_number: '', // Default to empty, trigger will generate if not provided
       date_created: new Date(), // Default to today
       price: null,
       assigned_driver_id: null,
@@ -97,8 +94,6 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, generatedRef }) =>
     name: 'deliveries',
   });
 
-  const overrideOrderNumber = form.watch('override_ref');
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -108,40 +103,23 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, generatedRef }) =>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
             {/* Order Number */}
-            <div>
-              <FormItem>
-                <FormLabel className="text-gray-700">Order Number</FormLabel>
-                <FormControl>
-                  <Input
-                    value={overrideOrderNumber ? form.watch('manual_ref') : generatedRef}
-                    readOnly={!overrideOrderNumber}
-                    disabled={!overrideOrderNumber}
-                    onChange={(e) => form.setValue('manual_ref', e.target.value, { shouldValidate: true })}
-                    placeholder="e.g., FRS-001"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-              <FormField
-                control={form.control}
-                name="override_ref"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-200 p-4 mt-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-gray-700">
-                        Override auto-generated order number
-                      </FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="order_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Order Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Leave blank for auto-generate, or enter ORDER-XXX"
+                      {...field}
+                      value={field.value || ''} // Ensure controlled component
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Date Created */}
             <FormField

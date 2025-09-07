@@ -25,7 +25,6 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
     throw new Error(error.message);
   }
 
-  // No RLS simulation for price needed as price is removed from Job interface
   return data as Job[];
 };
 
@@ -47,7 +46,6 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
 
   if (!data) return undefined;
 
-  // No RLS simulation for price needed as price is removed from Job interface
   return data as Job;
 };
 
@@ -97,26 +95,26 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
 };
 
 interface CreateJobPayload {
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>;
-  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[]; // Added created_at to omit
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number'> & { order_number?: string | null };
+  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
   org_id: string;
   actor_id: string;
 }
 
 export const createJob = async (
   orgId: string,
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>,
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number'> & { order_number?: string | null },
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[],
   actorId: string
 ): Promise<Job> => {
   const payload: CreateJobPayload = {
     jobData: {
-      ref: jobData.ref,
+      order_number: jobData.order_number, // Pass order_number
       status: jobData.status,
-      date_created: jobData.date_created, // New field
-      price: jobData.price, // New field
-      assigned_driver_id: jobData.assigned_driver_id, // New field
-      notes: jobData.notes, // New field
+      date_created: jobData.date_created,
+      price: jobData.price,
+      assigned_driver_id: jobData.assigned_driver_id,
+      notes: jobData.notes,
     },
     stopsData,
     org_id: orgId,
@@ -178,15 +176,15 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     throw new Error(stopsError.message);
   }
 
-  const newJobRef = `${originalJob.ref}-CLONE-${Math.floor(Math.random() * 100)}`;
-  const newJob: Omit<Job, 'id' | 'created_at'> = {
+  // Do not generate new order_number here, let the trigger handle it for the new job
+  const newJob: Omit<Job, 'id' | 'created_at' | 'order_number'> & { order_number?: string | null } = {
     org_id: orgId,
-    ref: newJobRef,
+    order_number: null, // Let trigger generate
     status: 'planned',
-    date_created: originalJob.date_created, // Cloned date
-    price: originalJob.price, // Cloned price
-    assigned_driver_id: originalJob.assigned_driver_id, // Cloned assigned driver
-    notes: originalJob.notes, // Cloned notes
+    date_created: originalJob.date_created,
+    price: originalJob.price,
+    assigned_driver_id: originalJob.assigned_driver_id,
+    notes: originalJob.notes,
     deleted_at: null,
   };
 
@@ -223,12 +221,11 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
 
     if (insertStopsError) {
       console.error("Error inserting cloned stops:", insertStopsError);
-      // Consider rolling back job creation here if this is critical
       throw new Error(insertStopsError.message);
     }
   }
 
-  await supabase.from("audit_logs").insert({
+  const { error: auditError } = await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_id: actorId,
     entity: "jobs",
@@ -236,7 +233,10 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     action: "create",
     notes: `Cloned from job ${jobId}`,
     after: clonedJobData,
-  }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+  });
+  if (auditError) {
+    console.error("DEBUG: audit insert failed", auditError.message);
+  }
 
   return clonedJobData as Job;
 };
@@ -269,7 +269,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
     throw new Error(error.message);
   }
 
-  await supabase.from("audit_logs").insert({
+  const { error: auditError } = await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_id: actorId,
     entity: "jobs",
@@ -277,10 +277,10 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
     action: "cancel",
     before: { status: oldJob.status },
     after: { status: 'cancelled', deleted_at: data.deleted_at },
-  }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
+  });
+  if (auditError) {
+    console.error("DEBUG: audit insert failed", auditError.message);
+  }
 
   return data as Job;
 };
-
-// Removed assignDriverToJob as assigned_driver_id is no longer in Job interface
-// If driver assignment is needed, it would require a separate table or a different approach.

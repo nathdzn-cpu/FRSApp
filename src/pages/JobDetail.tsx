@@ -119,7 +119,7 @@ const JobDetail: React.FC = () => {
       success: (clonedJob) => {
         if (clonedJob) {
           navigate(`/jobs/${clonedJob.id}`);
-          return `Job ${clonedJob.ref} cloned successfully!`;
+          return `Job ${clonedJob.order_number} cloned successfully!`; // Changed from ref
         }
         return 'Job cloned, but no new job returned.';
       },
@@ -182,7 +182,7 @@ const JobDetail: React.FC = () => {
         <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Job: {job.ref}
+              Job: {job.order_number} {/* Changed from job.ref */}
               <Badge
                 variant={
                   job.status === 'planned'

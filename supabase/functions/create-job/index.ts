@@ -84,40 +84,12 @@ serve(async (req) => {
       throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
     }
 
-    // 3) Allocate job reference if not provided (or if client-side generation is overridden)
-    let newJobRef = jobData.ref;
-    if (!newJobRef) {
-      // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
-      const { data: existingRefsData, error: refsError } = await admin
-        .from("jobs")
-        .select("ref")
-        .eq("org_id", org_id)
-        .like("ref", "FRS-%");
-
-      if (refsError) {
-        console.error("Error fetching existing job references:", refsError);
-        throw new Error("Failed to fetch existing job references: " + refsError.message);
-      }
-
-      const existingRefNumbers = new Set(
-        (existingRefsData || [])
-          .map((job: any) => parseInt(job.ref.substring(4), 10))
-          .filter((num: any) => !isNaN(num))
-      );
-
-      let nextNumber = 1;
-      while (existingRefNumbers.has(nextNumber)) {
-        nextNumber++;
-      }
-      newJobRef = `FRS-${nextNumber.toString().padStart(3, '0')}`;
-    }
-
-    // 4) Prepare job data for insert
+    // 3) Prepare job data for insert
     const newJobId = uuidv4();
     const jobToInsert = {
       id: newJobId,
       org_id: org_id,
-      ref: newJobRef,
+      order_number: jobData.order_number || null, // Use provided order_number or null for trigger
       status: jobData.status || 'planned',
       date_created: jobData.date_created,
       price: jobData.price || null,
@@ -127,7 +99,7 @@ serve(async (req) => {
       deleted_at: null,
     };
 
-    // 5) Insert job
+    // 4) Insert job
     const { data: insertedJob, error: jobInsertError } = await admin
       .from("jobs")
       .insert(jobToInsert)
@@ -139,7 +111,7 @@ serve(async (req) => {
       throw new Error("Failed to create job: " + jobInsertError.message);
     }
 
-    // 6) Prepare and insert stops
+    // 5) Prepare and insert stops
     const stopsToInsert = stopsData.map((stop: any, index: number) => ({
       id: uuidv4(),
       org_id: org_id,
@@ -164,13 +136,12 @@ serve(async (req) => {
 
       if (stopsInsertError) {
         console.error("Error inserting job stops:", stopsInsertError);
-        // If stops fail, consider rolling back job creation
-        await admin.from("jobs").delete().eq("id", insertedJob.id); // Rollback job
+        await admin.from("jobs").delete().eq("id", insertedJob.id);
         throw new Error("Failed to create job stops: " + stopsInsertError.message);
       }
     }
 
-    // 7) Audit log (this can run non-blocking, but still use explicit error check)
+    // 6) Audit log
     const { error: auditError } = await admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,
@@ -183,7 +154,6 @@ serve(async (req) => {
     });
     if (auditError) {
       console.error("DEBUG: audit insert failed", auditError.message);
-      // Do not throw here, as audit logs are secondary to job creation
     }
 
     return new Response(

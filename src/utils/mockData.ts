@@ -76,7 +76,7 @@ export interface DailyCheck {
 export interface Job {
   id: string;
   org_id: string;
-  ref: string;
+  order_number: string; // Changed from 'ref'
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
   date_created: string; // New field
   price: number | null; // New field
