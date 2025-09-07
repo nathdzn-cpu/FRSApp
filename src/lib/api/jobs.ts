@@ -400,3 +400,54 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string, a
 
   return data as Job;
 };
+
+export const uploadDocument = async (
+  jobId: string,
+  orgId: string,
+  driverId: string,
+  type: 'pod' | 'cmr' | 'damage' | 'check_signature',
+  storagePath: string,
+  stopId?: string,
+): Promise<Document> => {
+  // In a real app, the file would have already been uploaded to storage
+  // and storagePath would be the public URL or path.
+
+  const newDocument: Document = {
+    id: uuidv4(),
+    org_id: orgId,
+    job_id: jobId,
+    stop_id: stopId,
+    type: type,
+    storage_path: storagePath,
+    uploaded_by: driverId,
+    created_at: new Date().toISOString(),
+  };
+  
+  const { data, error } = await supabase
+    .from('documents')
+    .insert(newDocument)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error inserting document:", error);
+    throw new Error(error.message);
+  }
+
+  // Add a job event for document upload to job_progress_log
+  const { error: progressLogError } = await supabase
+    .from('job_progress_log')
+    .insert({
+      org_id: orgId,
+      job_id: jobId,
+      stop_id: stopId,
+      actor_id: driverId,
+      actor_role: 'driver', // Driver role
+      action_type: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific action_type for log
+      notes: `${type.replace(/_/g, ' ')} uploaded.`,
+      timestamp: new Date().toISOString(),
+    });
+  if (progressLogError) console.error("Error inserting document upload log:", progressLogError);
+
+  return data as Document;
+};
