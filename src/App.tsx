@@ -21,7 +21,7 @@ import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner'; // Import Toaster for sonner toasts
-import { useEphemeralScroll } from "@/hooks/useEphemeralScroll"; // Import the new hook
+import { useRouteScroll } from "@/hooks/useRouteScroll"; // Import the new hook
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Array<'admin' | 'office' | 'driver'> }) => {
@@ -85,8 +85,8 @@ function App() {
   const user = useUser();
   const supabaseClient = useSupabaseClient();
 
-  // Call the ephemeral scroll hook
-  useEphemeralScroll();
+  // Call the route-specific scroll restoration hook
+  useRouteScroll();
 
   console.log("Supabase Session State:", session); // Added for debugging
 

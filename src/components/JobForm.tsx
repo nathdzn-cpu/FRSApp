@@ -17,7 +17,8 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEphemeralForm } from '@/hooks/useEphemeralForm'; // Import the new hook
+import { useFormStore } from "@/store/formStore"; // Import the new hook
+import { useLocation } from "react-router-dom";
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -51,10 +52,12 @@ interface JobFormProps {
 }
 
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
-  // Use useEphemeralForm to initialize default values and persist changes temporarily
-  const [ephemeralFormState, setEphemeralFormState] = useEphemeralForm<Partial<JobFormValues>>(
-    "jobFormEphemeralState", // Unique key for this form
-    defaultValues || {
+  const { jobForm, setJobForm, clearJobForm } = useFormStore();
+  const location = useLocation();
+
+  const form = useForm<JobFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: jobForm || { // Initialize from store or with empty defaults
       ref: '',
       override_ref: false,
       manual_ref: '',
@@ -62,12 +65,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
       delivery_eta: '',
       collections: [],
       deliveries: [],
-    }
-  );
-
-  const form = useForm<JobFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: ephemeralFormState as JobFormValues, // Cast to JobFormValues as useForm expects full type
+    },
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -85,10 +83,19 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
   // Effect to persist form state whenever values change
   useEffect(() => {
     const subscription = form.watch((value) => {
-      setEphemeralFormState(value);
+      setJobForm(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, setEphemeralFormState]);
+  }, [form, setJobForm]);
+
+  // Clear form state when leaving the /jobs/new route
+  useEffect(() => {
+    return () => {
+      if (location.pathname !== "/jobs/new") {
+        clearJobForm();
+      }
+    };
+  }, [location.pathname, clearJobForm]);
 
   return (
     <Form {...form}>

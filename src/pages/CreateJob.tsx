@@ -12,7 +12,7 @@ import JobForm from '@/components/JobForm';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card'; // Import Card components
-import { usePersistentForm } from '@/hooks/usePersistentForm'; // Import usePersistentForm
+// Removed: import { usePersistentForm } from '@/hooks/usePersistentForm'; // Import usePersistentForm
 
 interface JobFormValues {
   ref?: string;
@@ -51,8 +51,8 @@ const CreateJob: React.FC = () => {
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
 
-  // For clearing the persistent form state
-  const [, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>("jobFormState", {});
+  // Removed: For clearing the persistent form state
+  // Removed: const [, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>("jobFormState", {});
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -96,7 +96,7 @@ const CreateJob: React.FC = () => {
         loading: 'Creating job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          setPersistedFormState({}); // Clear the persisted form state on success
+          // Removed: setPersistedFormState({}); // Clear the persisted form state on success
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },
