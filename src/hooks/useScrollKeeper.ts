@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
 export function useScrollKeeper(scrollRef: React.RefObject<HTMLElement>) {
@@ -17,10 +17,10 @@ export function useScrollKeeper(scrollRef: React.RefObject<HTMLElement>) {
     return () => {
       saveScroll();
     };
-  }, [pathname, scrollRef]); // Re-run when pathname or ref changes
+  }, [pathname, scrollRef]);
 
-  // Effect to restore scroll position
-  useEffect(() => {
+  // Use useLayoutEffect for restoring scroll position to prevent visual jumps
+  useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
 
@@ -36,7 +36,6 @@ export function useScrollKeeper(scrollRef: React.RefObject<HTMLElement>) {
 
     restoreScroll(); // Restore on mount/pathname change
 
-    // Add event listener for when the window/tab gains focus
     const handleFocus = () => {
       // Only restore if the current pathname is still the same
       if (pathname === window.location.pathname) {
@@ -49,5 +48,5 @@ export function useScrollKeeper(scrollRef: React.RefObject<HTMLElement>) {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [pathname, scrollRef]); // Re-run when pathname or ref changes
+  }, [pathname, scrollRef]); // Dependencies remain the same
 }
