@@ -146,7 +146,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Active Jobs</h2>
           <div className="flex flex-col sm:flex-row gap-4 mb-4 items-center">
             <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only">Filter by date:</Label>

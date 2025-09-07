@@ -53,14 +53,15 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
               <TableCell>
                 <Badge
                   variant={
-                    job.status === 'delivered'
-                      ? 'secondary'
+                    job.status === 'in_progress'
+                      ? 'default' // Blue
                       : job.status === 'cancelled'
-                      ? 'destructive'
-                      : job.status === 'in_progress'
-                      ? 'default'
-                      : 'outline'
+                      ? 'destructive' // Red
+                      : job.status === 'planned'
+                      ? 'secondary' // Gray
+                      : 'default' // Fallback to blue for 'assigned' or other active states
                   }
+                  className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''} // Green for delivered
                 >
                   {job.status.replace(/_/g, ' ')}
                 </Badge>

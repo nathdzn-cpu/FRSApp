@@ -45,11 +45,11 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 // MainLayout component for authenticated users
 const MainLayout = () => {
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">
           <Outlet /> {/* This is where nested routes will render */}
         </main>
       </div>

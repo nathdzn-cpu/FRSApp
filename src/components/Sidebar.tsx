@@ -42,8 +42,8 @@ const Sidebar: React.FC = () => {
           to={link.to}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-50 transition-all hover:text-gray-900 dark:hover:text-gray-50",
-              isActive ? "bg-gray-200 dark:bg-gray-700 font-semibold" : "text-gray-600 dark:text-gray-400"
+              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-gray-900 dark:hover:text-gray-50",
+              isActive ? "bg-blue-600 text-white" : "text-gray-600 dark:text-gray-400"
             )
           }
           onClick={() => setIsOpen(false)} // Close sidebar on link click
