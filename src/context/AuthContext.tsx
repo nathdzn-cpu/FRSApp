@@ -22,14 +22,48 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthContextProvider = ({ children, initialSession, initialUser }: { children: ReactNode; initialSession: Session | null; initialUser: User | null }) => {
+  const [session, setSession] = useState<Session | null>(initialSession);
+  const [user, setUser] = useState<User | null>(initialUser);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(undefined);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true); // Loading state for profile/role
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Effect for initial session load and auth state changes
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSession() {
+      const { data: { session: initialDataSession }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Error loading initial session:", sessionError);
+      }
+      if (mounted) {
+        setSession(initialDataSession || null);
+        setUser(initialDataSession?.user || null);
+        setIsLoadingAuth(false); // Set to false after initial session check
+      }
+    }
+
+    loadSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (mounted) {
+        setSession(newSession);
+        setUser(newSession?.user || null);
+        setIsLoadingAuth(false); // Also set to false on subsequent auth state changes
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []); // Run only once on mount
+
   const fetchProfile = useCallback(async (currentUser: User | null) => {
-    setIsLoadingAuth(true);
+    setIsLoadingAuth(true); // Set loading true when fetching profile
     setProfile(null);
     setUserRole(undefined);
     if (!currentUser) {
@@ -58,17 +92,25 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       console.error("Error fetching profile:", error);
       toast.error("An unexpected error occurred while fetching profile.");
     } finally {
-      setIsLoadingAuth(false);
+      setIsLoadingAuth(false); // Set loading false after profile fetch attempt
     }
   }, []);
 
   useEffect(() => {
-    fetchProfile(initialUser);
-  }, [initialUser, fetchProfile]);
+    // Only fetch profile if user is available and not already loading auth
+    if (user && !isLoadingAuth) {
+      fetchProfile(user);
+    } else if (!user) {
+      // If no user, ensure profile and role are cleared and loading is false
+      setProfile(null);
+      setUserRole(undefined);
+      setIsLoadingAuth(false);
+    }
+  }, [user, fetchProfile, isLoadingAuth]); // Re-run when user changes or isLoadingAuth changes
 
   // Redirection logic based on profile/role
   useEffect(() => {
-    if (!isLoadingAuth && initialUser) { // Only redirect if profile loading is done and user is present
+    if (!isLoadingAuth && user) { // Only redirect if profile loading is done and user is present
       if (location.pathname === '/login') {
         if (userRole === 'admin') {
           navigate('/admin/users');
@@ -78,8 +120,11 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
           navigate('/'); // Logged in but no role, go to home
         }
       }
+    } else if (!isLoadingAuth && !user && location.pathname !== '/login') {
+      // If not loading, no user, and not on login page, redirect to login
+      navigate('/login');
     }
-  }, [isLoadingAuth, initialUser, userRole, navigate, location.pathname]);
+  }, [isLoadingAuth, user, userRole, navigate, location.pathname]);
 
   const login = async (userIdOrEmail: string, password: string) => {
     let emailToLogin = userIdOrEmail;
@@ -108,7 +153,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   };
 
   return (
-    <AuthContext.Provider value={{ session: initialSession, user: initialUser, profile, userRole, isLoadingAuth, login, logout }}>
+    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

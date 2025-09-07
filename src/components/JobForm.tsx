@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePersistentForm } from '@/hooks/usePersistentForm'; // Import the new hook
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -50,9 +51,10 @@ interface JobFormProps {
 }
 
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
-  const form = useForm<JobFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+  // Use usePersistentForm to initialize default values and persist changes
+  const [persistedFormState, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>(
+    "jobFormState",
+    defaultValues || {
       ref: '',
       override_ref: false,
       manual_ref: '',
@@ -60,8 +62,12 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
       delivery_eta: '',
       collections: [],
       deliveries: [],
-      ...defaultValues,
-    },
+    }
+  );
+
+  const form = useForm<JobFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: persistedFormState as JobFormValues, // Cast to JobFormValues as useForm expects full type
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -75,6 +81,14 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
   });
 
   const overrideOrderNumber = form.watch('override_ref');
+
+  // Effect to persist form state whenever values change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      setPersistedFormState(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setPersistedFormState]);
 
   return (
     <Form {...form}>
