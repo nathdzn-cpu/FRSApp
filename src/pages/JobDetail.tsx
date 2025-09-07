@@ -115,7 +115,7 @@ const JobDetail: React.FC = () => {
   });
 
   const job = jobData?.job;
-  const stops = jobData?.stops || [];
+  const stops = jobData?.stops || []; // This is the correct variable to use
   const events = jobData?.events || [];
   const documents = jobData?.documents || [];
 
@@ -186,14 +186,15 @@ const JobDetail: React.FC = () => {
 
     setIsSubmittingEdit(true);
     try {
-      const originalStopsMap = new Map(initialStops.map(s => [s.id, s]));
-      const currentStopIds = new Set(initialStops.map(s => s.id));
+      // Use the 'stops' variable from the useQuery hook
+      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
+      const currentStopIds = new Set(stops.map(s => s.id));
 
       const allNewStops = [...values.collections, ...values.deliveries];
 
       const stops_to_add = allNewStops.filter(s => !s.id);
       const stops_to_update = allNewStops.filter(s => s.id && originalStopsMap.has(s.id));
-      const stops_to_delete = initialStops.filter(s => !allNewStops.some(ns => ns.id === s.id)).map(s => s.id);
+      const stops_to_delete = stops.filter(s => !allNewStops.some(ns => ns.id === s.id)).map(s => s.id);
 
       const jobUpdates: Partial<Job> = {
         order_number: values.order_number || null,
