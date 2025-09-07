@@ -16,20 +16,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import DateTimePicker from '@/components/DateTimePicker';
+import { Loader2, CalendarIcon, Clock } from 'lucide-react'; // Added CalendarIcon and Clock
+import { Input } from '@/components/ui/input'; // Added Input
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Added Popover components
+import { Calendar } from '@/components/ui/calendar'; // Added Calendar
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus, jobStatusOrder, getSkippedStatuses } from '@/lib/utils/statusUtils';
-import { format, setHours, setMinutes, setSeconds } from 'date-fns';
+import { format, setHours, setMinutes, setSeconds, parseISO } from 'date-fns'; // Added parseISO
 import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils'; // Added cn utility
 
 interface ProgressUpdateEntry {
   status: Job['status'];
-  dateTime: Date;
-  notes: string;
+  dateTime: Date; // Combined date and time
   timeInput: string;
   timeError: string | null;
+  notes: string;
 }
 
 interface JobProgressUpdateDialogProps {
@@ -82,44 +85,70 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
     }
   }, [job, selectedNewStatus]);
 
-  const handleProgressUpdateEntryChange = (index: number, field: 'dateTime' | 'notes' | 'timeInput', value: any) => {
+  const handleDateChange = (index: number, date: Date | undefined) => {
     setProgressUpdateEntries(prevEntries => {
       const newEntries = [...prevEntries];
-      if (field === 'timeInput') {
-        const { formattedTime, error } = formatAndValidateTimeInput(value);
-        newEntries[index] = {
-          ...newEntries[index],
-          timeInput: value,
-          timeError: error,
-        };
-        if (formattedTime && newEntries[index].dateTime) {
-          // Update dateTime with the formatted time, keeping the date part
-          const [hoursStr, minutesStr] = formattedTime.split(':');
-          const hours = parseInt(hoursStr, 10);
-          const minutes = parseInt(minutesStr, 10);
-          let newDateTime = setHours(newEntries[index].dateTime, hours);
-          newDateTime = setMinutes(newDateTime, minutes);
-          newDateTime = setSeconds(newDateTime, 0);
-          newEntries[index].dateTime = newDateTime;
-        } else if (formattedTime && !newEntries[index].dateTime) {
-          // If no date is selected, default to today's date with the chosen time
-          let newDateTime = new Date();
-          newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
-          newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
-          newDateTime = setSeconds(newDateTime, 0);
+      if (date && newEntries[index].dateTime) {
+        // Preserve time, update date
+        let newDateTime = setHours(date, newEntries[index].dateTime.getHours());
+        newDateTime = setMinutes(newDateTime, newEntries[index].dateTime.getMinutes());
+        newDateTime = setSeconds(newDateTime, 0);
+        newEntries[index].dateTime = newDateTime;
+      } else if (date && !newEntries[index].dateTime) {
+        // If no previous dateTime, use new date with default time (e.g., 00:00)
+        newEntries[index].dateTime = setSeconds(setMinutes(setHours(date, 0), 0), 0);
+      } else {
+        // Date cleared, clear dateTime
+        newEntries[index].dateTime = undefined as any; // Allow undefined for now, validation will catch
+      }
+      return newEntries;
+    });
+  };
+
+  const handleTimeInputChange = (index: number, rawInput: string) => {
+    setProgressUpdateEntries(prevEntries => {
+      const newEntries = [...prevEntries];
+      const { formattedTime, error } = formatAndValidateTimeInput(rawInput);
+      
+      newEntries[index] = {
+        ...newEntries[index],
+        timeInput: rawInput,
+        timeError: error,
+      };
+
+      if (formattedTime && newEntries[index].dateTime) {
+        // Update time part of existing dateTime
+        const [hoursStr, minutesStr] = formattedTime.split(':');
+        const hours = parseInt(hoursStr, 10);
+        const minutes = parseInt(minutesStr, 10);
+        let newDateTime = setHours(newEntries[index].dateTime, hours);
+        newDateTime = setMinutes(newDateTime, minutes);
+        newDateTime = setSeconds(newDateTime, 0);
+        newEntries[index].dateTime = newDateTime;
+      } else if (formattedTime && !newEntries[index].dateTime) {
+        // If no date is selected, default to today's date with the chosen time
+        let newDateTime = new Date();
+        newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
+        newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
+        newDateTime = setSeconds(newDateTime, 0);
+        newEntries[index].dateTime = newDateTime;
+      } else {
+        // If time is invalid or empty, clear the time part of the date
+        if (newEntries[index].dateTime) {
+          const newDateTime = setHours(setMinutes(setSeconds(newEntries[index].dateTime, 0), 0), 0);
           newEntries[index].dateTime = newDateTime;
         } else {
-          // If time is invalid or empty, clear the time part of the date
-          if (newEntries[index].dateTime) {
-            const newDateTime = setHours(setMinutes(setSeconds(newEntries[index].dateTime, 0), 0), 0);
-            newEntries[index].dateTime = newDateTime;
-          } else {
-            newEntries[index].dateTime = undefined as any; // Set to undefined if no date
-          }
+          newEntries[index].dateTime = undefined as any; // Set to undefined if no date
         }
-      } else {
-        newEntries[index] = { ...newEntries[index], [field]: value };
       }
+      return newEntries;
+    });
+  };
+
+  const handleNotesChange = (index: number, notes: string) => {
+    setProgressUpdateEntries(prevEntries => {
+      const newEntries = [...prevEntries];
+      newEntries[index] = { ...newEntries[index], notes };
       return newEntries;
     });
   };
@@ -130,9 +159,9 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
       return;
     }
 
-    const hasTimeErrors = progressUpdateEntries.some(entry => entry.timeError !== null);
-    if (hasTimeErrors) {
-      toast.error("Please fix invalid time entries.");
+    const hasErrors = progressUpdateEntries.some(entry => entry.timeError !== null || !entry.dateTime);
+    if (hasErrors) {
+      toast.error("Please ensure all date and time entries are valid.");
       return;
     }
 
@@ -187,22 +216,66 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                 <h3 className="text-lg font-semibold">Log Entries:</h3>
                 {progressUpdateEntries.map((entry, index) => (
                   <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                       {/* Status Display */}
-                      <div className="flex flex-col">
+                      <div className="flex flex-col sm:col-span-1">
                         <Label className="text-gray-700">Status:</Label>
                         <p className="font-semibold text-lg text-gray-900">{getDisplayStatus(entry.status)}</p>
                       </div>
 
-                      {/* Date and Time Picker */}
-                      <DateTimePicker
-                        label="Date and Time"
-                        value={entry.dateTime}
-                        onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
-                        disabled={isUpdatingProgress}
-                        timeError={entry.timeError}
-                        onTimeInputChange={(time) => handleProgressUpdateEntryEntryChange(index, 'timeInput', time)}
-                      />
+                      {/* Date Picker */}
+                      <div className="flex flex-col sm:col-span-1">
+                        <Label className="text-gray-700">Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !entry.dateTime && "text-muted-foreground"
+                              )}
+                              disabled={isUpdatingProgress}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {entry.dateTime ? format(entry.dateTime, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={entry.dateTime}
+                              onSelect={(date) => handleDateChange(index, date)}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Time Input */}
+                      <div className="flex flex-col sm:col-span-1">
+                        <Label htmlFor={`time-input-${index}`} className="text-gray-700">Time (HH:MM)</Label>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <Input
+                            id={`time-input-${index}`}
+                            type="text"
+                            value={entry.timeInput}
+                            onChange={(e) => handleTimeInputChange(index, e.target.value)}
+                            onBlur={(e) => {
+                              const { formattedTime } = formatAndValidateTimeInput(e.target.value);
+                              if (formattedTime) {
+                                handleTimeInputChange(index, formattedTime); // Auto-format on blur if valid
+                              }
+                            }}
+                            placeholder="HH:MM (e.g., 09:00)"
+                            className="w-full"
+                            disabled={isUpdatingProgress}
+                          />
+                        </div>
+                        {entry.timeError && (
+                          <p className="text-red-500 text-sm mt-1">{entry.timeError}</p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Notes */}
@@ -211,7 +284,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                       <Textarea
                         id={`notes-${index}`}
                         value={entry.notes}
-                        onChange={(e) => handleProgressUpdateEntryChange(index, 'notes', e.target.value)}
+                        onChange={(e) => handleNotesChange(index, e.target.value)}
                         placeholder="Add any relevant notes for this update..."
                         disabled={isUpdatingProgress}
                       />
@@ -224,7 +297,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => handleClose(false)} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null)}>
+          <AlertDialogAction onClick={handleConfirmUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null || !entry.dateTime)}>
             {isUpdatingProgress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save Progress
           </AlertDialogAction>
