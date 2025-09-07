@@ -23,7 +23,7 @@ import UsersDebug from "@/pages/admin/UsersDebug";
 import LoginPage from "./pages/Login";
 import { AuthContextProvider, useAuth } from "./context/AuthContext";
 import { Loader2 } from 'lucide-react';
-import { useSession } from '@supabase/auth-helpers-react'; // New import
+import { useSession } from '@supabase/auth-helpers-react';
 
 const queryClient = new QueryClient();
 
@@ -104,7 +104,8 @@ const AppContent = () => {
 };
 
 const App = () => {
-  const { session, isLoading } = useSession();
+  // Ensure useSession() always returns an object, even if it somehow returns null/undefined
+  const { session, isLoading } = useSession() || { session: null, isLoading: true };
 
   if (isLoading) {
     return (
