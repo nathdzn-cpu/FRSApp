@@ -67,7 +67,7 @@ const AddressSearchInput: React.FC<AddressSearchInputProps> = ({
 
   const handleSelect = (address: SavedAddress) => {
     onAddressSelect(address);
-    onValueChange(address.line_1); // Set the input value to line_1 for display
+    onValueChange(address.name || ''); // Set the input value to the selected address's name
     setOpen(false);
   };
 
@@ -87,7 +87,7 @@ const AddressSearchInput: React.FC<AddressSearchInputProps> = ({
           <CommandInput
             value={value}
             onValueChange={onValueChange}
-            placeholder="Search addresses..."
+            placeholder="Search addresses by name..."
             className="h-9"
             disabled={disabled}
           />
@@ -108,12 +108,11 @@ const AddressSearchInput: React.FC<AddressSearchInputProps> = ({
                     className="flex items-center justify-between"
                   >
                     <div className="flex flex-col items-start">
-                      <span className="font-medium text-gray-900">
-                        {address.name ? `${address.name} - ` : ''}
-                        {formatAddressPart(address.line_1)}
-                      </span>
+                      <span className="font-semibold text-gray-900">{address.name || 'Unnamed Address'}</span>
                       <span className="text-xs text-gray-500">
-                        {formatAddressPart(address.town_or_city)}, {formatPostcode(address.postcode)}
+                        {formatAddressPart(address.line_1)}
+                        {address.town_or_city && `, ${formatAddressPart(address.town_or_city)}`}
+                        {address.postcode && `, ${formatPostcode(address.postcode)}`}
                       </span>
                     </div>
                     {address.favourite && <Star className="h-4 w-4 text-yellow-500 ml-2" />}

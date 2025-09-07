@@ -58,10 +58,11 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({
 
   const handleAddressSelect = (index: number, address: SavedAddress) => {
     const fieldNamePrefix = `${type}.${index}`;
-    setValue(`${fieldNamePrefix}.name`, address.name || toTitleCase(address.line_1), { shouldDirty: true });
+    setValue(`${fieldNamePrefix}.name`, address.name || '', { shouldDirty: true });
     setValue(`${fieldNamePrefix}.address_line1`, address.line_1, { shouldDirty: true });
-    setValue(`${fieldNamePrefix}.address_line2`, address.line_2, { shouldDirty: true });
+    setValue(`${fieldNamePrefix}.address_line2`, address.line_2 || null, { shouldDirty: true });
     setValue(`${fieldNamePrefix}.city`, address.town_or_city, { shouldDirty: true });
+    setValue(`${fieldNamePrefix}.county`, address.county || null, { shouldDirty: true }); // Added county
     setValue(`${fieldNamePrefix}.postcode`, address.postcode, { shouldDirty: true });
     trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
     trigger(`${fieldNamePrefix}.city`);
