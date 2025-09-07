@@ -488,17 +488,19 @@ const JobDetail: React.FC = () => {
                       <Edit className="h-4 w-4 mr-2" /> Edit Job
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 rounded-xl shadow-lg">
+                  <DialogContent className="max-w-4xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-semibold text-gray-900">Edit Job: {job.order_number}</DialogTitle>
                     </DialogHeader>
-                    <JobEditForm
-                      initialJob={job}
-                      initialStops={stops}
-                      drivers={allProfiles.filter(p => p.role === 'driver')}
-                      onSubmit={handleEditSubmit}
-                      isSubmitting={isSubmittingEdit}
-                    />
+                    <div className="flex-1 overflow-y-auto p-4">
+                      <JobEditForm
+                        initialJob={job}
+                        initialStops={stops}
+                        drivers={allProfiles.filter(p => p.role === 'driver')}
+                        onSubmit={handleEditSubmit}
+                        isSubmitting={isSubmittingEdit}
+                      />
+                    </div>
                   </DialogContent>
                 </Dialog>
               )}
@@ -515,62 +517,64 @@ const JobDetail: React.FC = () => {
                         <CheckCircle className="h-4 w-4 mr-2" /> Update Progress
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
+                    <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
                         <AlertDialogDescription>
                           Log a new status update for this job.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="progress-status">New Status</Label>
-                          <Select
-                            value={selectedNewStatus}
-                            onValueChange={(value: Job['status']) => setSelectedNewStatus(value)}
-                            disabled={isUpdatingProgress}
-                          >
-                            <SelectTrigger id="progress-status">
-                              <SelectValue placeholder="Select new status" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white shadow-sm rounded-xl">
-                              {progressUpdateSelectableStatuses.map(status => (
-                                <SelectItem key={status} value={status}>
-                                  {getDisplayStatus(status)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {progressUpdateEntries.length > 0 && (
-                          <div className="space-y-4 border-t pt-4 mt-4">
-                            <h3 className="text-lg font-semibold">Log Entries:</h3>
-                            {progressUpdateEntries.map((entry, index) => (
-                              <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
-                                <p className="font-medium text-gray-900 mb-2">{getDisplayStatus(entry.status)}</p>
-                                <DateTimePicker
-                                  label="Date and Time"
-                                  value={entry.dateTime}
-                                  onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
-                                  disabled={isUpdatingProgress}
-                                  timeError={entry.timeError}
-                                  onTimeInputChange={(time) => handleProgressUpdateEntryChange(index, 'timeInput', time)}
-                                />
-                                <div className="space-y-2 mt-2">
-                                  <Label htmlFor={`notes-${index}`}>Notes (Optional)</Label>
-                                  <Textarea
-                                    id={`notes-${index}`}
-                                    value={entry.notes}
-                                    onChange={(e) => handleProgressUpdateEntryChange(index, 'notes', e.target.value)}
-                                    placeholder="Add any relevant notes for this update..."
-                                    disabled={isUpdatingProgress}
-                                  />
-                                </div>
-                              </Card>
-                            ))}
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="progress-status">New Status</Label>
+                            <Select
+                              value={selectedNewStatus}
+                              onValueChange={(value: Job['status']) => setSelectedNewStatus(value)}
+                              disabled={isUpdatingProgress}
+                            >
+                              <SelectTrigger id="progress-status">
+                                <SelectValue placeholder="Select new status" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white shadow-sm rounded-xl">
+                                {progressUpdateSelectableStatuses.map(status => (
+                                  <SelectItem key={status} value={status}>
+                                    {getDisplayStatus(status)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
+
+                          {progressUpdateEntries.length > 0 && (
+                            <div className="space-y-4 border-t pt-4 mt-4">
+                              <h3 className="text-lg font-semibold">Log Entries:</h3>
+                              {progressUpdateEntries.map((entry, index) => (
+                                <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
+                                  <p className="font-medium text-gray-900 mb-2">{getDisplayStatus(entry.status)}</p>
+                                  <DateTimePicker
+                                    label="Date and Time"
+                                    value={entry.dateTime}
+                                    onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
+                                    disabled={isUpdatingProgress}
+                                    timeError={entry.timeError}
+                                    onTimeInputChange={(time) => handleProgressUpdateEntryChange(index, 'timeInput', time)}
+                                  />
+                                  <div className="space-y-2 mt-2">
+                                    <Label htmlFor={`notes-${index}`}>Notes (Optional)</Label>
+                                    <Textarea
+                                      id={`notes-${index}`}
+                                      value={entry.notes}
+                                      onChange={(e) => handleProgressUpdateEntryChange(index, 'notes', e.target.value)}
+                                      placeholder="Add any relevant notes for this update..."
+                                      disabled={isUpdatingProgress}
+                                    />
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <AlertDialogFooter>
                         <AlertDialogCancel onClick={() => { setIsProgressUpdateDialogOpen(false); setSelectedNewStatus(''); setProgressUpdateEntries([]); }} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
@@ -588,7 +592,7 @@ const JobDetail: React.FC = () => {
                         <FileText className="h-4 w-4 mr-2" /> Request POD
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Request Proof of Delivery (POD)?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -614,7 +618,7 @@ const JobDetail: React.FC = () => {
                         <Copy className="h-4 w-4 mr-2" /> Clone Job
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Clone this Job?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -636,7 +640,7 @@ const JobDetail: React.FC = () => {
                         <XCircle className="h-4 w-4 mr-2" /> Cancel Job
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
                         <AlertDialogDescription>

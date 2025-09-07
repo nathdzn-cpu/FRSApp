@@ -94,25 +94,27 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent>
+      <AlertDialogContent className="flex flex-col max-h-[90vh]">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Your Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password to confirm"
-              disabled={isAuthenticating || isConfirming}
-            />
-            {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Your Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password to confirm"
+                disabled={isAuthenticating || isConfirming}
+              />
+              {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+            </div>
           </div>
         </div>
         <AlertDialogFooter>

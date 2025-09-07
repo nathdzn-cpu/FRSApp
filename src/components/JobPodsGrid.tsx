@@ -51,13 +51,15 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
       </div>
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg">
+        <DialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">Document Viewer</DialogTitle>
           </DialogHeader>
-          {selectedImage && (
-            <img src={selectedImage} alt="Selected Document" className="max-w-full h-auto mx-auto" />
-          )}
+          <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
+            {selectedImage && (
+              <img src={selectedImage} alt="Selected Document" className="max-w-full h-auto" />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

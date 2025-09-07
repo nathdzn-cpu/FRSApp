@@ -365,7 +365,7 @@ const AdminDailyChecks: React.FC = () => {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
@@ -393,40 +393,42 @@ const AdminDailyChecks: React.FC = () => {
         {/* Edit Item Dialog */}
         {editingItem && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
+            <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Daily Check Item</DialogTitle>
                 <DialogDescription>
                   Make changes to the item here. Click save when you're done.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editItemTitle">Title</Label>
-                  <Input
-                    id="editItemTitle"
-                    value={editingItem.title}
-                    onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editItemDescription">Description (Optional)</Label>
-                  <Textarea
-                    id="editItemDescription"
-                    value={editingItem.description || ''}
-                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="editItemIsActive"
-                    checked={editingItem.is_active}
-                    onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
-                    disabled={busy}
-                  />
-                  <Label htmlFor="editItemIsActive">Is Active</Label>
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="editItemTitle">Title</Label>
+                    <Input
+                      id="editItemTitle"
+                      value={editingItem.title}
+                      onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                      disabled={busy}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editItemDescription">Description (Optional)</Label>
+                    <Textarea
+                      id="editItemDescription"
+                      value={editingItem.description || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                      disabled={busy}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="editItemIsActive"
+                      checked={editingItem.is_active}
+                      onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
+                      disabled={busy}
+                    />
+                    <Label htmlFor="editItemIsActive">Is Active</Label>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
