@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { usePersistentForm } from '@/hooks/usePersistentForm'; // Import the new hook
+import { useEphemeralForm } from '@/hooks/useEphemeralForm'; // Import the new hook
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -51,9 +51,9 @@ interface JobFormProps {
 }
 
 const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
-  // Use usePersistentForm to initialize default values and persist changes
-  const [persistedFormState, setPersistedFormState] = usePersistentForm<Partial<JobFormValues>>(
-    "jobFormState",
+  // Use useEphemeralForm to initialize default values and persist changes temporarily
+  const [ephemeralFormState, setEphemeralFormState] = useEphemeralForm<Partial<JobFormValues>>(
+    "jobFormEphemeralState", // Unique key for this form
     defaultValues || {
       ref: '',
       override_ref: false,
@@ -67,7 +67,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: persistedFormState as JobFormValues, // Cast to JobFormValues as useForm expects full type
+    defaultValues: ephemeralFormState as JobFormValues, // Cast to JobFormValues as useForm expects full type
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -85,10 +85,10 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
   // Effect to persist form state whenever values change
   useEffect(() => {
     const subscription = form.watch((value) => {
-      setPersistedFormState(value);
+      setEphemeralFormState(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, setPersistedFormState]);
+  }, [form, setEphemeralFormState]);
 
   return (
     <Form {...form}>
