@@ -157,7 +157,7 @@ serve(async (req) => {
     }
 
     // 7) Audit log
-    await admin.from("audit_logs").insert({
+    await admin.from("audit_logs").insert({ // Added await here
       org_id: org_id,
       actor_id: actor_id,
       entity: "jobs",
