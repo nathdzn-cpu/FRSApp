@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { CardHeader, CardTitle } from '@/components/ui/card'; // Added CardHeader here
 import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle } from 'lucide-react';
 import JobEditForm from '@/components/JobEditForm';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
