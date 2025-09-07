@@ -21,6 +21,7 @@ import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner'; // Import Toaster for sonner toasts
+import { useScrollRestoration } from "@/hooks/useScrollRestoration"; // Import the new hook
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Array<'admin' | 'office' | 'driver'> }) => {
@@ -83,6 +84,9 @@ function App() {
   const session = useSession();
   const user = useUser();
   const supabaseClient = useSupabaseClient();
+
+  // Call the scroll restoration hook
+  useScrollRestoration();
 
   console.log("Supabase Session State:", session); // Added for debugging
 
