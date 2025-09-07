@@ -7,6 +7,9 @@ export default defineConfig(() => ({
   server: {
     host: "::",
     port: 8080,
+    hmr: { // Disable HMR overlay to prevent potential full page reloads on tab switch
+      overlay: false,
+    },
   },
   plugins: [dyadComponentTagger(), react()],
   resolve: {

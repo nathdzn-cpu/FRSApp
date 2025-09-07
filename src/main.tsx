@@ -7,7 +7,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css'; // Import Tailwind CSS
 
 // Create a client for TanStack Query
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Disable refetching when window regains focus
+      refetchOnReconnect: false,   // Disable refetching when network reconnects
+    },
+  },
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
