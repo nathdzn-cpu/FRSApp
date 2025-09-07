@@ -13,9 +13,6 @@ interface JobsTableProps {
 
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
   const { userRole } = useAuth();
-  // Removed canSeePrice as price is no longer in Job interface
-
-  // Removed getDriverName as assigned_driver_id is no longer in Job interface
 
   // Sort jobs: active (in_progress, assigned) first, then by created_at descending
   const sortedJobs = [...jobs].sort((a, b) => {
@@ -47,21 +44,21 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedJobs.map((job) => (
-            <TableRow key={job.id}>
+          {sortedJobs.map((job, index) => (
+            <TableRow key={job.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
               <TableCell className="font-medium">{job.ref}</TableCell>
               <TableCell>
                 <Badge
                   variant={
-                    job.status === 'in_progress'
-                      ? 'default' // Blue
-                      : job.status === 'cancelled'
-                      ? 'destructive' // Red
-                      : job.status === 'planned'
+                    job.status === 'planned'
                       ? 'secondary' // Gray
-                      : 'default' // Fallback to blue for 'assigned' or other active states
+                      : job.status === 'in_progress' || job.status === 'assigned'
+                      ? 'default' // Blue
+                      : job.status === 'delivered'
+                      ? 'outline' // Green for delivered
+                      : 'destructive' // Red for cancelled
                   }
-                  className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''} // Green for delivered
+                  className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
                 >
                   {job.status.replace(/_/g, ' ')}
                 </Badge>

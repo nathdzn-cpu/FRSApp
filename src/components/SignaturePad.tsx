@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; // Using Textarea for base64 string for simplicity
+import { Textarea } from '@/components/ui/textarea';
 
 interface SignaturePadProps {
   onSave: (signature: string) => void;
@@ -24,7 +24,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, initialSignature })
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="signature-input">Signature (Type your name or paste base64)</Label>
+      <Label htmlFor="signature-input" className="text-gray-700">Signature (Type your name or paste base64)</Label>
       <Textarea
         id="signature-input"
         value={signatureText}
@@ -34,7 +34,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, initialSignature })
       />
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={handleClear}>Clear</Button>
-        <Button type="button" onClick={handleSave}>Save Signature</Button>
+        <Button type="button" onClick={handleSave} className="bg-blue-600 text-white hover:bg-blue-700">Save Signature</Button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { getProfiles, getTenants } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,12 +11,12 @@ import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [drivers, setDrivers] = useState<Profile[]>([]);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
 
   useEffect(() => {
     if (!user || !profile) {
@@ -29,7 +29,6 @@ const Drivers: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        // Ensure selectedOrgId is set, ideally from user's profile or a default
         const defaultOrgId = profile.org_id || fetchedTenants[0]?.id;
 
         if (defaultOrgId) {
@@ -48,16 +47,16 @@ const Drivers: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading drivers...</p>
+        <p className="ml-2 text-gray-700">Loading drivers...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">{error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -67,28 +66,28 @@ const Drivers: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Drivers List</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Drivers List</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 pt-4">
             {drivers.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No drivers found.</p>
+              <p className="text-gray-600">No drivers found.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {drivers.map(driver => (
-                  <Card key={driver.id} className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-lg">{driver.full_name}</CardTitle>
+                  <Card key={driver.id} className="bg-white shadow-sm rounded-xl p-4">
+                    <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
+                      <CardTitle className="text-lg font-semibold text-gray-900">{driver.full_name}</CardTitle>
                       <Badge variant="secondary" className="capitalize">{driver.role}</Badge>
                     </CardHeader>
-                    <CardContent className="text-sm text-gray-700 dark:text-gray-300">
+                    <CardContent className="text-sm text-gray-700 p-0 pt-2">
                       <p className="flex items-center mb-1">
                         <Truck className="h-4 w-4 mr-2 text-gray-500" />
                         Truck: {driver.truck_reg || 'N/A'}
@@ -99,7 +98,7 @@ const Drivers: React.FC = () => {
                           `${driver.last_location.lat.toFixed(2)}, ${driver.last_location.lon.toFixed(2)}` : 'N/A'}
                       </p>
                       {driver.last_location?.timestamp && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                        <p className="text-xs text-gray-500 ml-6">
                           ({formatDistanceToNowStrict(parseISO(driver.last_location.timestamp), { addSuffix: true })})
                         </p>
                       )}

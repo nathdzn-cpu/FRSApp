@@ -31,34 +31,34 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ events, profiles }) => {
   };
 
   if (events.length === 0) {
-    return <p className="text-gray-600 dark:text-gray-400">No events recorded for this job yet.</p>;
+    return <p className="text-gray-600">No events recorded for this job yet.</p>;
   }
 
   return (
     <div className="relative pl-8">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
       {events.map((event, index) => {
         const Icon = eventIconMap[event.event_type] || MessageSquare;
         return (
           <div key={event.id} className="mb-6 relative">
-            <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-500 text-white dark:bg-blue-600">
+            <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
               <Icon size={16} />
             </div>
-            <div className="ml-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-1">
                 <Badge variant="secondary" className="capitalize">
                   {event.event_type.replace(/_/g, ' ')}
                 </Badge>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500">
                   {format(parseISO(event.created_at), 'MMM dd, yyyy HH:mm')}
                 </span>
               </div>
-              <p className="text-gray-800 dark:text-gray-200 mb-1">
-                <span className="font-medium">{getActorName(event.actor_id)}</span>{' '}
+              <p className="text-gray-800 mb-1">
+                <span className="font-medium text-gray-900">{getActorName(event.actor_id)}</span>{' '}
                 {event.notes || `performed a ${event.event_type.replace(/_/g, ' ')} event.`}
               </p>
               {(event.lat && event.lon) && (
-                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                <p className="text-xs text-gray-600 flex items-center">
                   <MapPin className="h-3 w-3 mr-1" /> Lat: {event.lat.toFixed(4)}, Lon: {event.lon.toFixed(4)}
                 </p>
               )}

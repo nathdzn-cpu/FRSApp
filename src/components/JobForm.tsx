@@ -16,7 +16,6 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
-// Removed formatGBP as price is no longer in Job interface
 import { Checkbox } from '@/components/ui/checkbox';
 
 const stopSchema = z.object({
@@ -34,7 +33,6 @@ const formSchema = z.object({
   ref: z.string().optional(),
   override_ref: z.boolean().optional(),
   manual_ref: z.string().optional(),
-  // Removed scheduled_date, price, notes, assigned_driver_id
   pickup_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
   delivery_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
   collections: z.array(stopSchema).min(0),
@@ -45,8 +43,8 @@ type JobFormValues = z.infer<typeof formSchema>;
 
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
-  profiles: Profile[]; // Still needed for other purposes, but not for assigning driver to job directly
-  canSeePrice: boolean; // Kept for consistency, but will always be false now
+  profiles: Profile[];
+  canSeePrice: boolean;
   defaultValues?: Partial<JobFormValues>;
   generatedRef?: string;
 }
@@ -76,21 +74,19 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
     name: 'deliveries',
   });
 
-  // Removed drivers filtering as assigned_driver_id is no longer in Job interface
-
   const overrideOrderNumber = form.watch('override_ref');
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Details</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
             <div>
               <FormItem>
-                <FormLabel>Order Number</FormLabel>
+                <FormLabel className="text-gray-700">Order Number</FormLabel>
                 <FormControl>
                   <Input
                     value={overrideOrderNumber ? form.watch('manual_ref') : (generatedRef || 'Generated on submit')}
@@ -106,7 +102,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                 control={form.control}
                 name="override_ref"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-2">
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-200 p-4 mt-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -114,7 +110,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>
+                      <FormLabel className="text-gray-700">
                         Override order number
                       </FormLabel>
                     </div>
@@ -123,14 +119,12 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               />
             </div>
 
-            {/* Removed Scheduled Date field */}
-
             <FormField
               control={form.control}
               name="pickup_eta"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pickup ETA (HH:MM)</FormLabel>
+                  <FormLabel className="text-gray-700">Pickup ETA (HH:MM)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 09:00" {...field} />
                   </FormControl>
@@ -144,7 +138,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               name="delivery_eta"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery ETA (HH:MM)</FormLabel>
+                  <FormLabel className="text-gray-700">Delivery ETA (HH:MM)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 17:00" {...field} />
                   </FormControl>
@@ -152,25 +146,21 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                 </FormItem>
               )}
             />
-
-            {/* Removed Price field */}
-            {/* Removed Assign Driver field */}
-            {/* Removed Notes field */}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Collection Points</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-0 pt-4">
             {collectionFields.map((field, index) => (
-              <Card key={field.id} className="p-4 border-l-4 border-blue-500 dark:border-blue-700">
+              <Card key={field.id} className="p-4 border-l-4 border-blue-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-lg">Collection #{index + 1}</h4>
+                  <h4 className="font-semibold text-lg text-gray-900">Collection #{index + 1}</h4>
                   <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
@@ -181,7 +171,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.name`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Name</FormLabel>
+                        <FormLabel className="text-gray-700">Name</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Supplier Warehouse" {...stopField} />
                         </FormControl>
@@ -194,7 +184,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.address_line1`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Address Line 1</FormLabel>
+                        <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., 123 Industrial Road" {...stopField} />
                         </FormControl>
@@ -207,7 +197,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.address_line2`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Address Line 2 (Optional)</FormLabel>
+                        <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Unit 4" {...stopField} />
                         </FormControl>
@@ -220,7 +210,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.city`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel className="text-gray-700">City</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., London" {...stopField} />
                         </FormControl>
@@ -233,7 +223,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.postcode`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Postcode</FormLabel>
+                        <FormLabel className="text-gray-700">Postcode</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., SW1A 0AA" {...stopField} />
                         </FormControl>
@@ -247,7 +237,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       name={`collections.${index}.window_from`}
                       render={({ field: stopField }) => (
                         <FormItem>
-                          <FormLabel>Window From (HH:MM)</FormLabel>
+                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g., 09:00" {...stopField} />
                           </FormControl>
@@ -260,7 +250,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       name={`collections.${index}.window_to`}
                       render={({ field: stopField }) => (
                         <FormItem>
-                          <FormLabel>Window To (HH:MM)</FormLabel>
+                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g., 12:00" {...stopField} />
                           </FormControl>
@@ -274,7 +264,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`collections.${index}.notes`}
                     render={({ field: stopField }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Notes / Reference</FormLabel>
+                        <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
                           <Textarea placeholder="Any specific instructions for this stop..." {...stopField} />
                         </FormControl>
@@ -286,23 +276,23 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               </Card>
             ))}
             {collectionFields.length === 0 && (
-              <p className="text-gray-600 dark:text-gray-400 text-center">No collection points added yet.</p>
+              <p className="text-gray-600 text-center">No collection points added yet.</p>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Delivery Points</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-0 pt-4">
             {deliveryFields.map((field, index) => (
-              <Card key={field.id} className="p-4 border-l-4 border-green-500 dark:border-green-700">
+              <Card key={field.id} className="p-4 border-l-4 border-green-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-lg">Delivery #{index + 1}</h4>
+                  <h4 className="font-semibold text-lg text-gray-900">Delivery #{index + 1}</h4>
                   <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
@@ -313,7 +303,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.name`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Name</FormLabel>
+                        <FormLabel className="text-gray-700">Name</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Customer Site" {...stopField} />
                         </FormControl>
@@ -326,7 +316,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.address_line1`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Address Line 1</FormLabel>
+                        <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., 456 Retail Street" {...stopField} />
                         </FormControl>
@@ -339,7 +329,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.address_line2`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Address Line 2 (Optional)</FormLabel>
+                        <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Loading Bay" {...stopField} />
                         </FormControl>
@@ -352,7 +342,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.city`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel className="text-gray-700">City</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Manchester" {...stopField} />
                         </FormControl>
@@ -365,7 +355,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.postcode`}
                     render={({ field: stopField }) => (
                       <FormItem>
-                        <FormLabel>Postcode</FormLabel>
+                        <FormLabel className="text-gray-700">Postcode</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., M1 1AA" {...stopField} />
                         </FormControl>
@@ -379,7 +369,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       name={`deliveries.${index}.window_from`}
                       render={({ field: stopField }) => (
                         <FormItem>
-                          <FormLabel>Window From (HH:MM)</FormLabel>
+                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g., 14:00" {...stopField} />
                           </FormControl>
@@ -392,7 +382,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       name={`deliveries.${index}.window_to`}
                       render={({ field: stopField }) => (
                         <FormItem>
-                          <FormLabel>Window To (HH:MM)</FormLabel>
+                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g., 17:00" {...stopField} />
                           </FormControl>
@@ -406,7 +396,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     name={`deliveries.${index}.notes`}
                     render={({ field: stopField }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Notes / Reference</FormLabel>
+                        <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
                           <Textarea placeholder="Any specific instructions for this stop..." {...stopField} />
                         </FormControl>
@@ -418,13 +408,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               </Card>
             ))}
             {deliveryFields.length === 0 && (
-              <p className="text-gray-600 dark:text-gray-400 text-center">No delivery points added yet.</p>
+              <p className="text-gray-600 text-center">No delivery points added yet.</p>
             )}
             <FormMessage>{form.formState.errors.deliveries?.message}</FormMessage>
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full">Create Job</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Job</Button>
       </form>
     </Form>
   );

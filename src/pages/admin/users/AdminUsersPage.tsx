@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers, purgeAllNonAdminUsers } from '@/lib/supabase';
 import { Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,20 +27,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [showDemo, setShowDemo] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]); // This seems redundant with `users` and `profile` from AuthContext
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
-  const currentProfile = profile; // Use profile from AuthContext
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const currentProfile = profile;
 
   const fetchUsers = async () => {
     if (!user || userRole !== 'admin' || !currentOrgId) {
@@ -55,8 +55,8 @@ const AdminUsersPage: React.FC = () => {
       const defaultOrgId = currentProfile?.org_id || fetchedTenants[0]?.id;
 
       if (defaultOrgId) {
-        const fetchedProfiles = await getProfiles(defaultOrgId); // This fetches all profiles, including the current admin's
-        setProfiles(fetchedProfiles); // Keep this for general profile lookup if needed
+        const fetchedProfiles = await getProfiles(defaultOrgId);
+        setProfiles(fetchedProfiles);
         const fetchedUsers = await getUsersForAdmin(defaultOrgId);
         setUsers(fetchedUsers);
       }
@@ -69,7 +69,7 @@ const AdminUsersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
@@ -198,16 +198,16 @@ const AdminUsersPage: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading users...</p>
+        <p className="ml-2 text-gray-700">Loading users...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -218,7 +218,7 @@ const AdminUsersPage: React.FC = () => {
 
   if (!user || userRole !== 'admin') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -228,25 +228,25 @@ const AdminUsersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-2xl font-bold">Admin: User Management</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Admin: User Management</CardTitle>
             <div className="flex space-x-2">
               <Button onClick={fetchUsers} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
-              <Button onClick={() => navigate('/admin/users/new')}>
+              <Button onClick={() => navigate('/admin/users/new')} className="bg-blue-600 text-white hover:bg-blue-700">
                 <UserPlus className="h-4 w-4 mr-2" /> Add New User
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 pt-4">
             <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
               <Input
                 placeholder="Search by name, user id, reg..."
@@ -271,7 +271,7 @@ const AdminUsersPage: React.FC = () => {
                   checked={showDemo}
                   onCheckedChange={(checked: boolean) => setShowDemo(checked)}
                 />
-                <Label htmlFor="show-demo">Show demo users</Label>
+                <Label htmlFor="show-demo" className="text-gray-700">Show demo users</Label>
               </div>
               <Button
                 variant="destructive"
@@ -292,7 +292,7 @@ const AdminUsersPage: React.FC = () => {
             </div>
 
             {filteredUsers.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No users found matching your criteria.</p>
+              <p className="text-gray-600">No users found matching your criteria.</p>
             ) : (
               <div className="rounded-md border overflow-hidden">
                 <Table>
@@ -309,14 +309,14 @@ const AdminUsersPage: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.map(user => (
-                      <TableRow key={user.id}>
+                    {filteredUsers.map((user, index) => (
+                      <TableRow key={user.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
                         <TableCell className="font-medium">{user.full_name}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="capitalize">{user.role}</Badge>
                         </TableCell>
                         <TableCell>{user.phone || '-'}</TableCell>
-                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">{user.user_id}</TableCell>
+                        <TableCell className="text-sm text-gray-600">{user.user_id}</TableCell>
                         <TableCell>{user.truck_reg || '-'}</TableCell>
                         <TableCell>{user.trailer_no || '-'}</TableCell>
                         <TableCell>{user.is_demo ? <Badge variant="outline">Demo</Badge> : '-'}</TableCell>

@@ -28,9 +28,9 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 
   if (isLoadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading authentication...</p>
+        <p className="ml-2 text-gray-700">Loading authentication...</p>
       </div>
     );
   }
@@ -45,11 +45,11 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 // MainLayout component for authenticated users
 const MainLayout = () => {
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="p-6 flex-1 overflow-y-auto">
+        <main className="p-6 flex-1 overflow-y-auto bg-gray-50">
           <Outlet /> {/* This is where nested routes will render */}
         </main>
       </div>
@@ -88,7 +88,7 @@ function App() {
           </Route>
         </Routes>
       </AuthContextProvider>
-      <Toaster richColors /> {/* Add Toaster for sonner notifications */}
+      <Toaster richColors />
     </BrowserRouter>
   );
 }

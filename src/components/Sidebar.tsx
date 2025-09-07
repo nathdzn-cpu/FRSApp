@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck } from 'lucide-react'; // Added ClipboardList, Shield
+import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -42,13 +42,13 @@ const Sidebar: React.FC = () => {
           to={link.to}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-white hover:bg-blue-500",
-              isActive ? "bg-blue-600 text-white" : "text-gray-600 dark:text-gray-400"
+              "flex items-center gap-3 rounded-md px-3 py-2 transition-all text-sm font-medium",
+              isActive ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
             )
           }
           onClick={() => setIsOpen(false)} // Close sidebar on link click
         >
-          <link.icon className="h-4 w-4" />
+          <link.icon className="h-4 w-4" size={18} />
           {link.label}
         </NavLink>
       ))}
@@ -63,8 +63,8 @@ const Sidebar: React.FC = () => {
             <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px]">
-          <h2 className="text-xl font-bold p-4 border-b dark:border-gray-700">FRS Haulage</h2>
+        <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px] bg-white">
+          <h2 className="text-xl font-bold p-4 border-b border-gray-200 text-blue-600">FRS Haulage</h2>
           {renderNavLinks()}
         </SheetContent>
       </Sheet>
@@ -72,8 +72,8 @@ const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 dark:border-gray-700">
+    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white shadow-md">
+      <div className="flex h-14 items-center border-b border-gray-200 px-4 lg:h-[60px] lg:px-6">
         <span className="font-semibold text-lg text-blue-600">FRS Haulage</span>
       </div>
       <div className="flex-1 overflow-auto py-2">

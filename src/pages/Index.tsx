@@ -16,8 +16,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Added Card imports
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -97,16 +97,16 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading dashboard...</p>
+        <p className="ml-2 text-gray-700">Loading dashboard...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-red-500">{error.message}</p>
       </div>
     );
@@ -119,7 +119,7 @@ const Index = () => {
   // If user is logged in but no profile/role is found
   if (!profile || userRole === undefined) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">No role assigned to your user account. Please contact an administrator.</p>
         <Button onClick={() => navigate('/login')} variant="outline">
           Log In Again
@@ -129,10 +129,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Haulage Office Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Haulage Office Dashboard</h1>
           <div className="flex items-center space-x-2">
             {canAccessAdminUsers && (
               <Button onClick={() => navigate('/admin/users')} variant="outline">
@@ -140,18 +140,18 @@ const Index = () => {
               </Button>
             )}
             {canCreateJob && (
-              <Button onClick={() => navigate('/jobs/new')} variant="default">
+              <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
                 <PlusCircle className="h-4 w-4 mr-2" /> Create New Job
               </Button>
             )}
           </div>
         </div>
 
-        <Card className="shadow-lg rounded-xl p-4 sm:p-6 mb-6">
-          <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-white">Active Jobs</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="flex flex-row justify-between items-center p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Active Jobs</CardTitle>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only">Filter by date:</Label>
+              <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only text-gray-500">Filter by date:</Label>
               <Select value={filterRange} onValueChange={(value: DateRangeFilter) => setFilterRange(value)}>
                 <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Select date range" />
@@ -217,11 +217,11 @@ const Index = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 pt-4">
             {jobs.length > 0 ? (
               <JobsTable jobs={jobs} profiles={profiles} />
             ) : (
-              <p className="text-gray-600 dark:text-gray-400">No jobs found for this tenant with the selected filter.</p>
+              <p className="text-gray-600">No jobs found for this tenant with the selected filter.</p>
             )}
           </CardContent>
         </Card>

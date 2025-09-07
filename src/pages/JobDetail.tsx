@@ -30,18 +30,16 @@ const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  // Removed isAssignDriverDialogOpen and selectedDriverId as driver assignment is removed from Job interface
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
-  // Removed canSeePrice as price is no longer in Job interface
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId],
     queryFn: () => getProfiles(currentOrgId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!user && !!currentProfile, // Only fetch if user and profile are loaded
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user && !!currentProfile,
   });
 
   // Use useQuery for job details, stops, events, and documents
@@ -51,7 +49,7 @@ const JobDetail: React.FC = () => {
     events: JobEvent[];
     documents: Document[];
   }, Error>({
-    queryKey: ['jobDetail', id, userRole], // Removed currentProfile?.id as driverId is removed
+    queryKey: ['jobDetail', id, userRole],
     queryFn: async () => {
       if (!id || !currentOrgId || !currentProfile || !userRole) {
         throw new Error("Missing job ID, organization ID, current profile, or user role.");
@@ -73,8 +71,8 @@ const JobDetail: React.FC = () => {
         documents: fetchedDocuments,
       };
     },
-    enabled: !!id && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth, // Only run query if these are available and not loading auth
-    retry: false, // Do not retry on failure, show error immediately
+    enabled: !!id && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth,
+    retry: false,
   });
 
   const job = jobData?.job;
@@ -85,9 +83,6 @@ const JobDetail: React.FC = () => {
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
-  // Removed getProfileName as created_by and assigned_driver_id are removed from Job interface.
-  // If needed, this would be for actor_id in events or uploaded_by in documents.
-
   const handleRequestPod = async () => {
     if (!job || !currentProfile) return;
     const promise = requestPod(job.id, currentOrgId, currentProfile.id);
@@ -97,7 +92,7 @@ const JobDetail: React.FC = () => {
       error: 'Failed to request POD.',
     });
     await promise;
-    refetchJobData(); // Refresh events
+    refetchJobData();
   };
 
   const handleExportPdf = async () => {
@@ -141,23 +136,21 @@ const JobDetail: React.FC = () => {
       error: 'Failed to cancel job.',
     });
     await promise;
-    refetchJobData(); // Refresh job status
+    refetchJobData();
   };
-
-  // Removed handleAssignDriver as assigned_driver_id is no longer in Job interface
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading job details...</p>
+        <p className="ml-2 text-gray-700">Loading job details...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -168,8 +161,8 @@ const JobDetail: React.FC = () => {
 
   if (!job) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <p className="text-gray-700 dark:text-gray-300 text-lg mb-4">No job found.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <p className="text-gray-700 text-lg mb-4">No job found.</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
@@ -178,30 +171,29 @@ const JobDetail: React.FC = () => {
   }
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-  // Removed drivers variable as assigned_driver_id is no longer in Job interface
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
+            <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               Job: {job.ref}
               <Badge
                 variant={
-                  job.status === 'delivered'
+                  job.status === 'planned'
                     ? 'secondary'
-                    : job.status === 'cancelled'
-                    ? 'destructive'
-                    : job.status === 'in_progress'
+                    : job.status === 'in_progress' || job.status === 'assigned'
                     ? 'default'
-                    : 'outline'
+                    : job.status === 'delivered'
+                    ? 'outline'
+                    : 'destructive'
                 }
-                className="capitalize"
+                className={job.status === 'delivered' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
               >
                 {job.status.replace(/_/g, ' ')}
               </Badge>
@@ -209,7 +201,6 @@ const JobDetail: React.FC = () => {
             <div className="flex space-x-2">
               {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <>
-                  {/* Removed Assign Driver Button */}
                   <Button variant="outline" onClick={handleRequestPod}>
                     <FileText className="h-4 w-4 mr-2" /> Request POD
                   </Button>
@@ -242,65 +233,62 @@ const JobDetail: React.FC = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700 dark:text-gray-300">
+          <CardContent className="p-0 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
               <div>
-                <p className="font-medium">Pickup ETA:</p>
+                <p className="font-medium text-gray-900">Pickup ETA:</p>
                 <p>{job.pickup_eta || '-'}</p>
               </div>
               <div>
-                <p className="font-medium">Delivery ETA:</p>
+                <p className="font-medium text-gray-900">Delivery ETA:</p>
                 <p>{job.delivery_eta || '-'}</p>
               </div>
               <div>
-                <p className="font-medium">Created At:</p>
+                <p className="font-medium text-gray-900">Created At:</p>
                 <p>{format(new Date(job.created_at), 'PPP')}</p>
               </div>
-              {/* Removed Price, Assigned Driver, and Notes fields */}
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1">
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="stops">Stops</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
           </TabsList>
           <TabsContent value="timeline" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Job Timeline</CardTitle>
+            <Card className="bg-white shadow-sm rounded-xl p-6">
+              <CardHeader className="p-0 pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 pt-4">
                 <JobTimeline events={events} profiles={allProfiles} />
               </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="stops" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Job Stops</CardTitle>
+            <Card className="bg-white shadow-sm rounded-xl p-6">
+              <CardHeader className="p-0 pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Job Stops</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 pt-4">
                 <JobStopsTable stops={stops} />
               </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="pods" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Proof of Delivery (PODs)</CardTitle>
+            <Card className="bg-white shadow-sm rounded-xl p-6">
+              <CardHeader className="p-0 pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Proof of Delivery (PODs)</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 pt-4">
                 <JobPodsGrid documents={documents} />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Removed Assign Driver Dialog */}
     </div>
   );
 };

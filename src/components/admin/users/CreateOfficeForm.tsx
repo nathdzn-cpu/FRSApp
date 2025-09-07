@@ -36,17 +36,17 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Office User Details</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Office User Details</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel className="text-gray-700">Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Jane Doe" {...field} />
                   </FormControl>
@@ -59,7 +59,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Number</FormLabel>
+                  <FormLabel className="text-gray-700">Contact Number</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., +447123456789" {...field} />
                   </FormControl>
@@ -72,7 +72,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-gray-700">Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="jane.doe@example.com" {...field} />
                   </FormControl>
@@ -85,7 +85,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Temporary Password</FormLabel>
+                  <FormLabel className="text-gray-700">Temporary Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="********" {...field} />
                   </FormControl>
@@ -95,7 +95,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
             />
           </CardContent>
         </Card>
-        <Button type="submit" className="w-full">Create Office User</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Office User</Button>
       </form>
     </Form>
   );

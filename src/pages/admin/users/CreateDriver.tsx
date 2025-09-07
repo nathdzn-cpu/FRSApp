@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { getTenants, getProfiles, createUser } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,15 @@ import CreateDriverForm from '@/components/admin/users/CreateDriverForm';
 
 const CreateDriver: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined); // This will be the admin's profile
+  const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
@@ -34,7 +34,7 @@ const CreateDriver: React.FC = () => {
         const defaultOrgId = profile?.org_id || fetchedTenants[0]?.id;
         if (defaultOrgId && user) {
           const profiles = await getProfiles(defaultOrgId);
-          setCurrentProfile(profiles.find(p => p.user_id === user.id)); // Set the admin's profile
+          setCurrentProfile(profiles.find(p => p.user_id === user.id));
         }
       } catch (err: any) {
         console.error("Failed to fetch profiles:", err);
@@ -59,10 +59,9 @@ const CreateDriver: React.FC = () => {
         phone: values.phone,
         role: 'driver' as const,
         email: values.email,
-        password: values.password, // This would be handled by Supabase Auth Admin API
+        password: values.password,
       };
 
-      // Conditionally add optional fields
       if (values.truck_reg) {
         newDriverData.truck_reg = values.truck_reg;
       }
@@ -77,7 +76,7 @@ const CreateDriver: React.FC = () => {
         error: (err) => `Failed to create driver: ${err.message}`,
       });
       await promise;
-      navigate('/admin/users'); // Navigate back to the list page
+      navigate('/admin/users');
     } catch (err: any) {
       console.error("Error creating driver:", err);
       toast.error("An unexpected error occurred while creating the driver.");
@@ -86,16 +85,16 @@ const CreateDriver: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading...</p>
+        <p className="ml-2 text-gray-700">Loading...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/admin/users')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
@@ -105,18 +104,22 @@ const CreateDriver: React.FC = () => {
   }
 
   if (!user || userRole !== 'admin') {
-    return null; // Should be redirected by useEffect
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/admin/users/new')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Type Selection
         </Button>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Create New Driver</h1>
-        <CreateDriverForm onSubmit={handleSubmit} />
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Driver</h1>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardContent className="p-0">
+            <CreateDriverForm onSubmit={handleSubmit} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

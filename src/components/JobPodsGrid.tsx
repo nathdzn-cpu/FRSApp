@@ -14,7 +14,7 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
   const podDocuments = documents.filter(doc => doc.type === 'pod' || doc.type === 'check_signature');
 
   if (podDocuments.length === 0) {
-    return <p className="text-gray-600 dark:text-gray-400">No PODs or signatures uploaded for this job yet.</p>;
+    return <p className="text-gray-600">No PODs or signatures uploaded for this job yet.</p>;
   }
 
   const getPlaceholderImage = (type: string) => {
@@ -28,18 +28,18 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {podDocuments.map((doc) => (
-          <div key={doc.id} className="relative group overflow-hidden rounded-lg shadow-md border dark:border-gray-700">
+          <div key={doc.id} className="relative group overflow-hidden rounded-lg shadow-sm border border-gray-200">
             <img
-              src={getPlaceholderImage(doc.type)} // Use placeholder for now
+              src={getPlaceholderImage(doc.type)}
               alt={doc.type}
               className="w-full h-32 object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
               onClick={() => setSelectedImage(getPlaceholderImage(doc.type))}
             />
-            <div className="p-2 bg-white dark:bg-gray-800 text-center text-sm">
+            <div className="p-2 bg-white text-center text-sm text-gray-700">
               <span className="capitalize">{doc.type.replace(/_/g, ' ')}</span>
             </div>
             <a
-              href={getPlaceholderImage(doc.type)} // Link to placeholder for download
+              href={getPlaceholderImage(doc.type)}
               download
               className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               title="Download"
@@ -51,9 +51,9 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
       </div>
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg">
           <DialogHeader>
-            <DialogTitle>Document Viewer</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Document Viewer</DialogTitle>
           </DialogHeader>
           {selectedImage && (
             <img src={selectedImage} alt="Selected Document" className="max-w-full h-auto mx-auto" />

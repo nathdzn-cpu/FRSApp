@@ -11,14 +11,14 @@ import { toast } from 'sonner';
 import JobForm from '@/components/JobForm';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card'; // Import Card components
 
 interface JobFormValues {
   ref?: string;
   override_ref?: boolean;
   manual_ref?: string;
-  // Removed scheduled_date, price, notes, assigned_driver_id
-  pickup_eta?: string; // New field
-  delivery_eta?: string; // New field
+  pickup_eta?: string;
+  delivery_eta?: string;
   collections: Array<{
     name: string;
     address_line1: string;
@@ -49,7 +49,6 @@ const CreateJob: React.FC = () => {
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
-  // Removed canSeePrice as price is no longer in Job interface
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -76,7 +75,7 @@ const CreateJob: React.FC = () => {
     try {
       const newJobData = {
         ref: values.override_ref ? values.manual_ref : undefined,
-        status: 'planned' as const, // Default status
+        status: 'planned' as const,
         pickup_eta: values.pickup_eta || null,
         delivery_eta: values.delivery_eta || null,
       };
@@ -106,16 +105,16 @@ const CreateJob: React.FC = () => {
 
   if (isLoadingAuth || isLoadingProfiles) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading profiles...</p>
+        <p className="ml-2 text-gray-700">Loading profiles...</p>
       </div>
     );
   }
 
   if (profilesError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error loading profiles: {profilesError.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -129,15 +128,19 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Create New Job</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
 
-        <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} /> {/* canSeePrice is now always false */}
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardContent className="p-0">
+            <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

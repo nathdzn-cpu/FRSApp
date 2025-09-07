@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
 import { Profile } from '@/utils/mockData';
@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import SignaturePad from '@/components/SignaturePad';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { getDailyCheckItems } from '@/lib/api/dailyCheckItems'; // Import getDailyCheckItems
+import { getDailyCheckItems } from '@/lib/api/dailyCheckItems';
 
 interface DailyCheckItem {
   id: string;
@@ -27,20 +27,20 @@ interface DailyCheckItem {
 
 interface CheckItemState {
   item_id: string;
-  title: string; // Keep title for display
-  description?: string; // Keep description for display
+  title: string;
+  description?: string;
   ok: boolean | null;
   notes?: string;
-  file?: File | null; // For temporary storage before upload
-  photo_url?: string | null; // For uploaded photo URL
+  file?: File | null;
+  photo_url?: string | null;
 }
 
 const DriverDailyCheck: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [activeItems, setActiveItems] = useState<DailyCheckItem[]>([]);
   const [checkStates, setCheckStates] = useState<CheckItemState[]>([]);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [truckReg, setTruckReg] = useState('');
@@ -49,14 +49,14 @@ const DriverDailyCheck: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
-  const currentProfile = profile; // Use profile from AuthContext
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const currentProfile = profile;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploadItemId, setPhotoUploadItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'driver') {
       toast.error("You do not have permission to access this page. Only drivers can perform daily checks.");
@@ -75,7 +75,6 @@ const DriverDailyCheck: React.FC = () => {
         setTruckReg(currentProfile.truck_reg || '');
         setTrailerNo(currentProfile.trailer_no || '');
 
-        // Fetch active daily check items using the new API function
         const fetchedItems = await getDailyCheckItems(currentOrgId);
         const active = fetchedItems.filter(item => item.is_active);
         
@@ -84,12 +83,12 @@ const DriverDailyCheck: React.FC = () => {
           item_id: item.id,
           title: item.title,
           description: item.description,
-          ok: null, // Default to null (unanswered)
+          ok: null,
           notes: '',
           file: null,
           photo_url: null,
         })));
-        setStartTime(new Date()); // Start timer
+        setStartTime(new Date());
       } catch (err: any) {
         console.error("Failed to fetch daily check items or profile:", err);
         setError(err.message || "Failed to load daily check items. Please try again.");
@@ -118,8 +117,8 @@ const DriverDailyCheck: React.FC = () => {
     if (file && photoUploadItemId) {
       handleCheckChange(photoUploadItemId, 'file', file);
       toast.success(`Photo selected for item: ${activeItems.find(i => i.id === photoUploadItemId)?.title}`);
-      setPhotoUploadItemId(null); // Reset
-      event.target.value = ''; // Clear the input so same file can be selected again
+      setPhotoUploadItemId(null);
+      event.target.value = '';
     }
   };
 
@@ -151,7 +150,6 @@ const DriverDailyCheck: React.FC = () => {
     const duration_seconds = Math.round((finishedAt.getTime() - startTime.getTime()) / 1000);
 
     try {
-      // 1. Upload photos first (if any)
       const itemsPayload: Array<{ item_id: string; ok: boolean; notes?: string | null; photo_url?: string | null }> = [];
       for (const check of checkStates) {
         let photo_url: string | null = null;
@@ -164,13 +162,12 @@ const DriverDailyCheck: React.FC = () => {
         }
         itemsPayload.push({
           item_id: check.item_id,
-          ok: check.ok === true, // Ensure boolean
+          ok: check.ok === true,
           notes: check.notes?.trim() || null,
           photo_url: photo_url,
         });
       }
 
-      // 2. Prepare payload for Edge Function or direct insert
       const payload = {
         truck_reg: truckReg,
         trailer_no: trailerNo.trim() || null,
@@ -179,16 +176,14 @@ const DriverDailyCheck: React.FC = () => {
         duration_seconds: duration_seconds,
         signature: signature,
         items: itemsPayload,
-        org_id: currentOrgId, // Include org_id for direct insert fallback
-        driver_id: currentProfile.id, // Include driver_id for direct insert fallback
+        org_id: currentOrgId,
+        driver_id: currentProfile.id,
       };
 
-      // 3. Prefer Edge Function (driver-daily-check-submit)
       try {
         await callFn("driver-daily-check-submit", payload);
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          // Fallback: insert directly (requires RLS allowing driver insert)
           const { error: dbError } = await supabase.from("daily_check_responses").insert(payload);
           if (dbError) throw dbError;
         } else {
@@ -197,7 +192,7 @@ const DriverDailyCheck: React.FC = () => {
       }
 
       toast.success("Daily check submitted successfully!");
-      navigate('/'); // Navigate back to dashboard
+      navigate('/');
     } catch (e: any) {
       console.error("Error submitting daily check:", e);
       setFnError(e.message || String(e));
@@ -209,16 +204,16 @@ const DriverDailyCheck: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading daily check items...</p>
+        <p className="ml-2 text-gray-700">Loading daily check items...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -228,28 +223,28 @@ const DriverDailyCheck: React.FC = () => {
   }
 
   if (!user || userRole !== 'driver') {
-    return null; // Should be redirected by useEffect
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Daily HGV Check</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Daily HGV Check</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-gray-700 dark:text-gray-300">
+          <CardContent className="space-y-6 p-0 pt-4">
+            <p className="text-gray-700">
               Please complete the following checks before starting your shift.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="truckReg">Truck Registration</Label>
+                <Label htmlFor="truckReg" className="text-gray-700">Truck Registration</Label>
                 <Input
                   id="truckReg"
                   value={truckReg}
@@ -260,7 +255,7 @@ const DriverDailyCheck: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="trailerNo">Trailer Number (Optional)</Label>
+                <Label htmlFor="trailerNo" className="text-gray-700">Trailer Number (Optional)</Label>
                 <Input
                   id="trailerNo"
                   value={trailerNo}
@@ -271,15 +266,15 @@ const DriverDailyCheck: React.FC = () => {
               </div>
             </div>
 
-            <h3 className="text-xl font-semibold mt-6 mb-4">Checklist Items</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Checklist Items</h3>
             {activeItems.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No active daily check items found. Please contact admin.</p>
+              <p className="text-gray-600">No active daily check items found. Please contact admin.</p>
             ) : (
               <div className="space-y-4">
                 {checkStates.map((check, index) => (
-                  <Card key={check.item_id} className="p-4">
+                  <Card key={check.item_id} className="bg-white p-4 border border-gray-200 rounded-md">
                     <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor={`check-${check.item_id}`} className="text-lg font-medium">
+                      <Label htmlFor={`check-${check.item_id}`} className="text-lg font-medium text-gray-900">
                         {index + 1}. {check.title}
                       </Label>
                       <div className="flex items-center space-x-2">
@@ -295,10 +290,10 @@ const DriverDailyCheck: React.FC = () => {
                       </div>
                     </div>
                     {check.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{check.description}</p>
+                      <p className="text-sm text-gray-600 mb-3">{check.description}</p>
                     )}
                     <div className="space-y-2 mt-3">
-                      <Label htmlFor={`notes-${check.item_id}`}>Notes (Optional)</Label>
+                      <Label htmlFor={`notes-${check.item_id}`} className="text-gray-700">Notes (Optional)</Label>
                       <Textarea
                         id={`notes-${check.item_id}`}
                         value={check.notes || ''}
@@ -318,7 +313,7 @@ const DriverDailyCheck: React.FC = () => {
                         <Camera className="h-4 w-4 mr-2" /> Add Photo
                       </Button>
                       {check.file && (
-                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                        <span className="text-sm text-gray-500 flex items-center">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" /> Photo Selected ({check.file.name})
                         </span>
                       )}
@@ -336,11 +331,11 @@ const DriverDailyCheck: React.FC = () => {
               accept="image/*"
             />
 
-            <h3 className="text-xl font-semibold mt-6 mb-4">Signature</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Signature</h3>
             <SignaturePad onSave={setSignature} initialSignature={signature} />
             {fnError && <p className="text-red-500 text-sm mt-4">Function error: {fnError}</p>}
 
-            <Button onClick={handleSubmit} className="w-full mt-6" disabled={isSubmitting}>
+            <Button onClick={handleSubmit} className="w-full mt-6 bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {isSubmitting ? 'Submitting...' : 'Submit Daily Check'}
             </Button>

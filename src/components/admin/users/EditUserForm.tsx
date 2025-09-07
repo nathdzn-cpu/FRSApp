@@ -50,17 +50,17 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Profile</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">User Profile</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel className="text-gray-700">Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -73,14 +73,14 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel className="text-gray-700">Role</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-white shadow-sm rounded-xl">
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="office">Office</SelectItem>
                       <SelectItem value="driver">Driver</SelectItem>
@@ -95,7 +95,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
               name="dob"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date of Birth (Optional)</FormLabel>
+                  <FormLabel className="text-gray-700">Date of Birth (Optional)</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -115,15 +115,15 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value || undefined}
                         onSelect={field.onChange}
                         initialFocus
-                        captionLayout="dropdown" // Added for year/month dropdowns
-                        fromYear={1900} // Start year for DOB
-                        toYear={new Date().getFullYear()} // End year for DOB
+                        captionLayout="dropdown"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
                       />
                     </PopoverContent>
                   </Popover>
@@ -136,7 +136,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Number</FormLabel>
+                  <FormLabel className="text-gray-700">Contact Number</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., +447123456789" {...field} />
                   </FormControl>
@@ -149,7 +149,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
               name="user_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Internal User ID</FormLabel>
+                  <FormLabel className="text-gray-700">Internal User ID</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., auth_user_id_123" {...field} />
                   </FormControl>
@@ -164,7 +164,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                   name="truck_reg"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Truck Registration</FormLabel>
+                      <FormLabel className="text-gray-700">Truck Registration</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., AB12 CDE" {...field} />
                       </FormControl>
@@ -177,7 +177,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                   name="trailer_no"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Trailer Number</FormLabel>
+                      <FormLabel className="text-gray-700">Trailer Number</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., TRL-001" {...field} />
                       </FormControl>
@@ -189,7 +189,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
             )}
           </CardContent>
         </Card>
-        <Button type="submit" className="w-full">Save Changes</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
       </form>
     </Form>
   );

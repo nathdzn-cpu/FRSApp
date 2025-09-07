@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Updated import
+import { useAuth } from '@/context/AuthContext';
 import { getDailyChecklists, updateDailyChecklist, getProfiles, getTenants } from '@/lib/supabase';
 import { DailyChecklist, Profile, Tenant } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,19 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const AdminChecklists: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth(); // Use useAuth
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [checklists, setChecklists] = useState<DailyChecklist[]>([]);
   const [selectedChecklist, setSelectedChecklist] = useState<DailyChecklist | undefined>(undefined);
   const [editingItems, setEditingItems] = useState<DailyChecklist['items']>([]);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with isLoadingAuth
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
-  const currentProfile = profile; // Use profile from AuthContext
+  const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const currentProfile = profile;
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'admin') {
       toast.error("You do not have permission to access this page.");
@@ -107,16 +107,16 @@ const AdminChecklists: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700 dark:text-gray-300">Loading checklists...</p>
+        <p className="ml-2 text-gray-700">Loading checklists...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-red-500 text-lg mb-4">{error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -130,19 +130,19 @@ const AdminChecklists: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Admin: Daily Checklists</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Admin: Daily Checklists</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 pt-4">
             <div className="mb-4">
-              <Label htmlFor="select-checklist">Select Checklist</Label>
+              <Label htmlFor="select-checklist" className="text-gray-700">Select Checklist</Label>
               <Select onValueChange={handleChecklistSelect} value={selectedChecklist?.id || ''}>
                 <SelectTrigger id="select-checklist" className="w-full md:w-[300px]">
                   <SelectValue placeholder="Select a checklist" />
@@ -157,10 +157,10 @@ const AdminChecklists: React.FC = () => {
 
             {selectedChecklist ? (
               <div>
-                <h3 className="text-xl font-semibold mb-4">{selectedChecklist.name} Items</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{selectedChecklist.name} Items</h3>
                 <div className="space-y-4">
                   {editingItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center space-x-2 p-2 border rounded-md dark:border-gray-700">
+                    <div key={item.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-md">
                       <Input
                         value={item.text}
                         onChange={(e) => handleItemChange(index, 'text', e.target.value)}
@@ -188,12 +188,12 @@ const AdminChecklists: React.FC = () => {
                     <PlusCircle className="h-4 w-4 mr-2" /> Add Item
                   </Button>
                 </div>
-                <Button onClick={handleSave} className="mt-6">
+                <Button onClick={handleSave} className="mt-6 bg-blue-600 text-white hover:bg-blue-700">
                   <Save className="h-4 w-4 mr-2" /> Save Checklist
                 </Button>
               </div>
             ) : (
-              <p className="text-gray-600 dark:text-gray-400">Please select a checklist to edit.</p>
+              <p className="text-gray-600">Please select a checklist to edit.</p>
             )}
           </CardContent>
         </Card>

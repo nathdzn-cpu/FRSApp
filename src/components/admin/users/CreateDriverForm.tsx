@@ -18,8 +18,8 @@ const driverFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
   dob: z.date({ required_error: 'Date of Birth is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
-  truck_reg: z.string().optional().or(z.literal('')), // Made optional
-  trailer_no: z.string().optional().or(z.literal('')), // Made optional
+  truck_reg: z.string().optional().or(z.literal('')),
+  trailer_no: z.string().optional().or(z.literal('')),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
@@ -47,17 +47,17 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Driver Details</CardTitle>
+        <Card className="bg-white shadow-sm rounded-xl p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Driver Details</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel className="text-gray-700">Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -70,7 +70,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="dob"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date of Birth</FormLabel>
+                  <FormLabel className="text-gray-700">Date of Birth</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -90,15 +90,15 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
                         initialFocus
-                        captionLayout="dropdown" // Added for year/month dropdowns
-                        fromYear={1900} // Start year for DOB
-                        toYear={new Date().getFullYear()} // End year for DOB
+                        captionLayout="dropdown"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
                       />
                     </PopoverContent>
                   </Popover>
@@ -111,7 +111,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Number</FormLabel>
+                  <FormLabel className="text-gray-700">Contact Number</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., +447123456789" {...field} />
                   </FormControl>
@@ -124,7 +124,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="truck_reg"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Truck Registration (Optional)</FormLabel>
+                  <FormLabel className="text-gray-700">Initial Truck Registration (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., AB12 CDE" {...field} />
                   </FormControl>
@@ -137,7 +137,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="trailer_no"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Trailer Number (Optional)</FormLabel>
+                  <FormLabel className="text-gray-700">Initial Trailer Number (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., TRL-001" {...field} />
                   </FormControl>
@@ -150,7 +150,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-gray-700">Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} />
                   </FormControl>
@@ -163,7 +163,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Temporary Password</FormLabel>
+                  <FormLabel className="text-gray-700">Temporary Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="********" {...field} />
                   </FormControl>
@@ -173,7 +173,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
             />
           </CardContent>
         </Card>
-        <Button type="submit" className="w-full">Create Driver</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Driver</Button>
       </form>
     </Form>
   );
