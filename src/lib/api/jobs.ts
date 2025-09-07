@@ -125,6 +125,21 @@ export const createJob = async (
   return result;
 };
 
+interface UpdateJobPayload {
+  job_id: string;
+  org_id: string;
+  actor_id: string;
+  job_updates?: Partial<Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'>>;
+  stops_to_add?: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
+  stops_to_update?: Partial<Omit<JobStop, 'org_id' | 'job_id' | 'created_at'>>[]; // Must include 'id'
+  stops_to_delete?: string[]; // Array of stop IDs
+}
+
+export const updateJob = async (payload: UpdateJobPayload): Promise<Job> => {
+  const result = await callFn<Job>('update-job', payload);
+  return result;
+};
+
 export const requestPod = async (jobId: string, orgId: string, actorId: string): Promise<boolean> => {
   const { data, error } = await supabase
     .from('job_events')

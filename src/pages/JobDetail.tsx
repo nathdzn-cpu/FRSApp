@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob } from '@/lib/supabase';
+import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob } from '@/lib/supabase';
 import { Job, JobStop, JobEvent, Document, Profile } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit } from 'lucide-react';
 import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
@@ -24,12 +24,51 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useQuery } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import JobEditForm from '@/components/JobEditForm'; // Import the new JobEditForm
+
+interface JobFormValues {
+  order_number?: string | null;
+  date_created: Date;
+  price: number | null;
+  assigned_driver_id: string | null;
+  notes: string | null;
+  status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
+  collections: Array<{
+    id?: string;
+    name: string;
+    address_line1: string;
+    address_line2?: string | null;
+    city: string;
+    postcode: string;
+    window_from?: string | null;
+    window_to?: string | null;
+    notes?: string | null;
+    type: 'collection';
+  }>;
+  deliveries: Array<{
+    id?: string;
+    name: string;
+    address_line1: string;
+    address_line2?: string | null;
+    city: string;
+    postcode: string;
+    window_from?: string | null;
+    window_to?: string | null;
+    notes?: string | null;
+    type: 'delivery';
+  }>;
+}
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -119,7 +158,7 @@ const JobDetail: React.FC = () => {
       success: (clonedJob) => {
         if (clonedJob) {
           navigate(`/jobs/${clonedJob.id}`);
-          return `Job ${clonedJob.order_number} cloned successfully!`; // Changed from ref
+          return `Job ${clonedJob.order_number} cloned successfully!`;
         }
         return 'Job cloned, but no new job returned.';
       },
@@ -137,6 +176,60 @@ const JobDetail: React.FC = () => {
     });
     await promise;
     refetchJobData();
+  };
+
+  const handleEditSubmit = async (values: JobFormValues) => {
+    if (!job || !currentProfile) {
+      toast.error("Job or user profile not found. Cannot update job.");
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    try {
+      const originalStopsMap = new Map(initialStops.map(s => [s.id, s]));
+      const currentStopIds = new Set(initialStops.map(s => s.id));
+
+      const allNewStops = [...values.collections, ...values.deliveries];
+
+      const stops_to_add = allNewStops.filter(s => !s.id);
+      const stops_to_update = allNewStops.filter(s => s.id && originalStopsMap.has(s.id));
+      const stops_to_delete = initialStops.filter(s => !allNewStops.some(ns => ns.id === s.id)).map(s => s.id);
+
+      const jobUpdates: Partial<Job> = {
+        order_number: values.order_number || null,
+        date_created: values.date_created.toISOString().split('T')[0],
+        price: values.price,
+        assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
+        notes: values.notes,
+        status: values.status,
+      };
+
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        job_updates: jobUpdates,
+        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })), // Re-sequence for new stops
+        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })), // Re-sequence for updated stops
+        stops_to_delete: stops_to_delete,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: 'Updating job...',
+        success: 'Job updated successfully!',
+        error: (err) => `Failed to update job: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs list
+      refetchJobData(); // Refetch current job details
+      setIsEditDialogOpen(false);
+    } catch (err: any) {
+      console.error("Error updating job:", err);
+      toast.error("An unexpected error occurred while updating the job.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
   };
 
   if (isLoading) {
@@ -171,6 +264,8 @@ const JobDetail: React.FC = () => {
   }
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
+  const isAssignedDriver = userRole === 'driver' && job.assigned_driver_id === user?.id;
+  const canEditJob = isOfficeOrAdmin || isAssignedDriver;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -182,7 +277,7 @@ const JobDetail: React.FC = () => {
         <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Job: {job.order_number} {/* Changed from job.ref */}
+              Job: {job.order_number}
               <Badge
                 variant={
                   job.status === 'planned'
@@ -199,6 +294,27 @@ const JobDetail: React.FC = () => {
               </Badge>
             </CardTitle>
             <div className="flex space-x-2">
+              {canEditJob && (
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Edit className="h-4 w-4 mr-2" /> Edit Job
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 rounded-xl shadow-lg">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-semibold text-gray-900">Edit Job: {job.order_number}</DialogTitle>
+                    </DialogHeader>
+                    <JobEditForm
+                      initialJob={job}
+                      initialStops={stops}
+                      drivers={allProfiles.filter(p => p.role === 'driver')}
+                      onSubmit={handleEditSubmit}
+                      isSubmitting={isSubmittingEdit}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
               {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <>
                   <Button variant="outline" onClick={handleRequestPod}>
@@ -236,16 +352,20 @@ const JobDetail: React.FC = () => {
           <CardContent className="p-0 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
               <div>
-                <p className="font-medium text-gray-900">Pickup ETA:</p>
-                <p>{job.pickup_eta || '-'}</p>
+                <p className="font-medium text-gray-900">Date Created:</p>
+                <p>{format(new Date(job.date_created), 'PPP')}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Delivery ETA:</p>
-                <p>{job.delivery_eta || '-'}</p>
+                <p className="font-medium text-gray-900">Assigned Driver:</p>
+                <p>{job.assigned_driver_id ? allProfiles.find(p => p.id === job.assigned_driver_id)?.full_name || 'Unknown' : 'Unassigned'}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Created At:</p>
-                <p>{format(new Date(job.created_at), 'PPP')}</p>
+                <p className="font-medium text-gray-900">Price:</p>
+                <p>{job.price ? `£${job.price.toFixed(2)}` : '-'}</p>
+              </div>
+              <div className="lg:col-span-1">
+                <p className="font-medium text-gray-900">Notes:</p>
+                <p>{job.notes || '-'}</p>
               </div>
             </div>
           </CardContent>
