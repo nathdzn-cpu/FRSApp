@@ -78,10 +78,8 @@ export interface Job {
   org_id: string;
   ref: string;
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
-  date_created: string; // New field
-  price?: number | null; // New field
-  assigned_driver_id?: string | null; // New field
-  notes?: string | null; // New field
+  pickup_eta?: string | null; // ISO string or HH:MM
+  delivery_eta?: string | null; // ISO string or HH:MM
   created_at: string;
   deleted_at?: string | null; // Added for soft deletion
 }
@@ -97,7 +95,8 @@ export interface JobStop {
   address_line2?: string | null;
   city: string;
   postcode: string;
-  time?: string | null; // Changed from window_from/window_to
+  window_from?: string | null; // HH:MM
+  window_to?: string | null; // HH:MM
   notes?: string | null;
 }
 

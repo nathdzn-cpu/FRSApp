@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { Job, Profile } from '@/utils/mockData';
 import { format } from 'date-fns';
-import { formatGBP } from '@/lib/money'; // Import formatGBP
 
 interface JobsTableProps {
   jobs: Job[];
@@ -31,12 +30,6 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
     return dateB - dateA;
   });
 
-  const getAssignedDriverName = (driverId?: string | null) => {
-    if (!driverId) return '-';
-    const driver = profiles.find(p => p.id === driverId);
-    return driver ? driver.full_name : 'Unknown';
-  };
-
   return (
     <div className="rounded-md border overflow-hidden">
       <Table>
@@ -44,9 +37,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
           <TableRow>
             <TableHead>Ref</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Date Created</TableHead> {/* New column */}
-            <TableHead>Price</TableHead> {/* New column */}
-            <TableHead>Assigned Driver</TableHead> {/* New column */}
+            <TableHead>Pickup ETA</TableHead>
+            <TableHead>Delivery ETA</TableHead>
+            <TableHead>Created At</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -70,9 +63,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   {job.status.replace(/_/g, ' ')}
                 </Badge>
               </TableCell>
-              <TableCell>{format(new Date(job.date_created), 'PPP')}</TableCell> {/* Display new date_created */}
-              <TableCell>{formatGBP(job.price)}</TableCell> {/* Display new price */}
-              <TableCell>{getAssignedDriverName(job.assigned_driver_id)}</TableCell> {/* Display assigned driver */}
+              <TableCell>{job.pickup_eta || '-'}</TableCell>
+              <TableCell>{job.delivery_eta || '-'}</TableCell>
+              <TableCell>{format(new Date(job.created_at), 'PPP')}</TableCell>
               <TableCell className="text-center">
                 <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline">
                   Open

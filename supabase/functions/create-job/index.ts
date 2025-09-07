@@ -58,23 +58,21 @@ serve(async (req) => {
       throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
     }
 
-    // 3) Allocate job reference if not provided (or if override_ref is false)
+    // 3) Allocate job reference if not provided
     let newJobRef = jobData.ref;
-    if (!newJobRef) { // This logic is now handled client-side for auto-generation, but kept as fallback
+    if (!newJobRef) {
+      // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
       const { data: existingRefsData, error: refsError } = await admin
         .from("jobs")
         .select("ref")
         .eq("org_id", org_id)
-        .like("ref", "ORDER-%"); // Changed prefix to ORDER-
+        .like("ref", "FRS-%");
 
       if (refsError) throw new Error("Failed to fetch existing job references: " + refsError.message);
 
       const existingRefNumbers = new Set(
         (existingRefsData || [])
-          .map((job: any) => {
-            const match = job.ref.match(/^ORDER-(\d+)$/);
-            return match ? parseInt(match[1], 10) : null;
-          })
+          .map((job: any) => parseInt(job.ref.substring(4), 10))
           .filter((num: any) => !isNaN(num))
       );
 
@@ -82,7 +80,7 @@ serve(async (req) => {
       while (existingRefNumbers.has(nextNumber)) {
         nextNumber++;
       }
-      newJobRef = `ORDER-${nextNumber.toString().padStart(3, '0')}`;
+      newJobRef = `FRS-${nextNumber.toString().padStart(3, '0')}`;
     }
 
     // 4) Prepare job data for insert
@@ -92,10 +90,8 @@ serve(async (req) => {
       org_id: org_id,
       ref: newJobRef,
       status: jobData.status || 'planned',
-      date_created: jobData.date_created, // New field
-      price: jobData.price || null, // New field
-      assigned_driver_id: jobData.assigned_driver_id || null, // New field
-      notes: jobData.notes || null, // New field
+      pickup_eta: jobData.pickup_eta || null,
+      delivery_eta: jobData.delivery_eta || null,
       created_at: new Date().toISOString(),
       deleted_at: null,
     };
@@ -121,7 +117,8 @@ serve(async (req) => {
       address_line2: stop.address_line2 || null,
       city: stop.city,
       postcode: stop.postcode,
-      time: stop.time || null, // New field
+      window_from: stop.window_from || null,
+      window_to: stop.window_to || null,
       notes: stop.notes || null,
       created_at: new Date().toISOString(),
     }));

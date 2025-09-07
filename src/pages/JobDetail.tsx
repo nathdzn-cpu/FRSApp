@@ -25,7 +25,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useQuery } from '@tanstack/react-query';
-import { formatGBP } from '@/lib/money'; // Import formatGBP
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -172,7 +171,6 @@ const JobDetail: React.FC = () => {
   }
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-  const assignedDriver = allProfiles.find(p => p.id === job.assigned_driver_id);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -238,20 +236,16 @@ const JobDetail: React.FC = () => {
           <CardContent className="p-0 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
               <div>
-                <p className="font-medium text-gray-900">Date Created:</p>
-                <p>{format(new Date(job.date_created), 'PPP')}</p>
+                <p className="font-medium text-gray-900">Pickup ETA:</p>
+                <p>{job.pickup_eta || '-'}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Price:</p>
-                <p>{formatGBP(job.price)}</p>
+                <p className="font-medium text-gray-900">Delivery ETA:</p>
+                <p>{job.delivery_eta || '-'}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Assigned Driver:</p>
-                <p>{assignedDriver?.full_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Notes:</p>
-                <p>{job.notes || '-'}</p>
+                <p className="font-medium text-gray-900">Created At:</p>
+                <p>{format(new Date(job.created_at), 'PPP')}</p>
               </div>
             </div>
           </CardContent>

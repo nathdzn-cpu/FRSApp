@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles, createJob, getJobs } from '@/lib/supabase'; // Import getJobs
+import { getProfiles, createJob } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -17,17 +17,16 @@ interface JobFormValues {
   ref?: string;
   override_ref?: boolean;
   manual_ref?: string;
-  date_created: Date;
-  price: number | null;
-  assigned_driver_id: string | null;
-  notes?: string;
+  pickup_eta?: string;
+  delivery_eta?: string;
   collections: Array<{
     name: string;
     address_line1: string;
     address_line2?: string;
     city: string;
     postcode: string;
-    time?: string;
+    window_from?: string;
+    window_to?: string;
     notes?: string;
   }>;
   deliveries: Array<{
@@ -36,7 +35,8 @@ interface JobFormValues {
     address_line2?: string;
     city: string;
     postcode: string;
-    time?: string;
+    window_from?: string;
+    window_to?: string;
     notes?: string;
   }>;
 }
@@ -45,7 +45,6 @@ const CreateJob: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
-  const [generatedRef, setGeneratedRef] = useState<string | undefined>(undefined);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -60,47 +59,12 @@ const CreateJob: React.FC = () => {
     }
   }, [user, canAccess, navigate, isLoadingAuth]);
 
-  // Fetch profiles (drivers)
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId],
     queryFn: () => getProfiles(currentOrgId),
     staleTime: 5 * 60 * 1000,
     enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
   });
-
-  // Generate unique order number
-  useEffect(() => {
-    const generateOrderNumber = async () => {
-      if (!currentOrgId) return;
-
-      try {
-        const existingJobs = await getJobs(currentOrgId, userRole!); // Fetch all jobs to find existing refs
-        const existingRefs = new Set(
-          existingJobs
-            .map(job => {
-              const match = job.ref.match(/^ORDER-(\d+)$/);
-              return match ? parseInt(match[1], 10) : null;
-            })
-            .filter((num): num is number => num !== null)
-        );
-
-        let nextNumber = 1;
-        while (existingRefs.has(nextNumber)) {
-          nextNumber++;
-        }
-        setGeneratedRef(`ORDER-${String(nextNumber).padStart(3, '0')}`);
-      } catch (error) {
-        console.error("Failed to generate order number:", error);
-        toast.error("Failed to generate order number.");
-        setGeneratedRef('ERROR-GEN'); // Fallback
-      }
-    };
-
-    if (canAccess && currentOrgId && userRole && !isLoadingAuth) {
-      generateOrderNumber();
-    }
-  }, [canAccess, currentOrgId, userRole, isLoadingAuth]);
-
 
   const handleSubmit = async (values: JobFormValues) => {
     if (!currentProfile) {
@@ -109,26 +73,17 @@ const CreateJob: React.FC = () => {
     }
 
     try {
-      const jobRef = values.override_ref && values.manual_ref ? values.manual_ref : generatedRef;
-      if (!jobRef) {
-        toast.error("Order number could not be determined. Please try again.");
-        return;
-      }
-
       const newJobData = {
-        ref: jobRef,
+        ref: values.override_ref ? values.manual_ref : undefined,
         status: 'planned' as const,
-        date_created: values.date_created.toISOString().split('T')[0], // Format to YYYY-MM-DD
-        price: values.price,
-        assigned_driver_id: values.assigned_driver_id,
-        notes: values.notes || null,
+        pickup_eta: values.pickup_eta || null,
+        delivery_eta: values.delivery_eta || null,
       };
 
       const newStopsData = [...values.collections, ...values.deliveries].map((stop, index) => ({
         ...stop,
         type: index < values.collections.length ? 'collection' : 'delivery',
         seq: index + 1,
-        time: stop.time || null, // Ensure time is passed
       }));
 
       const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id);
@@ -148,11 +103,11 @@ const CreateJob: React.FC = () => {
     }
   };
 
-  if (isLoadingAuth || isLoadingProfiles || !generatedRef) { // Wait for generatedRef
+  if (isLoadingAuth || isLoadingProfiles) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700">Loading profiles and generating order number...</p>
+        <p className="ml-2 text-gray-700">Loading profiles...</p>
       </div>
     );
   }
@@ -179,13 +134,14 @@ const CreateJob: React.FC = () => {
           <Button onClick={() => { navigate('/'); }} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
           </Button>
+          {/* Removed Clear Form button as state will reset on unmount */}
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
 
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardContent className="p-0">
-            <JobForm onSubmit={handleSubmit} profiles={profiles} generatedRef={generatedRef} />
+            <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} />
           </CardContent>
         </Card>
       </div>
