@@ -10,8 +10,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Import new modular components
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
-import JobOverviewCard from '@/components/job-detail/JobOverviewCard'; // Corrected import name
+import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
+import DriverJobDetailView from '@/components/driver/DriverJobDetailView'; // Import the new driver view
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
 interface JobFormValues {
@@ -70,10 +71,10 @@ const JobDetail: React.FC = () => {
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', currentOrgId],
-    queryFn: () => getProfiles(currentOrgId),
+    queryKey: ['profiles', currentOrgId, userRole], // Add userRole to query key
+    queryFn: () => getProfiles(currentOrgId, userRole), // Pass userRole
     staleTime: 5 * 60 * 1000,
-    enabled: !!user && !!currentProfile,
+    enabled: !!user && !!currentProfile && !isLoadingAuth && !!userRole,
   });
 
   // Use useQuery for job details, stops, and documents
@@ -330,6 +331,22 @@ const JobDetail: React.FC = () => {
     );
   }
 
+  // Conditional rendering based on user role
+  if (userRole === 'driver') {
+    return (
+      <DriverJobDetailView
+        job={job}
+        stops={stops}
+        progressLogs={progressLogs}
+        currentProfile={currentProfile!}
+        currentOrgId={currentOrgId}
+        userRole={userRole}
+        refetchJobData={refetchJobData}
+      />
+    );
+  }
+
+  // Default view for admin/office roles
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -368,8 +385,8 @@ const JobDetail: React.FC = () => {
           allProfiles={allProfiles}
           stops={stops}
           documents={documents}
-          currentOrgId={currentOrgId} // Pass currentOrgId
-          onLogVisibilityChange={refetchJobData} // Pass refetch function
+          currentOrgId={currentOrgId}
+          onLogVisibilityChange={refetchJobData}
         />
       </div>
     </div>

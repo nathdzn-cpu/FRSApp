@@ -28,8 +28,6 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
     query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled")');
   } else if (statusFilter === 'completed') {
     query = query.in('status', ['delivered', 'pod_received']);
-  } else if (statusFilter === 'cancelled') {
-    query = query.eq('status', 'cancelled');
   }
   // 'all' statusFilter means no status filtering applied
 
@@ -187,6 +185,7 @@ interface UpdateJobProgressPayload {
   new_status: Job['status']; // This is the job's overall status
   timestamp: string;
   notes?: string;
+  stop_id?: string; // Added stop_id
 }
 
 export const updateJobProgress = async (payload: UpdateJobProgressPayload): Promise<{ job: Job; log: JobProgressLog }> => {

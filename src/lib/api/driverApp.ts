@@ -77,65 +77,19 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
   return logs;
 };
 
-export const updateJobStage = async (
-  jobId: string,
-  orgId: string,
-  driverId: string,
-  actionType: 'at_collection' | 'departed_collection' | 'at_delivery' | 'delivered' | 'on_route_collection' | 'on_route_delivery' | 'loaded', // Renamed eventType to actionType
-  stopId?: string,
-  notes?: string,
-  lat?: number,
-  lon?: number,
-): Promise<JobProgressLog | undefined> => {
-  await delay(500);
-  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
-  if (!job) throw new Error("Job not found or not assigned to this driver.");
-
-  // Update job status based on actionType
-  job.status = actionType; // Directly set job status to actionType
-
-  // Insert into job_progress_log
-  const { data: newLog, error: insertError } = await supabase
-    .from('job_progress_log')
-    .insert({
-      org_id: orgId,
-      job_id: jobId,
-      stop_id: stopId,
-      actor_id: driverId,
-      actor_role: 'driver', // Driver role
-      action_type: actionType, // Use actionType as the action_type for the log
-      notes: notes,
-      lat: lat,
-      lon: lon,
-      timestamp: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    console.error("Error inserting job stage log:", insertError);
-    throw new Error(insertError.message);
-  }
-
-  // Update driver's last job status
-  const driverProfile = mockProfiles.find(p => p.id === driverId);
-  if (driverProfile) {
-    driverProfile.last_job_status = job.status;
-  }
-
-  return newLog;
-};
+// Removed updateJobStage as it's replaced by updateJobProgress Edge Function
 
 export const uploadDocument = async (
   jobId: string,
   orgId: string,
   driverId: string,
   type: 'pod' | 'cmr' | 'damage' | 'check_signature',
-  base64Image: string, // In a real app, this would be a file or blob
+  storagePath: string, // Changed from base64Image to storagePath
   stopId?: string,
 ): Promise<Document> => {
   await delay(1000);
-  const storagePath = `/uploads/${type}s/job_${jobId}_${stopId || 'general'}_${new Date().getTime()}.jpg`;
+  // In a real app, the file would have already been uploaded to storage
+  // and storagePath would be the public URL or path.
 
   const newDocument: Document = {
     id: uuidv4(),
@@ -164,7 +118,7 @@ export const uploadDocument = async (
     });
   if (progressLogError) console.error("Error inserting document upload log:", progressLogError);
 
-  console.log(`Simulating image upload to ${storagePath}. Base64 length: ${base64Image.length}`);
+  console.log(`Simulating document record for ${storagePath}.`);
   return newDocument;
 };
 
