@@ -67,6 +67,9 @@ const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Arra
 
 // MainLayout component for authenticated users
 const MainLayout = () => {
+  // Call the route-specific scroll restoration hook here
+  useRouteScroll(); 
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -85,8 +88,7 @@ function App() {
   const user = useUser();
   const supabaseClient = useSupabaseClient();
 
-  // Call the route-specific scroll restoration hook
-  useRouteScroll();
+  // Removed: useRouteScroll() from here
 
   console.log("Supabase Session State:", session); // Added for debugging
 
