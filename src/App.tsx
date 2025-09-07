@@ -22,6 +22,7 @@ import Settings from './pages/Settings';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner'; // Import Toaster for sonner toasts
 import { useScrollKeeper } from "@/hooks/useScrollKeeper"; // Import the new hook
+import React, { useRef } from 'react'; // Import useRef
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Array<'admin' | 'office' | 'driver'> }) => {
@@ -67,15 +68,15 @@ const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Arra
 
 // MainLayout component for authenticated users
 const MainLayout = () => {
-  // Call the route-specific scroll restoration hook here
-  useScrollKeeper();
+  const mainRef = useRef<HTMLElement>(null); // Create a ref for the main content area
+  useScrollKeeper(mainRef); // Pass the ref to the scroll keeper hook
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="p-6 flex-1 overflow-y-auto bg-gray-50">
+        <main ref={mainRef} className="p-6 flex-1 overflow-y-auto bg-gray-50"> {/* Apply the ref here */}
           <Outlet /> {/* This is where nested routes will render */}
         </main>
       </div>
@@ -87,8 +88,6 @@ function App() {
   const session = useSession();
   const user = useUser();
   const supabaseClient = useSupabaseClient();
-
-  // Removed: useScrollKeeper() from here
 
   console.log("Supabase Session State:", session); // Added for debugging
 
