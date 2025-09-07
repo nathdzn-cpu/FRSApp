@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthChangeEvent } from '@supabase/supabase-js'; // Import AuthChangeEvent
 import { Profile } from '@/utils/mockData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -44,14 +44,18 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     });
 
     // Listen for login/logout events
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => { // Add event type
       if (mounted) {
-        setSession(session);
-        setUser(session?.user || null); // Ensure user is set here
-        // Do not flip back to true — just mark as loaded.
-        // isLoadingAuth should already be false after initial load.
-        // If it was true, this would set it to false.
-        setIsLoadingAuth(false);
+        // Only update session/user state for SIGNED_IN and SIGNED_OUT events
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setSession(session);
+          setUser(session?.user || null);
+          // isLoadingAuth should already be false after initial load.
+          // If it was true, this would set it to false.
+          setIsLoadingAuth(false); // Ensure it's false after a definitive auth state change
+        }
+        // For TOKEN_REFRESHED and USER_UPDATED, we explicitly do nothing to prevent re-renders.
+        // The underlying Supabase client will still have the updated token/user.
       }
     });
 
@@ -62,7 +66,6 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   }, []); // Run only once on mount
 
   const fetchProfile = useCallback(async (currentUser: User | null) => {
-    // IMPORTANT: Removed setIsLoadingAuth(true) from here to prevent loop
     setProfile(null);
     setUserRole(undefined);
     if (!currentUser) {
@@ -90,8 +93,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       console.error("Error fetching profile:", error);
       toast.error("An unexpected error occurred while fetching profile.");
     } finally {
-      // IMPORTANT: Removed setIsLoadingAuth(false) from here.
-      // The main useEffect for session will handle the final isLoadingAuth(false).
+      // No change needed here for isLoadingAuth
     }
   }, []);
 
@@ -104,7 +106,6 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       // If no user, ensure profile and role are cleared.
       setProfile(null);
       setUserRole(undefined);
-      // Do NOT set isLoadingAuth here. The session listener handles it.
     }
   }, [user, fetchProfile, isLoadingAuth]); // Re-run when user changes or initial isLoadingAuth changes
 
