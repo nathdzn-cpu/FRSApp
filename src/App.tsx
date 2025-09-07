@@ -23,22 +23,44 @@ import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner'; // Import Toaster for sonner toasts
 
 // PrivateRoute component to protect routes
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, isLoadingAuth } = useAuth();
+const PrivateRoute = ({ children, roles }: { children: JSX.Element; roles?: Array<'admin' | 'office' | 'driver'> }) => {
+  const { user, profile, userRole, isLoadingAuth } = useAuth();
 
+  // Show spinner while still loading auth and profile
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700">Loading authentication...</p>
+        <p className="ml-2 text-gray-700">Checking authentication…</p>
       </div>
     );
   }
 
+  // Block if no user after loading
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
+  // Block if user is authenticated but profile/role is not yet loaded (e.g., initial sync)
+  if (!profile || userRole === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <p className="text-red-500">Your account is still being set up. Please try again shortly.</p>
+      </div>
+    );
+  }
+
+  // If role restriction applies and user's role is not in the allowed roles
+  if (roles && !roles.includes(userRole)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <p className="text-red-500 text-lg mb-4">You do not have permission to access this page.</p>
+        <Navigate to="/" replace /> {/* Redirect to dashboard if no permission */}
+      </div>
+    );
+  }
+
+  // Otherwise allow access
   return children;
 };
 
@@ -75,17 +97,17 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
             <Route path="/" element={<Index />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/daily-check" element={<DriverDailyCheck />} />
-            <Route path="/admin/checklists" element={<AdminChecklists />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/users/new" element={<CreateUserChoice />} />
-            <Route path="/admin/users/new/driver" element={<CreateDriver />} />
-            <Route path="/admin/users/new/office" element={<CreateOffice />} />
-            <Route path="/admin/users/:id/edit" element={<EditUser />} />
-            <Route path="/jobs/new" element={<CreateJob />} />
-            <Route path="/jobs/:id" element={<JobDetail />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/drivers" element={<PrivateRoute roles={['admin', 'office']}><Drivers /></PrivateRoute>} />
+            <Route path="/daily-check" element={<PrivateRoute roles={['driver']}><DriverDailyCheck /></PrivateRoute>} />
+            <Route path="/admin/checklists" element={<PrivateRoute roles={['admin']}><AdminChecklists /></PrivateRoute>} />
+            <Route path="/admin/users" element={<PrivateRoute roles={['admin']}><AdminUsersPage /></PrivateRoute>} />
+            <Route path="/admin/users/new" element={<PrivateRoute roles={['admin']}><CreateUserChoice /></PrivateRoute>} />
+            <Route path="/admin/users/new/driver" element={<PrivateRoute roles={['admin']}><CreateDriver /></PrivateRoute>} />
+            <Route path="/admin/users/new/office" element={<PrivateRoute roles={['admin']}><CreateOffice /></PrivateRoute>} />
+            <Route path="/admin/users/:id/edit" element={<PrivateRoute roles={['admin']}><EditUser /></PrivateRoute>} />
+            <Route path="/jobs/new" element={<PrivateRoute roles={['admin', 'office']}><CreateJob /></PrivateRoute>} />
+            <Route path="/jobs/:id" element={<JobDetail />} /> {/* JobDetail is accessible by all authenticated roles */}
+            <Route path="/settings" element={<Settings />} /> {/* Settings is accessible by all authenticated roles */}
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
