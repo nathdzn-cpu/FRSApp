@@ -21,7 +21,7 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
             <TableHead>Type</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Address</TableHead>
-            <TableHead>Window</TableHead>
+            <TableHead>Time</TableHead> {/* Changed from Window */}
             <TableHead>Notes</TableHead>
           </TableRow>
         </TableHeader>
@@ -41,9 +41,7 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
                 , {stop.city}, {stop.postcode}
               </TableCell>
               <TableCell className="text-gray-700">
-                {stop.window_from && stop.window_to
-                  ? `${stop.window_from} - ${stop.window_to}`
-                  : 'Anytime'}
+                {stop.time || 'Anytime'} {/* Display new 'time' field */}
               </TableCell>
               <TableCell className="text-sm text-gray-600">{stop.notes || '-'}</TableCell>
             </TableRow>

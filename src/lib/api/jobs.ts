@@ -113,8 +113,10 @@ export const createJob = async (
     jobData: {
       ref: jobData.ref,
       status: jobData.status,
-      pickup_eta: jobData.pickup_eta,
-      delivery_eta: jobData.delivery_eta,
+      date_created: jobData.date_created, // New field
+      price: jobData.price, // New field
+      assigned_driver_id: jobData.assigned_driver_id, // New field
+      notes: jobData.notes, // New field
     },
     stopsData,
     org_id: orgId,
@@ -181,8 +183,10 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     org_id: orgId,
     ref: newJobRef,
     status: 'planned',
-    pickup_eta: originalJob.pickup_eta,
-    delivery_eta: originalJob.delivery_eta,
+    date_created: originalJob.date_created, // New field
+    price: originalJob.price, // New field
+    assigned_driver_id: originalJob.assigned_driver_id, // New field
+    notes: originalJob.notes, // New field
     deleted_at: null,
   };
 
@@ -207,8 +211,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     address_line2: stop.address_line2,
     city: stop.city,
     postcode: stop.postcode,
-    window_from: stop.window_from,
-    window_to: stop.window_to,
+    time: stop.time, // New field
     notes: stop.notes,
   }));
 

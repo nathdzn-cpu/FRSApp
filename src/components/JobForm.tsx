@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,11 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatGBP } from '@/lib/money';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
@@ -24,17 +28,22 @@ const stopSchema = z.object({
   address_line2: z.string().optional(),
   city: z.string().min(1, { message: 'City is required.' }),
   postcode: z.string().min(1, { message: 'Postcode is required.' }),
-  window_from: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
-  window_to: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
+  time: z.string().regex(timeRegex, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')), // Single time field
   notes: z.string().optional(),
 });
 
 const formSchema = z.object({
-  ref: z.string().optional(),
+  ref: z.string().optional(), // Auto-generated or manual
   override_ref: z.boolean().optional(),
   manual_ref: z.string().optional(),
-  pickup_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
-  delivery_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
+  date_created: z.date({ required_error: 'Date created is required.' }),
+  price: z.string().optional().transform((val) => {
+    if (!val) return null;
+    const num = parseFloat(val.replace(/[^0-9.-]+/g, ""));
+    return isNaN(num) ? null : num;
+  }).nullable(),
+  assigned_driver_id: z.string().optional().nullable(),
+  notes: z.string().optional(),
   collections: z.array(stopSchema).min(0),
   deliveries: z.array(stopSchema).min(1, { message: 'At least one delivery point is required.' }),
 });
@@ -44,15 +53,22 @@ type JobFormValues = z.infer<typeof formSchema>;
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
   profiles: Profile[];
-  canSeePrice: boolean;
-  defaultValues?: Partial<JobFormValues>;
   generatedRef?: string;
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
+const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, generatedRef }) => {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues, // Initialize directly with defaultValues prop
+    defaultValues: {
+      date_created: new Date(),
+      price: null,
+      assigned_driver_id: null,
+      notes: '',
+      collections: [],
+      deliveries: [{ name: '', address_line1: '', city: '', postcode: '', time: '', notes: '' }],
+      override_ref: false,
+      manual_ref: '',
+    },
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -66,6 +82,24 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
   });
 
   const overrideOrderNumber = form.watch('override_ref');
+  const assignedDriverId = form.watch('assigned_driver_id');
+  const [isDriverSelectOpen, setIsDriverSelectOpen] = useState(false);
+
+  const driverProfiles = profiles.filter(p => p.role === 'driver');
+
+  // Set generatedRef as default for 'ref' if not overridden
+  useEffect(() => {
+    if (generatedRef && !overrideOrderNumber && !form.getValues('manual_ref')) {
+      form.setValue('ref', generatedRef);
+    }
+  }, [generatedRef, overrideOrderNumber, form]);
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Allow empty string or numbers, and a single decimal point
+    const cleanedValue = rawValue.replace(/[^0-9.]/g, '');
+    form.setValue('price', cleanedValue, { shouldValidate: true });
+  };
 
   return (
     <Form {...form}>
@@ -75,12 +109,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
             <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
+            {/* Order Number */}
             <div>
               <FormItem>
                 <FormLabel className="text-gray-700">Order Number</FormLabel>
                 <FormControl>
                   <Input
-                    value={overrideOrderNumber ? form.watch('manual_ref') : (generatedRef || 'Generated on submit')}
+                    value={overrideOrderNumber ? form.watch('manual_ref') : (generatedRef || 'Generating...')}
                     readOnly={!overrideOrderNumber}
                     disabled={!overrideOrderNumber}
                     onChange={(e) => form.setValue('manual_ref', e.target.value, { shouldValidate: true })}
@@ -102,7 +137,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel className="text-gray-700">
-                        Override order number
+                        Override auto-generated order number
                       </FormLabel>
                     </div>
                   </FormItem>
@@ -110,28 +145,157 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               />
             </div>
 
+            {/* Date Created */}
             <FormField
               control={form.control}
-              name="pickup_eta"
+              name="date_created"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-gray-700">Date Created</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Price */}
+            <FormField
+              control={form.control}
+              name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Pickup ETA (HH:MM)</FormLabel>
+                  <FormLabel className="text-gray-700">Price (GBP)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 09:00" {...field} />
+                    <Input
+                      placeholder="e.g., 123.45"
+                      value={field.value === null ? '' : field.value}
+                      onChange={handlePriceChange}
+                      onBlur={() => {
+                        const numValue = parseFloat(field.value as string);
+                        if (!isNaN(numValue)) {
+                          form.setValue('price', numValue.toFixed(2));
+                        }
+                      }}
+                      type="text" // Use text to allow custom formatting
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Assign Driver */}
             <FormField
               control={form.control}
-              name="delivery_eta"
+              name="assigned_driver_id"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Delivery ETA (HH:MM)</FormLabel>
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
+                  <Popover open={isDriverSelectOpen} onOpenChange={setIsDriverSelectOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? driverProfiles.find(
+                                (driver) => driver.id === field.value
+                              )?.full_name
+                            : "Select driver"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-sm rounded-xl">
+                      <Command>
+                        <CommandInput placeholder="Search driver..." />
+                        <CommandList>
+                          <CommandEmpty>No driver found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="unassigned"
+                              onSelect={() => {
+                                form.setValue("assigned_driver_id", null);
+                                setIsDriverSelectOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !field.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              Unassigned
+                            </CommandItem>
+                            {driverProfiles.map((driver) => (
+                              <CommandItem
+                                value={driver.full_name}
+                                key={driver.id}
+                                onSelect={() => {
+                                  form.setValue("assigned_driver_id", driver.id);
+                                  setIsDriverSelectOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    driver.id === field.value ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {driver.full_name} ({driver.truck_reg || 'N/A'})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Notes */}
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel className="text-gray-700">Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 17:00" {...field} />
+                    <Textarea placeholder="Add any general notes for this job..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,7 +307,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', time: '', notes: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
             </Button>
           </CardHeader>
@@ -222,34 +386,19 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`collections.${index}.window_from`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 09:00" {...stopField} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`collections.${index}.window_to`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 12:00" {...stopField} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`collections.${index}.time`}
+                    render={({ field: stopField }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Time (HH:MM, Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 09:00" {...stopField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name={`collections.${index}.notes`}
@@ -275,7 +424,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', time: '', notes: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
             </Button>
           </CardHeader>
@@ -354,34 +503,19 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`deliveries.${index}.window_from`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 14:00" {...stopField} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`deliveries.${index}.window_to`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 17:00" {...stopField} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`deliveries.${index}.time`}
+                    render={({ field: stopField }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Time (HH:MM, Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 14:00" {...stopField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name={`deliveries.${index}.notes`}
