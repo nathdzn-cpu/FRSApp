@@ -11,7 +11,8 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
 
   // Apply status filter
   if (statusFilter === 'active') {
-    query = query.not('status', 'in', ['delivered', 'pod_received', 'cancelled']);
+    // Corrected syntax for 'not.in' filter
+    query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled")');
   } else if (statusFilter === 'completed') {
     query = query.in('status', ['delivered', 'pod_received']);
   } else if (statusFilter === 'cancelled') {
