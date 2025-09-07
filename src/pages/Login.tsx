@@ -13,16 +13,22 @@ import { toast } from 'sonner';
 const LoginPage: React.FC = () => {
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoadingAuth } = useAuth(); // Use isLoadingAuth from useAuth
+  const [localError, setLocalError] = useState<string | null>(null); // State for local error message
+  const { login, isLoadingAuth } = useAuth(); // useAuth's isLoadingAuth indicates if profile is loading after session
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null); // Clear previous errors
+
     if (!userIdOrEmail || !password) {
-      toast.error("Please enter both User ID/Email and password.");
+      setLocalError("Please enter both User ID/Email and password.");
       return;
     }
 
-    await login(userIdOrEmail, password);
+    const { success, error } = await login(userIdOrEmail, password);
+    if (!success && error) {
+      setLocalError(error); // Set local error if login fails
+    }
   };
 
   // isLoadingAuth from AuthContext primarily indicates if the user profile is being fetched after a session is established.
@@ -41,7 +47,7 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">Log In</CardTitle>
+          <CardTitle className="text-3xl font-bold">FRS Haulage Login</CardTitle>
           <CardDescription>Enter your credentials to access the dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,6 +80,7 @@ const LoginPage: React.FC = () => {
               {isLoadingAuth && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Log In
             </Button>
+            {localError && <p className="text-red-500 text-sm text-center mt-2">{localError}</p>}
           </form>
         </CardContent>
       </Card>
