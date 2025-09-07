@@ -40,6 +40,7 @@ const Index = () => {
     queryFn: getTenants,
     staleTime: 5 * 60 * 1000,
     enabled: !!user && !!currentProfile && !isLoadingAuth,
+    onError: (err) => console.error("Tenants query failed", err),
   });
 
   // Set selectedOrgId once tenants and profile are loaded
@@ -82,6 +83,7 @@ const Index = () => {
     queryFn: () => getProfiles(selectedOrgId!),
     staleTime: 5 * 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth,
+    onError: (err) => console.error("Profiles query failed", err),
   });
 
   // Fetch jobs
@@ -90,6 +92,7 @@ const Index = () => {
     queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate),
     staleTime: 60 * 1000, // Cache jobs for 1 minute
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
+    onError: (err) => console.error("Jobs query failed", err),
   });
 
   const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;
@@ -105,23 +108,33 @@ const Index = () => {
   }
 
   if (error) {
+    console.error("Dashboard query error:", error);
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-red-500">{error.message}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <p className="text-red-600 font-bold mb-2">Dashboard failed to load</p>
+        <p className="text-sm text-gray-700">{error.message}</p>
       </div>
     );
   }
 
   if (!user) {
-    return null; // Should be handled by PrivateRoute or AuthContext redirect
-  }
-
-  // If user is logged in but no profile/role is found
-  if (!profile || userRole === undefined) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <p className="text-red-500 text-lg mb-4">No role assigned to your user account. Please contact an administrator.</p>
+        <p className="text-red-600 font-bold mb-2">You are not logged in.</p>
         <Button onClick={() => navigate('/login')} variant="outline">
+          Log In
+        </Button>
+      </div>
+    );
+  }
+
+  if (!profile || userRole === undefined) {
+    console.warn("Profile or role missing:", { profile, userRole });
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <p className="text-red-600 font-bold mb-2">No role assigned to your user account.</p>
+        <pre className="text-xs bg-gray-100 p-2 rounded">{JSON.stringify(profile, null, 2)}</pre>
+        <Button onClick={() => navigate('/login')} variant="outline" className="mt-4">
           Log In Again
         </Button>
       </div>
