@@ -34,7 +34,7 @@ const AdminUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [showDemo, setShowDemo] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]); // This seems redundant with `users`
   const [busyId, setBusyId] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
@@ -51,15 +51,10 @@ const AdminUsersPage: React.FC = () => {
     setLoadingData(true);
     setError(null);
     try {
-      const fetchedTenants = await getTenants();
-      const defaultOrgId = currentProfile?.org_id || fetchedTenants[0]?.id;
-
-      if (defaultOrgId) {
-        const fetchedProfiles = await getProfiles(defaultOrgId);
-        setProfiles(fetchedProfiles);
-        const fetchedUsers = await getUsersForAdmin(defaultOrgId);
-        setUsers(fetchedUsers);
-      }
+      // getTenants and getProfiles are still mock-based or client-side RLS based.
+      // getUsersForAdmin now uses the Edge Function.
+      const fetchedUsers = await getUsersForAdmin(currentOrgId);
+      setUsers(fetchedUsers);
     } catch (err: any) {
       console.error("Failed to fetch users:", err);
       setError(err.message || "Failed to load users. Please try again.");
@@ -89,7 +84,7 @@ const AdminUsersPage: React.FC = () => {
       const promise = resetUserPassword(currentOrgId, userToReset.user_id, currentProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToReset.full_name}...`,
-        success: `Password reset email sent to ${userToReset.full_name}! (Simulated)`,
+        success: `Password reset email sent to ${userToReset.full_name}!`,
         error: `Failed to send password reset to ${userToReset.full_name}.`,
       });
       await promise;
@@ -111,7 +106,7 @@ const AdminUsersPage: React.FC = () => {
       const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id);
       toast.promise(promise, {
         loading: `Deleting ${userToDelete.full_name}...`,
-        success: `${userToDelete.full_name} deleted successfully! (Simulated)`,
+        success: `${userToDelete.full_name} deleted successfully!`,
         error: `Failed to delete ${userToDelete.full_name}.`,
       });
       const result = await promise;
@@ -335,7 +330,7 @@ const AdminUsersPage: React.FC = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Reset Password for {user.full_name}?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This will send a password reset email to the user's registered email address (simulated).
+                                    This will send a password reset email to the user's registered email address.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -354,7 +349,7 @@ const AdminUsersPage: React.FC = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user profile (simulated).
+                                    This action cannot be undone. This will permanently delete the user profile and associated authentication record.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

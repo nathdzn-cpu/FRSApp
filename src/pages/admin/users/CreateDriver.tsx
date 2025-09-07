@@ -30,12 +30,10 @@ const CreateDriver: React.FC = () => {
       setLoadingData(true);
       setError(null);
       try {
-        const fetchedTenants = await getTenants();
-        const defaultOrgId = profile?.org_id || fetchedTenants[0]?.id;
-        if (defaultOrgId && user) {
-          const profiles = await getProfiles(defaultOrgId);
-          setCurrentProfile(profiles.find(p => p.user_id === user.id));
-        }
+        // getTenants and getProfiles are still mock-based or client-side RLS based.
+        // We need current admin profile for actor_id in createUser.
+        const profiles = await getProfiles(currentOrgId); // This now uses the Edge Function
+        setCurrentProfile(profiles.find(p => p.user_id === user.id));
       } catch (err: any) {
         console.error("Failed to fetch profiles:", err);
         setError(err.message || "Failed to load profiles. Please try again.");
@@ -44,7 +42,7 @@ const CreateDriver: React.FC = () => {
       }
     };
     fetchProfiles();
-  }, [user, profile, userRole, isLoadingAuth, navigate]);
+  }, [user, profile, userRole, isLoadingAuth, navigate, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
     if (!currentProfile) {

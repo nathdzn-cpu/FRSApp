@@ -45,13 +45,11 @@ const EditUser: React.FC = () => {
       setLoadingData(true);
       setError(null);
       try {
-        const fetchedTenants = await getTenants();
-        const defaultOrgId = profile?.org_id || fetchedTenants[0]?.id;
-        if (defaultOrgId && user) {
-          const allProfiles = await getProfiles(defaultOrgId);
-          setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id));
-          setUserToEdit(allProfiles.find(p => p.id === id));
-        }
+        // getTenants is still mock-based or client-side RLS based.
+        // getProfiles now uses the Edge Function.
+        const allProfiles = await getProfiles(currentOrgId);
+        setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id));
+        setUserToEdit(allProfiles.find(p => p.id === id));
       } catch (err: any) {
         console.error("Failed to fetch data:", err);
         setError(err.message || "Failed to load user data. Please try again.");
@@ -60,7 +58,7 @@ const EditUser: React.FC = () => {
       }
     };
     fetchData();
-  }, [user, profile, userRole, isLoadingAuth, navigate, id]);
+  }, [user, profile, userRole, isLoadingAuth, navigate, id, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
     if (!userToEdit || !currentAdminProfile) {
@@ -74,7 +72,7 @@ const EditUser: React.FC = () => {
         dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
         phone: values.phone || undefined,
         role: values.role,
-        user_id: values.user_id || undefined,
+        user_id: values.user_id || undefined, // user_id should ideally not be updated directly
         truck_reg: values.truck_reg || undefined,
         trailer_no: values.trailer_no || undefined,
       };
@@ -107,7 +105,7 @@ const EditUser: React.FC = () => {
       const promise = resetUserPassword(currentOrgId, userToEdit.user_id, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
-        success: `Password reset email sent to ${userToEdit.full_name}! (Simulated)`,
+        success: `Password reset email sent to ${userToEdit.full_name}!`,
         error: (err) => `Failed to send password reset to ${userToEdit.full_name}: ${err.message}`,
       });
       await promise;
@@ -190,7 +188,7 @@ const EditUser: React.FC = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Send Password Reset for {userToEdit.full_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will send a password reset email to the user's registered email address (simulated).
+                    This will send a password reset email to the user's registered email address.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
