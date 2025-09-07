@@ -77,13 +77,14 @@ export interface Job {
   id: string;
   org_id: string;
   order_number: string; // Changed from 'ref'
-  status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
+  status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received'; // Added new statuses
   date_created: string; // New field
   price: number | null; // New field
   assigned_driver_id?: string | null; // New field
   notes?: string | null; // New field
   created_at: string;
   deleted_at?: string | null; // Added for soft deletion
+  last_status_update_at?: string | null; // New field for last status update timestamp
   // New fields from jobs_with_stop_details view
   collection_name?: string | null;
   collection_city?: string | null;
@@ -140,13 +141,24 @@ export interface ProfileDevice {
   created_at: string;
 }
 
+export interface JobProgressLog {
+  id: string;
+  org_id: string;
+  job_id: string;
+  actor_id: string;
+  status: Job['status']; // Use the same status types as Job
+  timestamp: string;
+  notes?: string | null;
+  created_at: string;
+}
+
 export interface AuditLog {
   id: string;
   org_id: string;
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
-  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password';
+  action: 'create' | 'update' | 'delete' | 'cancel' | 'allocate_ref' | 'reset_password' | 'update_progress'; // Added update_progress
   before?: Record<string, any> | null;
   after?: Record<string, any> | null;
   notes?: string | null;
@@ -255,6 +267,7 @@ export const mockJobs: Job[] = [];
 export const mockJobStops: JobStop[] = [];
 export const mockJobEvents: JobEvent[] = [];
 export const mockDocuments: Document[] = [];
+export const mockJobProgressLogs: JobProgressLog[] = []; // New mock array for progress logs
 
 
 export const mockProfileDevices: ProfileDevice[] = []; // Initially empty

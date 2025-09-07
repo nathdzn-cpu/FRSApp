@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob } from '@/lib/supabase';
-import { Job, JobStop, JobEvent, Document, Profile } from '@/utils/mockData';
+import { getJobById, getJobStops, getJobEvents, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/supabase';
+import { Job, JobStop, JobEvent, Document, Profile, JobProgressLog } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle } from 'lucide-react';
 import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
-import { format } from 'date-fns';
+import JobProgressTimeline from '@/components/JobProgressTimeline'; // Import new component
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -27,6 +28,10 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobEditForm from '@/components/JobEditForm'; // Import the new JobEditForm
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DateTimePicker from '@/components/DateTimePicker'; // Import new DateTimePicker
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -69,9 +74,34 @@ const JobDetail: React.FC = () => {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
+  const [selectedProgressStatus, setSelectedProgressStatus] = useState<Job['status'] | ''>('');
+  const [progressUpdateDateTime, setProgressUpdateDateTime] = useState<Date | undefined>(new Date());
+  const [progressUpdateNotes, setProgressUpdateNotes] = useState<string>('');
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
+
+  // Define all possible job statuses for the dropdown
+  const jobStatuses: Array<Job['status']> = [
+    'planned',
+    'assigned',
+    'on_route_collection',
+    'at_collection',
+    'loaded',
+    'on_route_delivery',
+    'at_delivery',
+    'delivered',
+    'pod_received',
+    'cancelled',
+    'in_progress', // Include in_progress for completeness, though it might be an internal state
+  ];
+
+  // Filter statuses for the progress update dropdown (exclude 'planned', 'assigned', 'cancelled' as direct updates)
+  const progressUpdateStatuses = jobStatuses.filter(status =>
+    !['planned', 'assigned', 'cancelled'].includes(status)
+  );
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
@@ -87,6 +117,7 @@ const JobDetail: React.FC = () => {
     stops: JobStop[];
     events: JobEvent[];
     documents: Document[];
+    progressLogs: JobProgressLog[]; // Fetch progress logs
   }, Error>({
     queryKey: ['jobDetail', id, userRole],
     queryFn: async () => {
@@ -102,17 +133,20 @@ const JobDetail: React.FC = () => {
       const fetchedStops = await getJobStops(currentOrgId, id);
       const fetchedEvents = await getJobEvents(currentOrgId, id);
       const fetchedDocuments = await getJobDocuments(currentOrgId, id);
+      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id); // Fetch progress logs
 
       console.log("DEBUG: JobDetail - fetchedJob:", fetchedJob);
       console.log("DEBUG: JobDetail - fetchedStops:", fetchedStops);
       console.log("DEBUG: JobDetail - fetchedEvents:", fetchedEvents);
       console.log("DEBUG: JobDetail - fetchedDocuments:", fetchedDocuments);
+      console.log("DEBUG: JobDetail - fetchedProgressLogs:", fetchedProgressLogs);
 
       return {
         job: fetchedJob,
         stops: fetchedStops,
         events: fetchedEvents,
         documents: fetchedDocuments,
+        progressLogs: fetchedProgressLogs,
       };
     },
     enabled: !!id && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth,
@@ -120,9 +154,10 @@ const JobDetail: React.FC = () => {
   });
 
   const job = jobData?.job;
-  const stops = jobData?.stops || []; // This is the correct variable to use
+  const stops = jobData?.stops || [];
   const events = jobData?.events || [];
   const documents = jobData?.documents || [];
+  const progressLogs = jobData?.progressLogs || []; // Access progress logs
 
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
@@ -191,9 +226,7 @@ const JobDetail: React.FC = () => {
 
     setIsSubmittingEdit(true);
     try {
-      // Use the 'stops' variable from the useQuery hook
-      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : []).filter(Boolean)); // Filter out undefined IDs
-      const currentStopIds = new Set(stops.map(s => s.id));
+      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
 
       const allNewStops = [...values.collections, ...values.deliveries];
 
@@ -215,8 +248,8 @@ const JobDetail: React.FC = () => {
         org_id: currentOrgId,
         actor_id: currentProfile.id,
         job_updates: jobUpdates,
-        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })), // Re-sequence for new stops
-        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })), // Re-sequence for updated stops
+        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
+        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })),
         stops_to_delete: stops_to_delete,
       };
 
@@ -227,14 +260,52 @@ const JobDetail: React.FC = () => {
         error: (err) => `Failed to update job: ${err.message}`,
       });
       await promise;
-      queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs list
-      refetchJobData(); // Refetch current job details
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
       setIsEditDialogOpen(false);
     } catch (err: any) {
       console.error("Error updating job:", err);
       toast.error("An unexpected error occurred while updating the job.");
     } finally {
       setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleProgressUpdate = async () => {
+    if (!job || !currentProfile || !selectedProgressStatus || !progressUpdateDateTime) {
+      toast.error("Please select a status, date, and time for the progress update.");
+      return;
+    }
+
+    setIsUpdatingProgress(true);
+    try {
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        new_status: selectedProgressStatus,
+        timestamp: progressUpdateDateTime.toISOString(),
+        notes: progressUpdateNotes.trim() || undefined,
+      };
+
+      const promise = updateJobProgress(payload);
+      toast.promise(promise, {
+        loading: `Updating job progress to ${selectedProgressStatus.replace(/_/g, ' ')}...`,
+        success: 'Job progress updated successfully!',
+        error: (err) => `Failed to update job progress: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate jobs list
+      refetchJobData(); // Refetch current job details and progress logs
+      setIsProgressUpdateDialogOpen(false);
+      setSelectedProgressStatus('');
+      setProgressUpdateDateTime(new Date());
+      setProgressUpdateNotes('');
+    } catch (err: any) {
+      console.error("Error updating job progress:", err);
+      toast.error("An unexpected error occurred while updating job progress.");
+    } finally {
+      setIsUpdatingProgress(false);
     }
   };
 
@@ -323,6 +394,63 @@ const JobDetail: React.FC = () => {
               )}
               {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <>
+                  <Dialog open={isProgressUpdateDialogOpen} onOpenChange={setIsProgressUpdateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <CheckCircle className="h-4 w-4 mr-2" /> Update Progress
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="progress-status">New Status</Label>
+                          <Select
+                            value={selectedProgressStatus}
+                            onValueChange={(value: Job['status']) => setSelectedProgressStatus(value)}
+                            disabled={isUpdatingProgress}
+                          >
+                            <SelectTrigger id="progress-status">
+                              <SelectValue placeholder="Select new status" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-sm rounded-xl">
+                              {progressUpdateStatuses.map(status => (
+                                <SelectItem key={status} value={status}>
+                                  {status.replace(/_/g, ' ')}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <DateTimePicker
+                          label="Date and Time"
+                          value={progressUpdateDateTime}
+                          onChange={setProgressUpdateDateTime}
+                          disabled={isUpdatingProgress}
+                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="progress-notes">Notes (Optional)</Label>
+                          <Textarea
+                            id="progress-notes"
+                            value={progressUpdateNotes}
+                            onChange={(e) => setProgressUpdateNotes(e.target.value)}
+                            placeholder="Add any relevant notes for this update..."
+                            disabled={isUpdatingProgress}
+                          />
+                        </div>
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setIsProgressUpdateDialogOpen(false)} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleProgressUpdate} disabled={isUpdatingProgress || !selectedProgressStatus || !progressUpdateDateTime}>
+                          {isUpdatingProgress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                          Save Progress
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                   <Button variant="outline" onClick={handleRequestPod}>
                     <FileText className="h-4 w-4 mr-2" /> Request POD
                   </Button>
@@ -373,15 +501,23 @@ const JobDetail: React.FC = () => {
                 <p className="font-medium text-gray-900">Notes:</p>
                 <p>{job.notes || '-'}</p>
               </div>
+              <div className="lg:col-span-1">
+                <p className="font-medium text-gray-900">Last Status Update:</p>
+                <p className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  {job.last_status_update_at ? format(parseISO(job.last_status_update_at), 'PPP HH:mm') : 'N/A'}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm rounded-xl p-1">
+          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1"> {/* Increased grid-cols to 4 */}
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="stops">Stops</TabsTrigger>
             <TabsTrigger value="pods">PODs</TabsTrigger>
+            <TabsTrigger value="progress-log">Progress Log</TabsTrigger> {/* New tab */}
           </TabsList>
           <TabsContent value="timeline" className="mt-4">
             <Card className="bg-white shadow-sm rounded-xl p-6">
@@ -410,6 +546,16 @@ const JobDetail: React.FC = () => {
               </CardHeader>
               <CardContent className="p-0 pt-4">
                 <JobPodsGrid documents={documents} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="progress-log" className="mt-4"> {/* New tab content */}
+            <Card className="bg-white shadow-sm rounded-xl p-6">
+              <CardHeader className="p-0 pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Job Progress Log</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pt-4">
+                <JobProgressTimeline progressLogs={progressLogs} profiles={allProfiles} />
               </CardContent>
             </Card>
           </TabsContent>

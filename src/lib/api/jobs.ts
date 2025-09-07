@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { Job, JobStop, JobEvent, Document } from '@/utils/mockData';
+import { Job, JobStop, JobEvent, Document, JobProgressLog } from '@/utils/mockData';
 import { callFn } from '../callFunction'; // Import callFn
 
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
@@ -94,8 +94,23 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
   return data as Document[];
 };
 
+export const getJobProgressLogs = async (orgId: string, jobId: string): Promise<JobProgressLog[]> => {
+  const { data, error } = await supabase
+    .from('job_progress_log')
+    .select('*')
+    .eq('job_id', jobId)
+    .eq('org_id', orgId)
+    .order('timestamp', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching job progress logs:", error);
+    throw new Error(error.message);
+  }
+  return data as JobProgressLog[];
+};
+
 interface CreateJobPayload {
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null };
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city' | 'last_status_update_at'> & { order_number?: string | null };
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
   org_id: string;
   actor_id: string;
@@ -103,7 +118,7 @@ interface CreateJobPayload {
 
 export const createJob = async (
   orgId: string,
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null },
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city' | 'last_status_update_at'> & { order_number?: string | null },
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[],
   actorId: string
 ): Promise<Job> => {
@@ -137,6 +152,20 @@ interface UpdateJobPayload {
 
 export const updateJob = async (payload: UpdateJobPayload): Promise<Job> => {
   const result = await callFn<Job>('update-job', payload);
+  return result;
+};
+
+interface UpdateJobProgressPayload {
+  job_id: string;
+  org_id: string;
+  actor_id: string;
+  new_status: Job['status'];
+  timestamp: string;
+  notes?: string;
+}
+
+export const updateJobProgress = async (payload: UpdateJobProgressPayload): Promise<{ job: Job; log: JobProgressLog }> => {
+  const result = await callFn<{ job: Job; log: JobProgressLog }>('update-job-progress', payload);
   return result;
 };
 
@@ -192,7 +221,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   }
 
   // Do not generate new order_number here, let the trigger handle it for the new job
-  const newJob: Omit<Job, 'id' | 'created_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null } = {
+  const newJob: Omit<Job, 'id' | 'created_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city' | 'last_status_update_at'> & { order_number?: string | null } = {
     org_id: orgId,
     order_number: null, // Let trigger generate
     status: 'planned',
@@ -201,6 +230,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     assigned_driver_id: originalJob.assigned_driver_id,
     notes: originalJob.notes,
     deleted_at: null,
+    last_status_update_at: new Date().toISOString(), // Set initial status update time
   };
 
   const { data: clonedJobData, error: cloneJobError } = await supabase
@@ -272,7 +302,7 @@ export const cancelJob = async (jobId: string, orgId: string, actorId: string): 
 
   const { data, error } = await supabase
     .from('jobs')
-    .update({ status: 'cancelled', deleted_at: new Date().toISOString() }) // Soft delete on cancel
+    .update({ status: 'cancelled', deleted_at: new Date().toISOString(), last_status_update_at: new Date().toISOString() }) // Soft delete on cancel
     .eq('id', jobId)
     .eq('org_id', orgId)
     .is('deleted_at', null)
