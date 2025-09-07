@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getUsersForAdmin, getProfiles, getTenants, deleteUser, resetUserPassword, purgeDemoUsers, purgeAllNonAdminUsers } from '@/lib/supabase';
-import { Profile, Tenant } from '@/utils/mockData';
+import { getUsersForAdmin, deleteUser, resetUserPassword, purgeDemoUsers, purgeAllNonAdminUsers } from '@/lib/supabase';
+import { Profile } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, UserPlus, Edit, Trash2, Mail, RefreshCw, Eraser } from 'lucide-react';
@@ -24,6 +24,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import PasswordConfirmDialog from '@/components/PasswordConfirmDialog'; // Import the new component
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,10 +35,15 @@ const AdminUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'driver' | 'office' | 'admin'>('all');
   const [showDemo, setShowDemo] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]); // This seems redundant with `users`
   const [busyId, setBusyId] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
+
+  // State for password confirmation dialogs
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
+  const [isPurgeDemoConfirmOpen, setIsPurgeDemoConfirmOpen] = useState(false);
+  const [isPurgeAllNonAdminConfirmOpen, setIsPurgeAllNonAdminConfirmOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -72,6 +78,39 @@ const AdminUsersPage: React.FC = () => {
     fetchUsers();
   }, [user, userRole, currentOrgId, isLoadingAuth, navigate]);
 
+  const handleInitiateDelete = (user: Profile) => {
+    setUserToDelete(user);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteUserConfirmed = async () => {
+    if (!userToDelete || !currentProfile) {
+      toast.error("User to delete or admin profile not found. Cannot delete user.");
+      return;
+    }
+    try {
+      setBusyId(userToDelete.id);
+      const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id);
+      toast.promise(promise, {
+        loading: `Deleting ${userToDelete.full_name}...`,
+        success: `${userToDelete.full_name} deleted successfully!`,
+        error: `Failed to delete ${userToDelete.full_name}.`,
+      });
+      const result = await promise;
+      if (result) {
+        fetchUsers();
+      } else {
+        toast.error(`Failed to delete ${userToDelete.full_name}: User not found or could not be deleted.`);
+      }
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      toast.error("An unexpected error occurred while deleting user.");
+    } finally {
+      setBusyId(null);
+      setUserToDelete(null);
+    }
+  };
+
   const handleResetPassword = async (userToReset: Profile) => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot reset password.");
@@ -94,34 +133,7 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userToDelete: Profile) => {
-    if (!currentProfile) {
-      toast.error("Admin profile not found. Cannot delete user.");
-      return;
-    }
-    try {
-      setBusyId(userToDelete.id);
-      const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id);
-      toast.promise(promise, {
-        loading: `Deleting ${userToDelete.full_name}...`,
-        success: `${userToDelete.full_name} deleted successfully!`,
-        error: `Failed to delete ${userToDelete.full_name}.`,
-      });
-      const result = await promise;
-      if (result) {
-        fetchUsers();
-      } else {
-        toast.error(`Failed to delete ${userToDelete.full_name}: User not found or could not be deleted.`);
-      }
-    } catch (err: any) {
-      console.error("Error deleting user:", err);
-      toast.error("An unexpected error occurred while deleting user.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handlePurgeDemoUsers = async () => {
+  const handlePurgeDemoUsersConfirmed = async () => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot purge demo users.");
       return;
@@ -144,7 +156,7 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handlePurgeAllNonAdminUsers = async () => {
+  const handlePurgeAllNonAdminUsersConfirmed = async () => {
     if (!currentProfile) {
       toast.error("Admin profile not found. Cannot purge non-admin users.");
       return;
@@ -260,64 +272,24 @@ const AdminUsersPage: React.FC = () => {
                 />
                 <Label htmlFor="show-demo" className="text-gray-700">Show demo users</Label>
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={purging}
-                    className="w-full sm:w-auto"
-                  >
-                    {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Purge Demo Users
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure you want to purge ALL demo users?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all user profiles and associated authentication records marked as demo.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </AlertDialogCancel>
-                    <AlertDialogAction onClick={handlePurgeDemoUsers} disabled={purging} variant="destructive">
-                      {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Purge Demo Users
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="destructive"
+                onClick={() => setIsPurgeDemoConfirmOpen(true)}
+                disabled={purging}
+                className="w-full sm:w-auto"
+              >
+                {purging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Purge Demo Users
+              </Button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={purgingAll}
-                    className="w-full sm:w-auto"
-                  >
-                    <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure you want to purge ALL non-admin users?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all user profiles and associated authentication records that are not 'admin' role in this tenant.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </AlertDialogCancel>
-                    <AlertDialogAction onClick={handlePurgeAllNonAdminUsers} disabled={purgingAll} variant="destructive">
-                      {purgingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Purge All Non-Admin Users
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="destructive"
+                onClick={() => setIsPurgeAllNonAdminConfirmOpen(true)}
+                disabled={purgingAll}
+                className="w-full sm:w-auto"
+              >
+                <Eraser className="h-4 w-4 mr-2" /> {purgingAll ? "Purging All..." : "Purge All Non-Admin Users"}
+              </Button>
             </div>
 
             {filteredUsers.length === 0 ? (
@@ -375,27 +347,9 @@ const AdminUsersPage: React.FC = () => {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm" disabled={busyId === user.id}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure you want to delete {user.full_name}?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user profile and associated authentication record.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel asChild>
-                                    <Button variant="outline">Cancel</Button>
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(user)} disabled={busyId === user.id} variant="destructive">Delete User</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button variant="destructive" size="sm" onClick={() => handleInitiateDelete(user)} disabled={busyId === user.id}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -406,6 +360,44 @@ const AdminUsersPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Password Confirmation Dialog for Delete User */}
+        {userToDelete && (
+          <PasswordConfirmDialog
+            open={isDeleteConfirmOpen}
+            onOpenChange={setIsDeleteConfirmOpen}
+            title={`Confirm Deletion of ${userToDelete.full_name}`}
+            description={`This action cannot be undone. This will permanently delete ${userToDelete.full_name}'s profile and associated authentication record. Please enter your password to confirm.`}
+            confirmLabel="Delete User"
+            onConfirm={handleDeleteUserConfirmed}
+            isConfirming={busyId === userToDelete.id}
+            variant="destructive"
+          />
+        )}
+
+        {/* Password Confirmation Dialog for Purge Demo Users */}
+        <PasswordConfirmDialog
+          open={isPurgeDemoConfirmOpen}
+          onOpenChange={setIsPurgeDemoConfirmOpen}
+          title="Confirm Purge Demo Users"
+          description="This action cannot be undone. This will permanently delete all user profiles and associated authentication records marked as demo. Please enter your password to confirm."
+          confirmLabel="Purge Demo Users"
+          onConfirm={handlePurgeDemoUsersConfirmed}
+          isConfirming={purging}
+          variant="destructive"
+        />
+
+        {/* Password Confirmation Dialog for Purge All Non-Admin Users */}
+        <PasswordConfirmDialog
+          open={isPurgeAllNonAdminConfirmOpen}
+          onOpenChange={setIsPurgeAllNonAdminConfirmOpen}
+          title="Confirm Purge All Non-Admin Users"
+          description="This action cannot be undone. This will permanently delete all user profiles and associated authentication records that are not 'admin' role in this tenant. Please enter your password to confirm."
+          confirmLabel="Purge All Non-Admin Users"
+          onConfirm={handlePurgeAllNonAdminUsersConfirmed}
+          isConfirming={purgingAll}
+          variant="destructive"
+        />
       </div>
     </div>
   );

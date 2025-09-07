@@ -501,7 +501,7 @@ const JobDetail: React.FC = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
+                      <Button variant="destructive"> {/* Changed to destructive variant */}
                         <XCircle className="h-4 w-4 mr-2" /> Cancel Job
                       </Button>
                     </AlertDialogTrigger>

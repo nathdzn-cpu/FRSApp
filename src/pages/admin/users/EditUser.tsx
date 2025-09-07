@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getTenants, getProfiles, updateUser, resetUserPassword } from '@/lib/supabase';
+import { getProfiles, updateUser, resetUserPassword } from '@/lib/supabase';
 import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import PasswordConfirmDialog from '@/components/PasswordConfirmDialog'; // Import the new component
 
 const EditUser: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,12 @@ const EditUser: React.FC = () => {
   const [userToEdit, setUserToEdit] = useState<Profile | undefined>(undefined);
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined);
   const [isResetPasswordBusy, setIsResetPasswordBusy] = useState(false);
+  const [isUpdateRoleBusy, setIsUpdateRoleBusy] = useState(false); // New busy state for role update
+
+  // State for password confirmation dialogs
+  const [isResetPasswordConfirmOpen, setIsResetPasswordConfirmOpen] = useState(false);
+  const [isRoleChangeConfirmOpen, setIsRoleChangeConfirmOpen] = useState(false);
+  const [pendingRoleUpdateValues, setPendingRoleUpdateValues] = useState<any | null>(null); // Store form values for role change
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
 
@@ -45,8 +52,6 @@ const EditUser: React.FC = () => {
       setLoadingData(true);
       setError(null);
       try {
-        // getTenants is still mock-based or client-side RLS based.
-        // getProfiles now uses the Edge Function.
         const allProfiles = await getProfiles(currentOrgId);
         setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id));
         setUserToEdit(allProfiles.find(p => p.id === id));
@@ -66,17 +71,33 @@ const EditUser: React.FC = () => {
       return;
     }
 
-    try {
-      const updates: Partial<Profile> = {
-        full_name: values.full_name,
-        dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
-        phone: values.phone || undefined,
-        role: values.role,
-        user_id: values.user_id || undefined, // user_id should ideally not be updated directly
-        truck_reg: values.truck_reg || undefined,
-        trailer_no: values.trailer_no || undefined,
-      };
+    const updates: Partial<Profile> = {
+      full_name: values.full_name,
+      dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
+      phone: values.phone || undefined,
+      role: values.role,
+      user_id: values.user_id || undefined,
+      truck_reg: values.truck_reg || undefined,
+      trailer_no: values.trailer_no || undefined,
+    };
 
+    // Check if role is being changed
+    if (userToEdit.role !== values.role) {
+      setPendingRoleUpdateValues(updates); // Store updates for confirmation
+      setIsRoleChangeConfirmOpen(true);
+    } else {
+      // If role is not changing, proceed directly
+      await performUpdateUser(updates);
+    }
+  };
+
+  const performUpdateUser = async (updates: Partial<Profile>) => {
+    if (!userToEdit || !currentAdminProfile) {
+      toast.error("User to edit or admin profile not found. Cannot update user.");
+      return;
+    }
+    setIsUpdateRoleBusy(true);
+    try {
       const promise = updateUser(currentOrgId, userToEdit.id, updates, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Updating ${userToEdit.full_name}...`,
@@ -92,10 +113,13 @@ const EditUser: React.FC = () => {
     } catch (err: any) {
       console.error("Error updating user:", err);
       toast.error("An unexpected error occurred while updating the user.");
+    } finally {
+      setIsUpdateRoleBusy(false);
+      setPendingRoleUpdateValues(null);
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPasswordConfirmed = async () => {
     if (!userToEdit || !currentAdminProfile) {
       toast.error("User to edit or admin profile not found. Cannot reset password.");
       return;
@@ -178,32 +202,35 @@ const EditUser: React.FC = () => {
             <CardTitle className="text-xl font-semibold text-gray-900">User Actions</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="w-full" disabled={isResetPasswordBusy}>
-                  <Mail className="h-4 w-4 mr-2" /> Send Password Reset
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Send Password Reset for {userToEdit.full_name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will send a password reset email to the user's registered email address.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleResetPassword} disabled={isResetPasswordBusy}>
-                    {isResetPasswordBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Send Reset Email
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button variant="outline" className="w-full" onClick={() => setIsResetPasswordConfirmOpen(true)} disabled={isResetPasswordBusy}>
+              <Mail className="h-4 w-4 mr-2" /> Send Password Reset
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Password Confirmation Dialog for Reset Password */}
+        <PasswordConfirmDialog
+          open={isResetPasswordConfirmOpen}
+          onOpenChange={setIsResetPasswordConfirmOpen}
+          title={`Confirm Password Reset for ${userToEdit.full_name}`}
+          description="This will send a password reset email to the user's registered email address. Please enter your password to confirm."
+          confirmLabel="Send Reset Email"
+          onConfirm={handleResetPasswordConfirmed}
+          isConfirming={isResetPasswordBusy}
+        />
+
+        {/* Password Confirmation Dialog for Role Change */}
+        {pendingRoleUpdateValues && (
+          <PasswordConfirmDialog
+            open={isRoleChangeConfirmOpen}
+            onOpenChange={setIsRoleChangeConfirmOpen}
+            title={`Confirm Role Change for ${userToEdit.full_name}`}
+            description={`You are changing the role of ${userToEdit.full_name} from '${userToEdit.role}' to '${pendingRoleUpdateValues.role}'. This is a high-privilege action. Please enter your password to confirm.`}
+            confirmLabel="Confirm Role Change"
+            onConfirm={() => performUpdateUser(pendingRoleUpdateValues)}
+            isConfirming={isUpdateRoleBusy}
+          />
+        )}
       </div>
     </div>
   );
