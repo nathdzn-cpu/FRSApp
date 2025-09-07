@@ -3,6 +3,13 @@ import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
 
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Replace with your frontend origin in production
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
+};
+
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -29,6 +36,11 @@ const slugify = (s: string) =>
     .slice(0, 64);
 
 serve(async (req) => {
+  // Handle CORS preflight request
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const admin = adminClient();
     const user = userClient(req.headers.get("authorization"));
@@ -298,7 +310,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(resultData),
-      { status, headers: { "Content-Type": "application/json" } },
+      { status, headers: { "Content-Type": "application/json", ...corsHeaders } }, // Include CORS headers here
     );
   } catch (e) {
     console.error("DEBUG: function error", e);
@@ -306,7 +318,7 @@ serve(async (req) => {
       JSON.stringify({ ok: false, error: (e as Error).message }),
       {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders }, // Include CORS headers here
       },
     );
   }
