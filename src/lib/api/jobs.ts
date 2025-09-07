@@ -407,13 +407,11 @@ export const uploadDocument = async (
   jobId: string,
   orgId: string,
   driverId: string,
-  type: 'pod' | 'cmr' | 'damage' | 'check_signature',
+  type: 'pod' | 'cmr' | 'damage' | 'check_signature' | 'document_uploaded', // Added 'document_uploaded' as a type for generic images
   storagePath: string,
+  logActionType: 'pod_uploaded' | 'image_uploaded', // New parameter to specify action_type for log
   stopId?: string,
 ): Promise<Document> => {
-  // In a real app, the file would have already been uploaded to storage
-  // and storagePath would be the public URL or path.
-
   const newDocument: Document = {
     id: uuidv4(),
     org_id: orgId,
@@ -444,8 +442,8 @@ export const uploadDocument = async (
       job_id: jobId,
       stop_id: stopId,
       actor_id: driverId,
-      actor_role: 'driver', // Driver role
-      action_type: type === 'pod' ? 'pod_uploaded' : 'document_uploaded', // Use specific action_type for log
+      actor_role: 'driver',
+      action_type: logActionType, // Use the new logActionType parameter
       notes: `${type.replace(/_/g, ' ')} uploaded.`,
       timestamp: new Date().toISOString(),
       file_path: storagePath, // Store the full storage path

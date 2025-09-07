@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, MapPin, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react'; // Import Camera icon
 import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
 import ProgressActionDialog from './ProgressActionDialog';
 import PodUploadDialog from './PodUploadDialog';
+import ImageUploadDialog from './ImageUploadDialog'; // Import new ImageUploadDialog
 import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction'; // Import the new utility
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
@@ -41,6 +42,8 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const [nextAction, setNextAction] = useState<NextDriverAction | null>(null);
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
   const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
+  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false); // New state for image upload dialog
+  const [isUploadingImage, setIsUploadingImage] = useState(false); // New state for image upload loading
 
   useEffect(() => {
     if (job && stops && progressLogs && currentProfile) {
@@ -82,6 +85,11 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const handlePodUploadSuccess = () => {
     refetchJobData(); // Refetch after POD upload to update job status
     toast.success("POD uploaded successfully!");
+  };
+
+  const handleImageUploadSuccess = () => {
+    refetchJobData(); // Refetch after image upload to update document list
+    toast.success("Image uploaded successfully!");
   };
 
   const handleNextActionButtonClick = () => {
@@ -156,15 +164,26 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
                     </p>
                   )}
                   {currentStopForAction && renderStopDetails(currentStopForAction)}
-                  <Button
-                    onClick={handleNextActionButtonClick}
-                    disabled={isUpdatingProgress}
-                    className="w-full mt-4 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                    data-testid="driver-next-action-btn"
-                  >
-                    {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                    {nextAction.label}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                    <Button
+                      onClick={handleNextActionButtonClick}
+                      disabled={isUpdatingProgress || isUploadingImage}
+                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                      data-testid="driver-next-action-btn"
+                    >
+                      {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                      {nextAction.label}
+                    </Button>
+                    <Button
+                      onClick={() => setIsImageUploadDialogOpen(true)}
+                      disabled={isUpdatingProgress || isUploadingImage}
+                      variant="outline"
+                      className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                    >
+                      {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
+                      Upload Image
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <div className="text-center py-8">
@@ -202,6 +221,17 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           setIsLoading={setIsUpdatingProgress} // Pass setter for internal loading state
         />
       )}
+
+      <ImageUploadDialog
+        open={isImageUploadDialogOpen}
+        onOpenChange={setIsImageUploadDialogOpen}
+        job={job}
+        stopId={currentStopForAction?.id} // Pass the current stop ID if applicable
+        currentProfile={currentProfile}
+        onUploadSuccess={handleImageUploadSuccess}
+        isLoading={isUploadingImage}
+        setIsLoading={setIsUploadingImage}
+      />
     </div>
   );
 };

@@ -37,10 +37,10 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
       .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()); // Newest first
   }, [progressLogs, currentProfile.id]);
 
-  // Filter documents to only show PODs for this job
-  const podDocuments = useMemo(() => {
+  // Filter documents to show all job-related documents (PODs and other images)
+  const jobDocuments = useMemo(() => {
     return documents
-      .filter(doc => doc.type === 'pod' && doc.job_id === job.id)
+      .filter(doc => doc.job_id === job.id)
       .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime()); // Newest first
   }, [documents, job.id]);
 
@@ -92,9 +92,9 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
           )}
         </div>
 
-        {/* POD Upload Section */}
+        {/* All Uploaded Files Section */}
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Proof of Delivery (PODs)</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">All Uploaded Files</h3>
           <Button
             onClick={() => setIsPodUploadDialogOpen(true)}
             disabled={isUploadingAdditionalPod}
@@ -104,11 +104,11 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
             Upload Additional POD
           </Button>
 
-          {podDocuments.length === 0 ? (
-            <p className="text-gray-600">No PODs uploaded for this job yet.</p>
+          {jobDocuments.length === 0 ? (
+            <p className="text-gray-600">No files uploaded for this job yet.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {podDocuments.map((doc) => (
+              {jobDocuments.map((doc) => (
                 <Card key={doc.id} className="p-3 shadow-sm rounded-md border border-gray-200">
                   <div className="flex flex-col items-start mb-2">
                     <ImageIcon className="h-5 w-5 text-blue-600 mb-1" />
