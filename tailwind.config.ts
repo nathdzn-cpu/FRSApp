@@ -7,6 +7,8 @@ export default {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "./src/components/**/*.{ts,tsx}", // Explicitly added for clarity
+    "./src/pages/**/*.{ts,tsx}", // Explicitly added for clarity
   ],
   prefix: "",
   theme: {
