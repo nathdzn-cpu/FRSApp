@@ -79,8 +79,8 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
       price: null,
       assigned_driver_id: null,
       notes: '',
-      collections: [],
-      deliveries: [{ name: '', address_line1: '', city: '', postcode: '' }], // At least one delivery by default
+      collections: [], // Changed to empty array
+      deliveries: [], // Changed to empty array
     },
   });
 

@@ -75,7 +75,7 @@ serve(async (req) => {
     // Fetch the existing log entry for audit purposes
     const { data: oldLog, error: fetchLogError } = await admin
       .from("job_progress_log")
-      .select("action_type, notes, visible_in_timeline")
+      .select("action_type, notes, visible_in_timeline, timestamp") // Fetch timestamp for audit log note
       .eq("id", log_id)
       .eq("org_id", org_id)
       .single();
@@ -96,13 +96,23 @@ serve(async (req) => {
 
     // 4) Audit log the action of changing visibility
     const actionDescription = visible_in_timeline ? "restored to timeline" : "removed from timeline";
+    const actionTypeForAudit = visible_in_timeline ? "timeline_event_restored_to_timeline" : "timeline_event_removed_from_timeline";
+    const eventTimestamp = new Date(oldLog.timestamp).toLocaleString('en-GB', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const currentActionTimestamp = new Date().toLocaleString('en-GB', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const auditNotes = `${me.full_name} ${actionDescription} '${oldLog.action_type}' event (originally ${eventTimestamp}) on ${currentActionTimestamp}.`;
+
     const { error: auditError } = await admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,
       entity: "job_progress_log",
       entity_id: log_id,
-      action: `timeline_event_${actionDescription.replace(/ /g, '_')}`,
-      notes: `${me.full_name || me.role} ${actionDescription}: '${oldLog.action_type}' event.`,
+      action: actionTypeForAudit,
+      notes: auditNotes,
       before: { visible_in_timeline: oldLog.visible_in_timeline },
       after: { visible_in_timeline: updatedLog.visible_in_timeline },
       created_at: new Date().toISOString(),
