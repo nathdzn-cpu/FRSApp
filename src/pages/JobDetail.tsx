@@ -12,7 +12,7 @@ import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
 import JobStopsList from '@/components/JobStopsList';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, setHours, setMinutes, setSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -33,8 +33,9 @@ import DateTimePicker from '@/components/DateTimePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
-import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { getDisplayStatus, jobStatusOrder, getSkippedStatuses } from '@/lib/utils/statusUtils'; // Import new utilities
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
+import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils'; // Import new time utility
 
 interface JobFormValues {
   order_number?: string | null;
@@ -69,6 +70,14 @@ interface JobFormValues {
   }>;
 }
 
+interface ProgressUpdateEntry {
+  status: Job['status'];
+  dateTime: Date;
+  notes: string;
+  timeInput: string; // To store raw time input for validation
+  timeError: string | null; // To store time validation error
+}
+
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -80,16 +89,15 @@ const JobDetail: React.FC = () => {
   const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
-  const [selectedProgressStatus, setSelectedProgressStatus] = useState<Job['status'] | ''>('');
-  const [progressUpdateDateTime, setProgressUpdateDateTime] = useState<Date | undefined>(new Date());
-  const [progressUpdateNotes, setProgressUpdateNotes] = useState<string>('');
+  const [selectedNewStatus, setSelectedNewStatus] = useState<Job['status'] | ''>('');
+  const [progressUpdateEntries, setProgressUpdateEntries] = useState<ProgressUpdateEntry[]>([]);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
 
   // Define all possible job statuses for the dropdown (using snake_case for values)
-  const jobStatuses: Array<Job['status']> = [
+  const allJobStatuses: Array<Job['status']> = [
     'planned',
     'assigned',
     'accepted',
@@ -104,7 +112,7 @@ const JobDetail: React.FC = () => {
   ];
 
   // Filter statuses for the progress update dropdown (exclude 'planned', 'assigned', 'cancelled' as direct updates)
-  const progressUpdateStatuses = jobStatuses.filter(status =>
+  const progressUpdateSelectableStatuses = allJobStatuses.filter(status =>
     !['planned', 'assigned', 'cancelled'].includes(status)
   );
 
@@ -162,9 +170,62 @@ const JobDetail: React.FC = () => {
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
+  // Effect to generate progress update entries when selectedNewStatus changes
+  useEffect(() => {
+    if (job && selectedNewStatus && jobStatusOrder.includes(job.status) && jobStatusOrder.includes(selectedNewStatus)) {
+      const skipped = getSkippedStatuses(job.status, selectedNewStatus);
+      const allStatusesToLog = [...skipped, selectedNewStatus];
+      
+      const now = new Date();
+      const defaultTime = format(now, 'HH:mm');
+
+      setProgressUpdateEntries(
+        allStatusesToLog.map(status => ({
+          status,
+          dateTime: setSeconds(setMinutes(setHours(new Date(), now.getHours()), now.getMinutes()), 0), // Today's date, current time, seconds to 0
+          notes: '',
+          timeInput: defaultTime,
+          timeError: null,
+        }))
+      );
+    } else {
+      setProgressUpdateEntries([]);
+    }
+  }, [job, selectedNewStatus]);
+
+  const handleProgressUpdateEntryChange = (index: number, field: 'dateTime' | 'notes' | 'timeInput', value: any) => {
+    setProgressUpdateEntries(prevEntries => {
+      const newEntries = [...prevEntries];
+      if (field === 'timeInput') {
+        const { formattedTime, error } = formatAndValidateTimeInput(value);
+        newEntries[index] = {
+          ...newEntries[index],
+          timeInput: value,
+          timeError: error,
+        };
+        if (formattedTime) {
+          // Update dateTime with today's date and the formatted time
+          const [hoursStr, minutesStr] = formattedTime.split(':');
+          const hours = parseInt(hoursStr, 10);
+          const minutes = parseInt(minutesStr, 10);
+          let newDateTime = setHours(new Date(), hours); // Always use today's date
+          newDateTime = setMinutes(newDateTime, minutes);
+          newDateTime = setSeconds(newDateTime, 0);
+          newEntries[index].dateTime = newDateTime;
+        } else {
+          // If time input is invalid, set dateTime to today 00:00:00
+          newEntries[index].dateTime = setSeconds(setMinutes(setHours(new Date(), 0), 0), 0);
+        }
+      } else {
+        newEntries[index] = { ...newEntries[index], [field]: value };
+      }
+      return newEntries;
+    });
+  };
+
   const handleRequestPod = async () => {
-    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
-    const promise = requestPod(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
+    if (!job || !currentProfile || !userRole) return;
+    const promise = requestPod(job.id, currentOrgId, currentProfile.id, userRole);
     toast.promise(promise, {
       loading: 'Requesting POD...',
       success: 'POD request sent to driver!',
@@ -191,8 +252,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCloneJob = async () => {
-    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
-    const promise = cloneJob(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
+    if (!job || !currentProfile || !userRole) return;
+    const promise = cloneJob(job.id, currentOrgId, currentProfile.id, userRole);
     toast.promise(promise, {
       loading: 'Cloning job...',
       success: (clonedJob) => {
@@ -207,8 +268,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCancelJob = async () => {
-    if (!job || !currentProfile || !userRole) return; // Ensure userRole is available
-    const promise = cancelJob(job.id, currentOrgId, currentProfile.id, userRole); // Pass userRole
+    if (!job || !currentProfile || !userRole) return;
+    const promise = cancelJob(job.id, currentOrgId, currentProfile.id, userRole);
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
@@ -219,7 +280,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleEditSubmit = async (values: JobFormValues) => {
-    if (!job || !currentProfile || !userRole) { // Ensure userRole is available
+    if (!job || !currentProfile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot update job.");
       return;
     }
@@ -247,7 +308,7 @@ const JobDetail: React.FC = () => {
         job_id: job.id,
         org_id: currentOrgId,
         actor_id: currentProfile.id,
-        actor_role: userRole, // Pass userRole
+        actor_role: userRole,
         job_updates: jobUpdates,
         stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
         stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })),
@@ -273,7 +334,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleAssignDriver = async (driverId: string | null) => {
-    if (!job || !currentProfile || !userRole) { // Ensure userRole is available
+    if (!job || !currentProfile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot assign driver.");
       return;
     }
@@ -287,7 +348,7 @@ const JobDetail: React.FC = () => {
         job_id: job.id,
         org_id: currentOrgId,
         actor_id: currentProfile.id,
-        actor_role: userRole, // Pass userRole
+        actor_role: userRole,
         job_updates: jobUpdates,
       };
 
@@ -309,36 +370,44 @@ const JobDetail: React.FC = () => {
   };
 
   const handleProgressUpdate = async () => {
-    if (!job || !currentProfile || !userRole || !selectedProgressStatus || !progressUpdateDateTime) { // Ensure userRole is available
-      toast.error("Please select a status, date, and time for the progress update.");
+    if (!job || !currentProfile || !userRole || progressUpdateEntries.length === 0) {
+      toast.error("No status updates to log.");
+      return;
+    }
+
+    // Validate all time inputs before submission
+    const hasTimeErrors = progressUpdateEntries.some(entry => entry.timeError !== null);
+    if (hasTimeErrors) {
+      toast.error("Please fix invalid time entries.");
       return;
     }
 
     setIsUpdatingProgress(true);
     try {
-      const payload = {
-        job_id: job.id,
-        org_id: currentOrgId,
-        actor_id: currentProfile.id,
-        actor_role: userRole, // Pass userRole
-        new_status: selectedProgressStatus,
-        timestamp: progressUpdateDateTime.toISOString(),
-        notes: progressUpdateNotes.trim() || undefined,
-      };
+      // Sort entries by dateTime to ensure chronological order
+      const sortedEntries = [...progressUpdateEntries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
 
-      const promise = updateJobProgress(payload);
-      toast.promise(promise, {
-        loading: `Updating job progress to ${getDisplayStatus(selectedProgressStatus)}...`,
-        success: 'Job progress updated successfully!',
-        error: (err) => `Failed to update job progress: ${err.message}`,
-      });
-      await promise;
+      for (const entry of sortedEntries) {
+        const payload = {
+          job_id: job.id,
+          org_id: currentOrgId,
+          actor_id: currentProfile.id,
+          actor_role: userRole,
+          new_status: entry.status,
+          timestamp: entry.dateTime.toISOString(),
+          notes: entry.notes.trim() || undefined,
+        };
+
+        // Call updateJobProgress for each entry
+        await updateJobProgress(payload);
+      }
+
+      toast.success('Job progress updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       refetchJobData();
       setIsProgressUpdateDialogOpen(false);
-      setSelectedProgressStatus('');
-      setProgressUpdateDateTime(new Date());
-      setProgressUpdateNotes('');
+      setSelectedNewStatus('');
+      setProgressUpdateEntries([]);
     } catch (err: any) {
       console.error("Error updating job progress:", err);
       toast.error("An unexpected error occurred while updating job progress.");
@@ -457,15 +526,15 @@ const JobDetail: React.FC = () => {
                         <div className="space-y-2">
                           <Label htmlFor="progress-status">New Status</Label>
                           <Select
-                            value={selectedProgressStatus}
-                            onValueChange={(value: Job['status']) => setSelectedProgressStatus(value)}
+                            value={selectedNewStatus}
+                            onValueChange={(value: Job['status']) => setSelectedNewStatus(value)}
                             disabled={isUpdatingProgress}
                           >
                             <SelectTrigger id="progress-status">
                               <SelectValue placeholder="Select new status" />
                             </SelectTrigger>
                             <SelectContent className="bg-white shadow-sm rounded-xl">
-                              {progressUpdateStatuses.map(status => (
+                              {progressUpdateSelectableStatuses.map(status => (
                                 <SelectItem key={status} value={status}>
                                   {getDisplayStatus(status)}
                                 </SelectItem>
@@ -473,26 +542,39 @@ const JobDetail: React.FC = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <DateTimePicker
-                          label="Date and Time"
-                          value={progressUpdateDateTime}
-                          onChange={setProgressUpdateDateTime}
-                          disabled={isUpdatingProgress}
-                        />
-                        <div className="space-y-2">
-                          <Label htmlFor="progress-notes">Notes (Optional)</Label>
-                          <Textarea
-                            id="progress-notes"
-                            value={progressUpdateNotes}
-                            onChange={(e) => setProgressUpdateNotes(e.target.value)}
-                            placeholder="Add any relevant notes for this update..."
-                            disabled={isUpdatingProgress}
-                          />
-                        </div>
+
+                        {progressUpdateEntries.length > 0 && (
+                          <div className="space-y-4 border-t pt-4 mt-4">
+                            <h3 className="text-lg font-semibold">Log Entries:</h3>
+                            {progressUpdateEntries.map((entry, index) => (
+                              <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
+                                <p className="font-medium text-gray-900 mb-2">{getDisplayStatus(entry.status)}</p>
+                                <DateTimePicker
+                                  label="Date and Time"
+                                  value={entry.dateTime}
+                                  onChange={(date) => handleProgressUpdateEntryChange(index, 'dateTime', date)}
+                                  disabled={isUpdatingProgress}
+                                  timeError={entry.timeError}
+                                  onTimeInputChange={(time) => handleProgressUpdateEntryChange(index, 'timeInput', time)}
+                                />
+                                <div className="space-y-2 mt-2">
+                                  <Label htmlFor={`notes-${index}`}>Notes (Optional)</Label>
+                                  <Textarea
+                                    id={`notes-${index}`}
+                                    value={entry.notes}
+                                    onChange={(e) => handleProgressUpdateEntryChange(index, 'notes', e.target.value)}
+                                    placeholder="Add any relevant notes for this update..."
+                                    disabled={isUpdatingProgress}
+                                  />
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setIsProgressUpdateDialogOpen(false)} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleProgressUpdate} disabled={isUpdatingProgress || !selectedProgressStatus || !progressUpdateDateTime}>
+                        <AlertDialogCancel onClick={() => { setIsProgressUpdateDialogOpen(false); setSelectedNewStatus(''); setProgressUpdateEntries([]); }} disabled={isUpdatingProgress}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleProgressUpdate} disabled={isUpdatingProgress || progressUpdateEntries.length === 0 || progressUpdateEntries.some(entry => entry.timeError !== null)}>
                           {isUpdatingProgress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                           Save Progress
                         </AlertDialogAction>

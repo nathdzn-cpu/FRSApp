@@ -9,17 +9,22 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils'; // Import the new utility
 
 interface DateTimePickerProps {
   value: Date | undefined;
   onChange: (date: Date | undefined) => void;
   label?: string;
   disabled?: boolean;
+  // New props for time input validation/error
+  timeError?: string | null;
+  onTimeInputChange?: (time: string) => void;
 }
 
-const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, label, disabled }) => {
+const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, label, disabled, timeError, onTimeInputChange }) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(value);
   const [timeInput, setTimeInput] = useState<string>(value ? format(value, 'HH:mm') : '');
+  const [internalTimeError, setInternalTimeError] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedDate(value);
@@ -44,33 +49,47 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, label,
       const now = new Date();
       newDateTime = setHours(newDateTime, now.getHours());
       newDateTime = setMinutes(newDateTime, now.getMinutes());
-      newDateTime = setSeconds(newDateTime, now.getSeconds());
+      newDateTime = setSeconds(newDateTime, 0);
     }
     setSelectedDate(newDateTime);
     onChange(newDateTime);
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = e.target.value;
-    setTimeInput(newTime);
+    const rawInput = e.target.value;
+    setTimeInput(rawInput);
+    if (onTimeInputChange) {
+      onTimeInputChange(rawInput); // Pass raw input to parent for external validation
+    }
 
-    const [hoursStr, minutesStr] = newTime.split(':');
-    const hours = parseInt(hoursStr, 10);
-    const minutes = parseInt(minutesStr, 10);
+    const { formattedTime, error } = formatAndValidateTimeInput(rawInput);
+    setInternalTimeError(error);
 
-    if (selectedDate && !isNaN(hours) && !isNaN(minutes)) {
+    if (formattedTime && selectedDate) {
+      const [hoursStr, minutesStr] = formattedTime.split(':');
+      const hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+
       let newDateTime = setHours(selectedDate, hours);
       newDateTime = setMinutes(newDateTime, minutes);
-      newDateTime = setSeconds(newDateTime, 0); // Reset seconds to 0
+      newDateTime = setSeconds(newDateTime, 0);
       onChange(newDateTime);
-    } else if (!selectedDate && !isNaN(hours) && !isNaN(minutes)) {
+    } else if (formattedTime && !selectedDate) {
       // If no date is selected, default to today's date with the chosen time
       let newDateTime = new Date();
-      newDateTime = setHours(newDateTime, hours);
-      newDateTime = setMinutes(newDateTime, minutes);
+      newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
+      newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
       newDateTime = setSeconds(newDateTime, 0);
       setSelectedDate(newDateTime);
       onChange(newDateTime);
+    } else {
+      // If time is invalid or empty, clear the time part of the date
+      if (selectedDate) {
+        const newDateTime = setHours(setMinutes(setSeconds(selectedDate, 0), 0), 0);
+        onChange(newDateTime);
+      } else {
+        onChange(undefined);
+      }
     }
   };
 
@@ -98,15 +117,29 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, label,
             onSelect={handleDateSelect}
             initialFocus
           />
-          <div className="p-3 border-t border-gray-200 flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <Input
-              type="time"
-              value={timeInput}
-              onChange={handleTimeChange}
-              className="w-full"
-              disabled={disabled}
-            />
+          <div className="p-3 border-t border-gray-200 flex flex-col space-y-2">
+            <Label htmlFor="time-input" className="sr-only">Time</Label>
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-gray-500" />
+              <Input
+                id="time-input"
+                type="text" // Changed to text to allow custom formatting
+                value={timeInput}
+                onChange={handleTimeChange}
+                onBlur={(e) => {
+                  const { formattedTime } = formatAndValidateTimeInput(e.target.value);
+                  if (formattedTime) {
+                    setTimeInput(formattedTime); // Auto-format on blur if valid
+                  }
+                }}
+                placeholder="HH:MM (e.g., 09:00 or 15:30)"
+                className="w-full"
+                disabled={disabled}
+              />
+            </div>
+            {(internalTimeError || timeError) && (
+              <p className="text-red-500 text-sm">{internalTimeError || timeError}</p>
+            )}
           </div>
         </PopoverContent>
       </Popover>
