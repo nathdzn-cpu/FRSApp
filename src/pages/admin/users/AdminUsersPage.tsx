@@ -328,13 +328,15 @@ const AdminUsersPage: React.FC = () => {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Reset Password for {user.full_name}?</AlertDialogTitle>
+                                  <AlertDialogTitle>Send Password Reset for {user.full_name}?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     This will send a password reset email to the user's registered email address.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel asChild>
+                                    <Button variant="outline">Cancel</Button>
+                                  </AlertDialogCancel>
                                   <AlertDialogAction onClick={() => handleResetPassword(user)} disabled={busyId === user.id}>Send Reset Email</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -347,14 +349,16 @@ const AdminUsersPage: React.FC = () => {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogTitle>Are you absolutely sure you want to delete {user.full_name}?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     This action cannot be undone. This will permanently delete the user profile and associated authentication record.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(user)} disabled={busyId === user.id}>Delete User</AlertDialogAction>
+                                  <AlertDialogCancel asChild>
+                                    <Button variant="outline">Cancel</Button>
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(user)} disabled={busyId === user.id} variant="destructive">Delete User</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>

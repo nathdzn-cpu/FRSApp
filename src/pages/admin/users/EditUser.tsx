@@ -192,8 +192,13 @@ const EditUser: React.FC = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleResetPassword} disabled={isResetPasswordBusy}>Send Reset Email</AlertDialogAction>
+                  <AlertDialogCancel asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetPassword} disabled={isResetPasswordBusy}>
+                    {isResetPasswordBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Send Reset Email
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

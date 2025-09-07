@@ -468,14 +468,16 @@ const JobDetail: React.FC = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will mark the job as cancelled.
+                          This action cannot be undone. This will permanently mark the job as cancelled and it will no longer appear in active job lists.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Dismiss</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancelJob}>Continue</AlertDialogAction>
+                        <AlertDialogCancel asChild>
+                          <Button variant="outline">Dismiss</Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelJob} variant="destructive">Cancel Job</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
