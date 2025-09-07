@@ -25,8 +25,8 @@ import AdminDailyChecks from './pages/admin/DailyChecks'; // Import the new Admi
 
 function App() {
   return (
-    <AuthContextProvider initialSession={null} initialUser={null}>
-      <Router>
+    <Router> {/* BrowserRouter starts here */}
+      <AuthContextProvider initialSession={null} initialUser={null}>
         <Toaster richColors position="top-right" />
         <div className="flex min-h-screen bg-gray-50">
           <Sidebar />
@@ -54,8 +54,8 @@ function App() {
             </main>
           </div>
         </div>
-      </Router>
-    </AuthContextProvider>
+      </AuthContextProvider>
+    </Router> // BrowserRouter ends here
   );
 }
 
