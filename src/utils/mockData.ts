@@ -84,6 +84,11 @@ export interface Job {
   notes?: string | null; // New field
   created_at: string;
   deleted_at?: string | null; // Added for soft deletion
+  // New fields from jobs_with_stop_details view
+  collection_name?: string | null;
+  collection_city?: string | null;
+  delivery_name?: string | null;
+  delivery_city?: string | null;
 }
 
 export interface JobStop {

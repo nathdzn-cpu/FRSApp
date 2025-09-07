@@ -35,10 +35,10 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Order Number</TableHead> {/* Changed from Ref */}
+            <TableHead>Order Number</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Pickup ETA</TableHead>
-            <TableHead>Delivery ETA</TableHead>
+            <TableHead>Collection</TableHead> {/* New column */}
+            <TableHead>Delivery</TableHead>   {/* New column */}
             <TableHead>Created At</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
@@ -46,7 +46,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
         <TableBody>
           {sortedJobs.map((job, index) => (
             <TableRow key={job.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
-              <TableCell className="font-medium">{job.order_number}</TableCell> {/* Changed from job.ref */}
+              <TableCell className="font-medium">{job.order_number}</TableCell>
               <TableCell>
                 <Badge
                   variant={
@@ -63,8 +63,16 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   {job.status.replace(/_/g, ' ')}
                 </Badge>
               </TableCell>
-              <TableCell>{job.pickup_eta || '-'}</TableCell>
-              <TableCell>{job.delivery_eta || '-'}</TableCell>
+              <TableCell>
+                {job.collection_name && job.collection_city
+                  ? `${job.collection_name}, ${job.collection_city}`
+                  : '-'}
+              </TableCell>
+              <TableCell>
+                {job.delivery_name && job.delivery_city
+                  ? `${job.delivery_name}, ${job.delivery_city}`
+                  : '-'}
+              </TableCell>
               <TableCell>{format(new Date(job.created_at), 'PPP')}</TableCell>
               <TableCell className="text-center">
                 <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline">

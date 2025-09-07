@@ -4,7 +4,7 @@ import { callFn } from '../callFunction'; // Import callFn
 
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string): Promise<Job[]> => {
   let query = supabase
-    .from('jobs')
+    .from('jobs_with_stop_details') // Query the new view
     .select('*')
     .eq('org_id', orgId)
     .is('deleted_at', null)
@@ -30,7 +30,7 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
 
 export const getJobById = async (orgId: string, jobId: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
   let query = supabase
-    .from('jobs')
+    .from('jobs_with_stop_details') // Query the new view
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
@@ -95,7 +95,7 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
 };
 
 interface CreateJobPayload {
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number'> & { order_number?: string | null };
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null };
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[];
   org_id: string;
   actor_id: string;
@@ -103,7 +103,7 @@ interface CreateJobPayload {
 
 export const createJob = async (
   orgId: string,
-  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number'> & { order_number?: string | null },
+  jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null },
   stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[],
   actorId: string
 ): Promise<Job> => {
@@ -153,7 +153,7 @@ export const generateJobPdf = async (jobId: string, orgId: string, actorId: stri
 
 export const cloneJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
   const { data: originalJob, error: jobError } = await supabase
-    .from('jobs')
+    .from('jobs_with_stop_details') // Query the view
     .select('*')
     .eq('id', jobId)
     .eq('org_id', orgId)
@@ -177,7 +177,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
   }
 
   // Do not generate new order_number here, let the trigger handle it for the new job
-  const newJob: Omit<Job, 'id' | 'created_at' | 'order_number'> & { order_number?: string | null } = {
+  const newJob: Omit<Job, 'id' | 'created_at' | 'order_number' | 'collection_name' | 'collection_city' | 'delivery_name' | 'delivery_city'> & { order_number?: string | null } = {
     org_id: orgId,
     order_number: null, // Let trigger generate
     status: 'planned',
@@ -243,7 +243,7 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
 
 export const cancelJob = async (jobId: string, orgId: string, actorId: string): Promise<Job | undefined> => {
   const { data: oldJob, error: fetchError } = await supabase
-    .from('jobs')
+    .from('jobs_with_stop_details') // Query the view
     .select('status')
     .eq('id', jobId)
     .eq('org_id', orgId)
