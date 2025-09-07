@@ -103,7 +103,13 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({
                   <FormItem>
                     <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Supplier Warehouse" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
+                      <AddressSearchInput
+                        placeholder="e.g., Supplier Warehouse"
+                        value={stopField.value || ''}
+                        onValueChange={stopField.onChange}
+                        onAddressSelect={(address) => handleAddressSelect(index, address)}
+                        disabled={disableStopDetailsForDriver || isSubmitting}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,13 +122,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({
                   <FormItem>
                     <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                     <FormControl>
-                      <AddressSearchInput
-                        placeholder="Start typing address or postcode..."
-                        value={stopField.value}
-                        onValueChange={stopField.onChange}
-                        onAddressSelect={(address) => handleAddressSelect(index, address)}
-                        disabled={disableStopDetailsForDriver || isSubmitting}
-                      />
+                      <Input placeholder="e.g., 123 High Street" {...stopField} disabled={disableStopDetailsForDriver || isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

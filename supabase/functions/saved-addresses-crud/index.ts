@@ -92,7 +92,7 @@ serve(async (req) => {
 
         if (searchTerm) {
           const searchPattern = `%${searchTerm.toLowerCase()}%`;
-          query = query.or(`name.ilike.${searchPattern},line_1.ilike.${searchPattern},town_or_city.ilike.${searchPattern},postcode.ilike.${searchPattern}`);
+          query = query.or(`name.ilike.${searchPattern},town_or_city.ilike.${searchPattern},postcode.ilike.${searchPattern}`);
         }
 
         const { data: readData, error: readError } = await query;
@@ -112,7 +112,7 @@ serve(async (req) => {
 
         if (searchTerm) {
           const searchPattern = `%${searchTerm.toLowerCase()}%`;
-          searchQuery = searchQuery.or(`name.ilike.${searchPattern},line_1.ilike.${searchPattern},postcode.ilike.${searchPattern}`);
+          searchQuery = searchQuery.or(`name.ilike.${searchPattern},town_or_city.ilike.${searchPattern},postcode.ilike.${searchPattern}`);
         }
 
         const { data: searchData, error: searchError } = await searchQuery;
@@ -130,10 +130,10 @@ serve(async (req) => {
           id: uuidv4(),
           org_id: effective_org_id,
           name: name || null,
-          line_1,
+          line_1: line_1,
           line_2: line_2 || null,
           town_or_city,
-          county: county || null,
+          county: county || null, // Assuming county might be available
           postcode: postcode.toUpperCase(), // Ensure postcode is uppercase
           favourite: favourite ?? false,
           created_at: currentTimestamp,
