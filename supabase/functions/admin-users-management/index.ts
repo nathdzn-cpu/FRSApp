@@ -99,31 +99,38 @@ serve(async (req) => {
         const newAuthId = createdAuthUser.user?.id;
         if (!newAuthId) throw new Error("Auth user ID missing after creation.");
 
-        const newProfilePayload: Record<string, any> = {
-          id: newAuthId,
+        // The 'handle_new_user' trigger will create the initial profile row.
+        // We now need to update it with the specific details from the form.
+        const profileUpdates: Record<string, any> = {
           org_id: effective_org_id,
           full_name,
           phone,
           role,
-          user_id: newAuthId, // Use auth ID as user_id for consistency
+          user_id: newAuthId, // Ensure user_id is set correctly
           is_demo: is_demo ?? false,
         };
-        if (dob) newProfilePayload.dob = dob;
+        if (dob) profileUpdates.dob = dob;
         if (role === "driver") {
-          newProfilePayload.truck_reg = truck_reg || null;
-          newProfilePayload.trailer_no = trailer_no || null;
+          profileUpdates.truck_reg = truck_reg || null;
+          profileUpdates.trailer_no = trailer_no || null;
         }
 
-        const { data: insertedProfile, error: iErr } = await admin
+        // Wait a moment for the trigger to complete, then update the profile
+        // A small delay can help ensure the trigger has run, though Supabase usually handles this quickly.
+        await new Promise(resolve => setTimeout(resolve, 100)); 
+
+        const { data: updatedProfile, error: uErr } = await admin
           .from("profiles")
-          .insert(newProfilePayload)
+          .update(profileUpdates) // Use update instead of insert
+          .eq("id", newAuthId)
           .select()
           .single();
 
-        if (iErr) {
-          // Attempt to roll back auth user creation if profile insert fails
+        if (uErr) {
+          // If update fails, it means the profile wasn't created by the trigger,
+          // or there's another issue. We should still try to delete the auth user.
           await admin.auth.admin.deleteUser(newAuthId).catch(e => console.error("Failed to rollback auth user:", e.message));
-          throw new Error("Profile insert failed: " + iErr.message);
+          throw new Error("Profile update failed after auth user creation: " + uErr.message);
         }
 
         await admin.from("audit_logs").insert({
@@ -136,7 +143,7 @@ serve(async (req) => {
           created_at: new Date().toISOString(),
         }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
 
-        resultData = insertedProfile;
+        resultData = updatedProfile;
         break;
 
       case "update":
@@ -152,7 +159,7 @@ serve(async (req) => {
         if (fetchOldProfileError) throw new Error("Failed to fetch old profile for update: " + fetchOldProfileError.message);
         if (!oldProfile) throw new Error("Profile not found for update.");
 
-        const { data: updatedProfile, error: updateError } = await admin
+        const { data: updatedProfileData, error: updateError } = await admin
           .from("profiles")
           .update(updates)
           .eq("id", profile_id)
@@ -169,11 +176,11 @@ serve(async (req) => {
           entity_id: profile_id,
           action: "update",
           before: oldProfile, // Simplified, ideally full old profile
-          after: updatedProfile,
+          after: updatedProfileData,
           created_at: new Date().toISOString(),
         }).catch((e) => console.log("DEBUG: audit insert failed", e.message));
 
-        resultData = updatedProfile;
+        resultData = updatedProfileData;
         break;
 
       case "delete":
