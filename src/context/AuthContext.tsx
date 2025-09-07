@@ -26,7 +26,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const [user, setUser] = useState<User | null>(initialUser);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(undefined);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true); // Loading state for profile/role
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true); // Loading state for initial session and profile fetch
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,25 +34,24 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   useEffect(() => {
     let mounted = true;
 
-    async function loadSession() {
-      const { data: { session: initialDataSession }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Error loading initial session:", sessionError);
-      }
+    // Hydrate session once on mount
+    supabase.auth.getSession().then(({ data }) => {
       if (mounted) {
-        setSession(initialDataSession || null);
-        setUser(initialDataSession?.user || null);
+        setSession(data.session || null);
+        setUser(data.session?.user || null); // Ensure user is set here
         setIsLoadingAuth(false); // Set to false after initial session check
       }
-    }
+    });
 
-    loadSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    // Listen for login/logout events
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
-        setSession(newSession);
-        setUser(newSession?.user || null);
-        setIsLoadingAuth(false); // Also set to false on subsequent auth state changes
+        setSession(session);
+        setUser(session?.user || null); // Ensure user is set here
+        // Do not flip back to true — just mark as loaded.
+        // isLoadingAuth should already be false after initial load.
+        // If it was true, this would set it to false.
+        setIsLoadingAuth(false);
       }
     });
 
@@ -63,11 +62,10 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   }, []); // Run only once on mount
 
   const fetchProfile = useCallback(async (currentUser: User | null) => {
-    setIsLoadingAuth(true); // Set loading true when fetching profile
+    // IMPORTANT: Removed setIsLoadingAuth(true) from here to prevent loop
     setProfile(null);
     setUserRole(undefined);
     if (!currentUser) {
-      setIsLoadingAuth(false);
       return;
     }
 
@@ -92,21 +90,23 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       console.error("Error fetching profile:", error);
       toast.error("An unexpected error occurred while fetching profile.");
     } finally {
-      setIsLoadingAuth(false); // Set loading false after profile fetch attempt
+      // IMPORTANT: Removed setIsLoadingAuth(false) from here.
+      // The main useEffect for session will handle the final isLoadingAuth(false).
     }
   }, []);
 
   useEffect(() => {
-    // Only fetch profile if user is available and not already loading auth
+    // This effect runs when 'user' changes.
+    // The 'isLoadingAuth' in the dependency array ensures it waits for the initial session load to complete.
     if (user && !isLoadingAuth) {
       fetchProfile(user);
     } else if (!user) {
-      // If no user, ensure profile and role are cleared and loading is false
+      // If no user, ensure profile and role are cleared.
       setProfile(null);
       setUserRole(undefined);
-      setIsLoadingAuth(false);
+      // Do NOT set isLoadingAuth here. The session listener handles it.
     }
-  }, [user, fetchProfile, isLoadingAuth]); // Re-run when user changes or isLoadingAuth changes
+  }, [user, fetchProfile, isLoadingAuth]); // Re-run when user changes or initial isLoadingAuth changes
 
   // Redirection logic based on profile/role
   useEffect(() => {
