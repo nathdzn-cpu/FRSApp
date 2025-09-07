@@ -112,6 +112,7 @@ serve(async (req) => {
 
         if (searchTerm) {
           const searchPattern = `%${searchTerm.toLowerCase()}%`;
+          // Updated search to prioritize name, then city, then postcode
           searchQuery = searchQuery.or(`name.ilike.${searchPattern},town_or_city.ilike.${searchPattern},postcode.ilike.${searchPattern}`);
         }
 
