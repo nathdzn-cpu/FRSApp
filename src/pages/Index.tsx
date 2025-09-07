@@ -22,13 +22,13 @@ type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const Index = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  const [selectedTenantId, setSelectedTenantId] = useState<string | undefined>(undefined);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined); // Changed from selectedTenantId
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id';
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
   const currentProfile = profile;
   const canCreateJob = userRole === 'admin' || userRole === 'office';
   const canAccessAdminUsers = userRole === 'admin';
@@ -41,12 +41,12 @@ const Index = () => {
     enabled: !!user && !!currentProfile && !isLoadingAuth,
   });
 
-  // Set selectedTenantId once tenants and profile are loaded
+  // Set selectedOrgId once tenants and profile are loaded
   useEffect(() => {
-    if (tenants.length > 0 && currentProfile && !selectedTenantId) {
-      setSelectedTenantId(currentProfile.org_id || tenants[0]?.id);
+    if (tenants.length > 0 && currentProfile && !selectedOrgId) {
+      setSelectedOrgId(currentProfile.org_id || tenants[0]?.id);
     }
-  }, [tenants, currentProfile, selectedTenantId]);
+  }, [tenants, currentProfile, selectedOrgId]);
 
   // Determine date filters for jobs query
   const getJobDateFilters = () => {
@@ -77,18 +77,18 @@ const Index = () => {
 
   // Fetch profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', selectedTenantId],
-    queryFn: () => getProfiles(selectedTenantId!),
+    queryKey: ['profiles', selectedOrgId],
+    queryFn: () => getProfiles(selectedOrgId!), // Pass orgId
     staleTime: 5 * 60 * 1000,
-    enabled: !!selectedTenantId && !!user && !!currentProfile && !isLoadingAuth,
+    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth,
   });
 
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedTenantId, userRole, currentProfile?.id, startDate, endDate],
-    queryFn: () => getJobs(selectedTenantId!, userRole!, currentProfile?.id, startDate, endDate),
+    queryKey: ['jobs', selectedOrgId, userRole, currentProfile?.id, startDate, endDate],
+    queryFn: () => getJobs(selectedOrgId!, userRole!, currentProfile?.id, startDate, endDate), // Pass orgId
     staleTime: 60 * 1000, // Cache jobs for 1 minute
-    enabled: !!selectedTenantId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
+    enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
   });
 
   const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;

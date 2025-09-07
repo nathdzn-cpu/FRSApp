@@ -8,6 +8,8 @@ interface SubmitDailyCheckPayload {
   finished_at: string;
   signature?: string; // Base64 string
   items: Array<{ item_id: string; ok: boolean; notes?: string; photo_base64?: string }>;
+  org_id: string; // Added org_id
+  driver_id: string; // Added driver_id
 }
 
 export const submitDailyCheckResponse = async (payload: SubmitDailyCheckPayload): Promise<DailyCheckResponse> => {

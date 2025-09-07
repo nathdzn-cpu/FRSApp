@@ -1,3 +1,131 @@
-// supabase/functions/admin-daily-check-items/index.ts
+// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
-serve(() => new Response(JSON.stringify({ ok:false, error: "admin-daily-check-items not configured" }), { status: 404, headers: { "Content-Type": "application/json" }}));
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
+
+function adminClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
+}
+
+function userClient(authHeader: string | null) {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const token =
+    (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : "") || "";
+  return createClient(url, anon, {
+    global: { headers: { Authorization: token ? `Bearer ${token}` : "" } },
+    auth: { persistSession: false },
+  });
+}
+
+serve(async (req) => {
+  try {
+    const admin = adminClient();
+    const user = userClient(req.headers.get("authorization"));
+
+    // 1) Authenticate and authorize caller
+    const { data: authUser } = await user.auth.getUser();
+    if (!authUser?.user?.id) {
+      throw new Error("Not signed in or no auth user ID.");
+    }
+
+    const { data: me, error: meErr } = await user
+      .from("profiles")
+      .select("id, role, org_id")
+      .eq("id", authUser.user.id)
+      .single();
+
+    if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
+    if (!me || me.role !== "admin" || !me.org_id) {
+      throw new Error("Access denied (admin role required and org_id must be set).");
+    }
+
+    // 2) Parse body and determine operation
+    const body = await req.json().catch(() => ({}));
+    const { op, id, title, description, is_active, changes, org_id: body_org_id } = body;
+
+    // Ensure org_id from body matches user's org_id
+    if (body_org_id && body_org_id !== me.org_id) {
+      throw new Error("Organization ID mismatch. User can only manage items in their own organization.");
+    }
+    const effective_org_id = me.org_id;
+
+    let resultData: any;
+    let status = 200;
+
+    switch (op) {
+      case "read":
+        const { data: readData, error: readError } = await admin
+          .from("daily_check_items")
+          .select("id, title, description, is_active")
+          .eq("org_id", effective_org_id)
+          .order("created_at", { ascending: false });
+        if (readError) throw readError;
+        resultData = readData;
+        break;
+
+      case "create":
+        if (!title) throw new Error("Title is required for creating a daily check item.");
+        const newItem = {
+          id: uuidv4(),
+          org_id: effective_org_id,
+          title,
+          description: description || null,
+          is_active: is_active ?? true,
+          created_at: new Date().toISOString(),
+        };
+        const { data: createData, error: createError } = await admin
+          .from("daily_check_items")
+          .insert(newItem)
+          .select()
+          .single();
+        if (createError) throw createError;
+        resultData = createData;
+        break;
+
+      case "update":
+        if (!id || !changes) throw new Error("ID and changes are required for updating a daily check item.");
+        const { data: updateData, error: updateError } = await admin
+          .from("daily_check_items")
+          .update(changes)
+          .eq("id", id)
+          .eq("org_id", effective_org_id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        resultData = updateData;
+        break;
+
+      case "delete":
+        if (!id) throw new Error("ID is required for deleting a daily check item.");
+        const { error: deleteError } = await admin
+          .from("daily_check_items")
+          .delete()
+          .eq("id", id)
+          .eq("org_id", effective_org_id);
+        if (deleteError) throw deleteError;
+        resultData = { message: "Item deleted successfully." };
+        break;
+
+      default:
+        throw new Error("Invalid operation specified.");
+    }
+
+    return new Response(
+      JSON.stringify(resultData),
+      { status, headers: { "Content-Type": "application/json" } },
+    );
+  } catch (e) {
+    console.error("DEBUG: function error", e);
+    return new Response(
+      JSON.stringify({ ok: false, error: (e as Error).message }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+});

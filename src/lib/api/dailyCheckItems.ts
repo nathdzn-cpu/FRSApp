@@ -1,24 +1,24 @@
 import { DailyCheckItem } from '@/utils/mockData';
 import { supabase } from '../supabaseClient';
+import { callFn } from '../callFunction';
 
-const EDGE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1/admin-daily-check-items';
-
-export const getDailyCheckItems = async (): Promise<DailyCheckItem[]> => {
+export const getDailyCheckItems = async (orgId: string): Promise<DailyCheckItem[]> => {
   const { data, error } = await supabase.functions.invoke('admin-daily-check-items', {
-    method: 'GET',
+    method: 'POST', // Changed to POST to send body
+    body: JSON.stringify({ op: "read", org_id: orgId }), // Pass org_id in body
   });
 
   if (error) {
     console.error("Error fetching daily check items:", error);
     throw new Error(data?.error || "Failed to fetch daily check items.");
   }
-  return data;
+  return data as DailyCheckItem[];
 };
 
-export const createDailyCheckItem = async (itemData: Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>): Promise<DailyCheckItem> => {
+export const createDailyCheckItem = async (orgId: string, itemData: Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>): Promise<DailyCheckItem> => {
   const { data, error } = await supabase.functions.invoke('admin-daily-check-items', {
     method: 'POST',
-    body: JSON.stringify(itemData),
+    body: JSON.stringify({ op: "create", org_id: orgId, ...itemData }), // Added org_id to payload
   });
 
   if (error) {
@@ -28,10 +28,10 @@ export const createDailyCheckItem = async (itemData: Omit<DailyCheckItem, 'id' |
   return data;
 };
 
-export const updateDailyCheckItem = async (itemId: string, updates: Partial<Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>>): Promise<DailyCheckItem> => {
+export const updateDailyCheckItem = async (orgId: string, itemId: string, updates: Partial<Omit<DailyCheckItem, 'id' | 'org_id' | 'created_at'>>): Promise<DailyCheckItem> => {
   const { data, error } = await supabase.functions.invoke(`admin-daily-check-items/${itemId}`, {
     method: 'PUT',
-    body: JSON.stringify(updates),
+    body: JSON.stringify({ op: "update", org_id: orgId, changes: updates }), // Added org_id to payload
   });
 
   if (error) {
@@ -41,9 +41,10 @@ export const updateDailyCheckItem = async (itemId: string, updates: Partial<Omit
   return data;
 };
 
-export const deleteDailyCheckItem = async (itemId: string): Promise<void> => {
+export const deleteDailyCheckItem = async (orgId: string, itemId: string): Promise<void> => {
   const { data, error } = await supabase.functions.invoke(`admin-daily-check-items/${itemId}`, {
     method: 'DELETE',
+    body: JSON.stringify({ op: "delete", org_id: orgId }), // Added org_id to payload
   });
 
   if (error) {

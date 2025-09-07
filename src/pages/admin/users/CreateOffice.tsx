@@ -15,7 +15,7 @@ const CreateOffice: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | undefined>(undefined); // This will be the admin's profile
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   useEffect(() => {
     if (isLoadingAuth) return; // Wait for auth to load
@@ -31,9 +31,9 @@ const CreateOffice: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = profile?.org_id || fetchedTenants[0]?.id;
-        if (defaultTenantId && user) {
-          const profiles = await getProfiles(defaultTenantId);
+        const defaultOrgId = profile?.org_id || fetchedTenants[0]?.id;
+        if (defaultOrgId && user) {
+          const profiles = await getProfiles(defaultOrgId);
           setCurrentProfile(profiles.find(p => p.user_id === user.id)); // Set the admin's profile
         }
       } catch (err: any) {
@@ -61,7 +61,7 @@ const CreateOffice: React.FC = () => {
         password: values.password, // This would be handled by Supabase Auth Admin API
       };
 
-      const promise = createUser(currentTenantId, newOfficeData, currentProfile.id);
+      const promise = createUser(currentOrgId, newOfficeData, currentProfile.id);
       toast.promise(promise, {
         loading: 'Creating office user...',
         success: 'Office user created successfully!',

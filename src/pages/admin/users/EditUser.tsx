@@ -30,7 +30,7 @@ const EditUser: React.FC = () => {
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined); // This will be the admin's profile
   const [isResetPasswordBusy, setIsResetPasswordBusy] = useState(false);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   useEffect(() => {
     if (isLoadingAuth) return; // Wait for auth to load
@@ -46,9 +46,9 @@ const EditUser: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = profile?.org_id || fetchedTenants[0]?.id;
-        if (defaultTenantId && user) {
-          const allProfiles = await getProfiles(defaultTenantId);
+        const defaultOrgId = profile?.org_id || fetchedTenants[0]?.id;
+        if (defaultOrgId && user) {
+          const allProfiles = await getProfiles(defaultOrgId);
           setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id)); // Set the admin's profile
           setUserToEdit(allProfiles.find(p => p.id === id));
         }
@@ -79,7 +79,7 @@ const EditUser: React.FC = () => {
         trailer_no: values.trailer_no || undefined, // Ensure empty string becomes undefined
       };
 
-      const promise = updateUser(currentTenantId, userToEdit.id, updates, currentAdminProfile.id);
+      const promise = updateUser(currentOrgId, userToEdit.id, updates, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Updating ${userToEdit.full_name}...`,
         success: 'User updated successfully!',
@@ -106,7 +106,7 @@ const EditUser: React.FC = () => {
     // For this mock, we'll just simulate the action.
     try {
       setIsResetPasswordBusy(true);
-      const promise = resetUserPassword(currentTenantId, userToEdit.user_id, currentAdminProfile.id);
+      const promise = resetUserPassword(currentOrgId, userToEdit.user_id, currentAdminProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToEdit.full_name}...`,
         success: `Password reset email sent to ${userToEdit.full_name}! (Simulated)`,

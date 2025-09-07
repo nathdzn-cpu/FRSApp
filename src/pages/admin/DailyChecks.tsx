@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { createDailyCheckItem, updateDailyCheckItem, deleteDailyCheckItem, getDailyCheckItems } from '@/lib/api/dailyCheckItems'; // Import API functions
 
 type DailyCheckItem = { id: string; title: string; description: string | null; is_active: boolean };
 
@@ -46,10 +47,10 @@ const AdminDailyChecks: React.FC = () => {
   // State for editing item dialog
   const [editingItem, setEditingItem] = useState<DailyCheckItem | null>(null);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
 
   const loadItems = async () => {
-    if (!user || userRole !== 'admin' || !currentTenantId) {
+    if (!user || userRole !== 'admin' || !currentOrgId) {
       setLoadingData(false);
       return;
     }
@@ -61,7 +62,7 @@ const AdminDailyChecks: React.FC = () => {
       const { data, error: dbError } = await supabase
         .from("daily_check_items")
         .select("id, title, description, is_active")
-        .eq("org_id", currentTenantId) // Filter by org_id
+        .eq("org_id", currentOrgId) // Filter by org_id
         .order("created_at", { ascending: false });
 
       if (dbError) {
@@ -86,7 +87,7 @@ const AdminDailyChecks: React.FC = () => {
       return;
     }
     loadItems();
-  }, [user, userRole, currentTenantId, isLoadingAuth, navigate]);
+  }, [user, userRole, currentOrgId, isLoadingAuth, navigate]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
@@ -102,12 +103,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "create", title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive, org_id: currentTenantId };
+      const itemData = { title: newItemTitle, description: newItemDescription.trim() || null, is_active: newItemIsActive };
       try {
-        await callFn("admin-daily-check-items", payload);
+        await createDailyCheckItem(currentOrgId, itemData); // Pass orgId
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").insert({ ...payload, org_id: currentTenantId });
+          const { error: dbError } = await supabase.from("daily_check_items").insert({ ...itemData, org_id: currentOrgId });
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -131,12 +132,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "update", id, changes: { is_active: !is_active }, org_id: currentTenantId };
+      const updates = { is_active: !is_active };
       try {
-        await callFn("admin-daily-check-items", payload);
+        await updateDailyCheckItem(currentOrgId, id, updates); // Pass orgId
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").update({ is_active: !is_active }).eq("id", id).eq("org_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").update(updates).eq("id", id).eq("org_id", currentOrgId);
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -165,12 +166,12 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "update", id: editingItem.id, changes: { title: editingItem.title, description: editingItem.description?.trim() || null }, org_id: currentTenantId };
+      const updates = { title: editingItem.title, description: editingItem.description?.trim() || null };
       try {
-        await callFn("admin-daily-check-items", payload);
+        await updateDailyCheckItem(currentOrgId, editingItem.id, updates); // Pass orgId
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").update({ title: editingItem.title, description: editingItem.description?.trim() || null }).eq("id", editingItem.id).eq("org_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").update(updates).eq("id", editingItem.id).eq("org_id", currentOrgId);
           if (dbError) throw dbError;
         } else {
           throw e;
@@ -192,12 +193,11 @@ const AdminDailyChecks: React.FC = () => {
     setBusy(true);
     setFnError(null);
     try {
-      const payload = { op: "delete", id, org_id: currentTenantId };
       try {
-        await callFn("admin-daily-check-items", payload);
+        await deleteDailyCheckItem(currentOrgId, id); // Pass orgId
       } catch (e: any) {
         if (/404|not configured|Failed/i.test(e.message)) {
-          const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("org_id", currentTenantId);
+          const { error: dbError } = await supabase.from("daily_check_items").delete().eq("id", id).eq("org_id", currentOrgId);
           if (dbError) throw dbError;
         } else {
           throw e;

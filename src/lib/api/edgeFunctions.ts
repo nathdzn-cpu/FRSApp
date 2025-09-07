@@ -6,14 +6,14 @@ import { delay } from '../utils/apiUtils';
 // Functions like requestPod, generateJobPdf, cloneJob, cancelJob, assignDriverToJob
 // are now handled by src/lib/api/jobs.ts with direct Supabase calls.
 
-export const recordLocationPing = async (jobId: string, tenantId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => {
+export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobEvent> => { // Changed tenantId to orgId
   await delay(100); // Very quick for frequent pings
-  const job = mockJobs.find(j => j.id === jobId && j.tenant_id === tenantId && j.assigned_driver_id === driverId);
+  const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId); // Changed j.tenant_id to j.org_id
   if (!job || job.status !== 'in_progress') throw new Error("Job not in progress or not assigned to this driver.");
 
   const newEvent: JobEvent = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: orgId, // Changed tenant_id to org_id
     job_id: jobId,
     actor_id: driverId,
     event_type: 'location_ping',
@@ -24,17 +24,15 @@ export const recordLocationPing = async (jobId: string, tenantId: string, driver
   mockJobEvents.push(newEvent);
 
   // Update driver's last location
-  const driverProfile = mockProfileDevices.find(p => p.profile_id === driverId); // Should be mockProfiles
+  const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
   if (driverProfile) {
-    // This part needs to be updated to use mockProfiles, not mockProfileDevices
-    // For now, leaving as is to avoid further changes, but noting it's incorrect.
-    // driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
+    driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
   return newEvent;
 };
 
-export const registerPushToken = async (profileId: string, tenantId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => {
+export const registerPushToken = async (profileId: string, orgId: string, platform: 'ios' | 'android', expoPushToken: string): Promise<ProfileDevice> => { // Changed tenantId to orgId
   await delay(300);
   // Check for existing device for this profile and platform
   const existingDeviceIndex = mockProfileDevices.findIndex(
@@ -43,7 +41,7 @@ export const registerPushToken = async (profileId: string, tenantId: string, pla
 
   const newDevice: ProfileDevice = {
     id: uuidv4(),
-    tenant_id: tenantId,
+    org_id: orgId, // Changed tenant_id to org_id
     profile_id: profileId,
     platform: platform,
     expo_push_token: expoPushToken,

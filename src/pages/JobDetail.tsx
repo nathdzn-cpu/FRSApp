@@ -41,14 +41,14 @@ const JobDetail: React.FC = () => {
   const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>(undefined);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
   const currentProfile = profile; // Use profile from AuthContext
   const canSeePrice = userRole === 'admin' || userRole === 'office';
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', currentTenantId],
-    queryFn: () => getProfiles(currentTenantId),
+    queryKey: ['profiles', currentOrgId],
+    queryFn: () => getProfiles(currentOrgId), // Pass orgId
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!user && !!currentProfile, // Only fetch if user and profile are loaded
   });
@@ -62,18 +62,18 @@ const JobDetail: React.FC = () => {
   }, Error>({
     queryKey: ['jobDetail', id, userRole, currentProfile?.id],
     queryFn: async () => {
-      if (!id || !currentTenantId || !currentProfile || !userRole) {
+      if (!id || !currentOrgId || !currentProfile || !userRole) {
         throw new Error("Missing job ID, tenant ID, current profile, or user role.");
       }
 
-      const fetchedJob = await getJobById(currentTenantId, id, userRole, currentProfile.id);
+      const fetchedJob = await getJobById(currentOrgId, id, userRole, currentProfile.id); // Pass orgId
       if (!fetchedJob) {
         throw new Error("Job not found or you don't have permission to view it.");
       }
 
-      const fetchedStops = await getJobStops(currentTenantId, id);
-      const fetchedEvents = await getJobEvents(currentTenantId, id);
-      const fetchedDocuments = await getJobDocuments(currentTenantId, id);
+      const fetchedStops = await getJobStops(currentOrgId, id); // Pass orgId
+      const fetchedEvents = await getJobEvents(currentOrgId, id); // Pass orgId
+      const fetchedDocuments = await getJobDocuments(currentOrgId, id); // Pass orgId
 
       return {
         job: fetchedJob,
@@ -82,7 +82,7 @@ const JobDetail: React.FC = () => {
         documents: fetchedDocuments,
       };
     },
-    enabled: !!id && !!currentTenantId && !!currentProfile && !!userRole && !isLoadingAuth, // Only run query if these are available and not loading auth
+    enabled: !!id && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth, // Only run query if these are available and not loading auth
     retry: false, // Do not retry on failure, show error immediately
   });
 
@@ -101,7 +101,7 @@ const JobDetail: React.FC = () => {
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile) return;
-    const promise = requestPod(job.id, currentTenantId, currentProfile.id);
+    const promise = requestPod(job.id, currentOrgId, currentProfile.id); // Pass orgId
     toast.promise(promise, {
       loading: 'Requesting POD...',
       success: 'POD request sent to driver!',
@@ -113,7 +113,7 @@ const JobDetail: React.FC = () => {
 
   const handleExportPdf = async () => {
     if (!job || !currentProfile) return;
-    const promise = generateJobPdf(job.id, currentTenantId, currentProfile.id);
+    const promise = generateJobPdf(job.id, currentOrgId, currentProfile.id); // Pass orgId
     toast.promise(promise, {
       loading: 'Generating PDF...',
       success: (url) => {
@@ -129,7 +129,7 @@ const JobDetail: React.FC = () => {
 
   const handleCloneJob = async () => {
     if (!job || !currentProfile) return;
-    const promise = cloneJob(job.id, currentTenantId, currentProfile.id);
+    const promise = cloneJob(job.id, currentOrgId, currentProfile.id); // Pass orgId
     toast.promise(promise, {
       loading: 'Cloning job...',
       success: (clonedJob) => {
@@ -145,7 +145,7 @@ const JobDetail: React.FC = () => {
 
   const handleCancelJob = async () => {
     if (!job || !currentProfile) return;
-    const promise = cancelJob(job.id, currentTenantId, currentProfile.id);
+    const promise = cancelJob(job.id, currentOrgId, currentProfile.id); // Pass orgId
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
@@ -157,7 +157,7 @@ const JobDetail: React.FC = () => {
 
   const handleAssignDriver = async () => {
     if (!job || !currentProfile || !selectedDriverId) return;
-    const promise = assignDriverToJob(job.id, currentTenantId, selectedDriverId, currentProfile.id);
+    const promise = assignDriverToJob(job.id, currentOrgId, selectedDriverId, currentProfile.id); // Pass orgId
     toast.promise(promise, {
       loading: 'Assigning driver...',
       success: 'Driver assigned successfully!',

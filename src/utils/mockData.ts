@@ -9,7 +9,7 @@ export interface Tenant {
 
 export interface Profile {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   full_name: string;
   dob?: string;
   phone?: string;
@@ -25,7 +25,7 @@ export interface Profile {
 
 export interface DailyChecklist {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   name: string;
   items: { id: string; text: string; type: 'checkbox' | 'text' }[];
   active: boolean;
@@ -35,7 +35,7 @@ export interface DailyChecklist {
 // New interfaces for Daily HGV Checks
 export interface DailyCheckItem {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   title: string;
   description?: string;
   is_active: boolean;
@@ -44,7 +44,7 @@ export interface DailyCheckItem {
 
 export interface DailyCheckResponse {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   driver_id: string;
   truck_reg: string;
   trailer_no?: string;
@@ -58,7 +58,7 @@ export interface DailyCheckResponse {
 
 export interface DailyCheck {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   driver_id: string;
   checklist_id: string;
   vehicle_reg: string;
@@ -75,7 +75,7 @@ export interface DailyCheck {
 
 export interface Job {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   ref: string;
   price: number | null; // Changed to allow null
   status: 'planned' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
@@ -89,7 +89,7 @@ export interface Job {
 
 export interface JobStop {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   job_id: string;
   seq: number;
   type: 'collection' | 'delivery';
@@ -105,7 +105,7 @@ export interface JobStop {
 
 export interface JobEvent {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   job_id: string;
   stop_id?: string | null; // Changed to allow null
   actor_id: string; // profile_id
@@ -118,7 +118,7 @@ export interface JobEvent {
 
 export interface Document {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   job_id: string;
   stop_id?: string | null; // Changed to allow null
   type: 'pod' | 'cmr' | 'damage' | 'check_signature';
@@ -129,7 +129,7 @@ export interface Document {
 
 export interface ProfileDevice {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   profile_id: string;
   platform: 'ios' | 'android';
   expo_push_token: string;
@@ -138,7 +138,7 @@ export interface ProfileDevice {
 
 export interface AuditLog {
   id: string;
-  tenant_id: string;
+  org_id: string; // Changed from tenant_id
   actor_id: string; // profile_id
   entity: string;
   entity_id: string;
@@ -163,7 +163,7 @@ export const mockTenants: Tenant[] = [
 export let mockProfiles: Profile[] = [ // Made mutable
   {
     id: aliceAdminId,
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     full_name: 'Alice Admin',
     role: 'admin',
     user_id: 'auth_user_alice', // Placeholder for Supabase auth.users.id
@@ -172,7 +172,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
   },
   {
     id: daveDriverId,
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     full_name: 'Dave Driver',
     role: 'driver',
     user_id: 'auth_user_dave',
@@ -188,7 +188,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
 export const mockDailyChecklists: DailyChecklist[] = [
   {
     id: checklist1Id,
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     name: 'Pre-shift Vehicle Check',
     items: [
       { id: 'lights', text: 'All lights working?', type: 'checkbox' },
@@ -207,7 +207,7 @@ export const mockDailyChecklists: DailyChecklist[] = [
 export const mockDailyCheckItems: DailyCheckItem[] = [
   {
     id: uuidv4(),
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     title: "Brakes",
     description: "Check brake fluid, pads, and general function.",
     is_active: true,
@@ -215,7 +215,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     title: "Lights",
     description: "Check all exterior lights (headlights, tail lights, indicators, brake lights).",
     is_active: true,
@@ -223,7 +223,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     title: "Tires",
     description: "Check tire pressure, tread depth, and for any damage.",
     is_active: true,
@@ -231,7 +231,7 @@ export const mockDailyCheckItems: DailyCheckItem[] = [
   },
   {
     id: uuidv4(),
-    tenant_id: demoTenantId,
+    org_id: demoTenantId, // Changed from tenant_id
     title: "Windscreen Wipers",
     description: "Check wiper blades for wear and washer fluid level.",
     is_active: false,

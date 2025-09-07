@@ -39,11 +39,11 @@ const AdminUsersPage: React.FC = () => {
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
 
   const fetchUsers = async () => {
-    if (!user || userRole !== 'admin' || !currentTenantId) {
+    if (!user || userRole !== 'admin' || !currentOrgId) {
       setLoadingData(false);
       return;
     }
@@ -52,12 +52,12 @@ const AdminUsersPage: React.FC = () => {
     setError(null);
     try {
       const fetchedTenants = await getTenants();
-      const defaultTenantId = currentProfile?.org_id || fetchedTenants[0]?.id;
+      const defaultOrgId = currentProfile?.org_id || fetchedTenants[0]?.id;
 
-      if (defaultTenantId) {
-        const fetchedProfiles = await getProfiles(defaultTenantId); // This fetches all profiles, including the current admin's
+      if (defaultOrgId) {
+        const fetchedProfiles = await getProfiles(defaultOrgId); // This fetches all profiles, including the current admin's
         setProfiles(fetchedProfiles); // Keep this for general profile lookup if needed
-        const fetchedUsers = await getUsersForAdmin(defaultTenantId);
+        const fetchedUsers = await getUsersForAdmin(defaultOrgId);
         setUsers(fetchedUsers);
       }
     } catch (err: any) {
@@ -77,7 +77,7 @@ const AdminUsersPage: React.FC = () => {
       return;
     }
     fetchUsers();
-  }, [user, userRole, currentTenantId, isLoadingAuth, navigate]);
+  }, [user, userRole, currentOrgId, isLoadingAuth, navigate]);
 
   const handleResetPassword = async (userToReset: Profile) => {
     if (!currentProfile) {
@@ -86,7 +86,7 @@ const AdminUsersPage: React.FC = () => {
     }
     try {
       setBusyId(userToReset.id);
-      const promise = resetUserPassword(currentTenantId, userToReset.user_id, currentProfile.id);
+      const promise = resetUserPassword(currentOrgId, userToReset.user_id, currentProfile.id);
       toast.promise(promise, {
         loading: `Sending password reset to ${userToReset.full_name}...`,
         success: `Password reset email sent to ${userToReset.full_name}! (Simulated)`,
@@ -108,7 +108,7 @@ const AdminUsersPage: React.FC = () => {
     }
     try {
       setBusyId(userToDelete.id);
-      const promise = deleteUser(currentTenantId, userToDelete.id, currentProfile.id);
+      const promise = deleteUser(currentOrgId, userToDelete.id, currentProfile.id);
       toast.promise(promise, {
         loading: `Deleting ${userToDelete.full_name}...`,
         success: `${userToDelete.full_name} deleted successfully! (Simulated)`,
@@ -139,7 +139,7 @@ const AdminUsersPage: React.FC = () => {
 
     setPurging(true);
     try {
-      const result = await purgeDemoUsers(currentTenantId, currentProfile.id);
+      const result = await purgeDemoUsers(currentOrgId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} demo user(s).`);
         fetchUsers(); // Refresh the list after purge
@@ -165,7 +165,7 @@ const AdminUsersPage: React.FC = () => {
 
     setPurgingAll(true);
     try {
-      const result = await purgeAllNonAdminUsers(currentTenantId, currentProfile.id);
+      const result = await purgeAllNonAdminUsers(currentOrgId, currentProfile.id);
       if (result.ok) {
         toast.success(`Removed ${result.removed} non-admin user(s).`);
         fetchUsers(); // Refresh the list after purge

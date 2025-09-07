@@ -3,15 +3,15 @@ import { serve } from "https://deno.land/std@0.223.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function adminClient() {
-  const url = Deno.env.get("URL");
-  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing URL or SERVICE_ROLE_KEY");
+  const url = Deno.env.get("SUPABASE_URL"); // Changed from URL
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"); // Changed from SERVICE_ROLE_KEY
+  if (!url || !serviceKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"); // Changed from URL or SERVICE_ROLE_KEY
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
 function userClient(authHeader: string | null) {
-  const url = Deno.env.get("URL")!;
-  const anon = Deno.env.get("ANON_KEY")!;
+  const url = Deno.env.get("SUPABASE_URL")!; // Changed from URL
+  const anon = Deno.env.get("SUPABASE_ANON_KEY")!; // Changed from ANON_KEY
   const token =
     (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : "") || "";
   return createClient(url, anon, {
@@ -41,12 +41,12 @@ if (!authUser?.user?.id) {
 
 const { data: me, error: meErr } = await user
   .from("profiles")
-  .select("id, role, org_id")
+  .select("id, role, org_id") // Changed tenant_id to org_id
   .eq("id", authUser.user.id)
   .single();
 
 if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
-if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
+if (!me || me.role !== "admin" || !me.org_id) throw new Error("Access denied (admin only and org_id must be set)"); // Added org_id check
 
 
     console.log("DEBUG: profile lookup", { me, meErr });
@@ -97,7 +97,7 @@ if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
     const user_id = `${kind}_${slugify(full_name)}`;
     const profile: Record<string, any> = {
       id: authId,
-      org_id: me.org_id ?? null,
+      org_id: me.org_id, // Changed tenant_id to org_id, ensured it's from me.org_id
       full_name,
       phone,
       role: kind,
@@ -122,7 +122,7 @@ if (!me || me.role !== "admin") throw new Error("Access denied (admin only)");
 
     // 6) Audit (optional)
     await admin.from("audit_logs").insert({
-      org_id: me.org_id ?? null,
+      org_id: me.org_id, // Changed tenant_id to org_id
       actor_id: me.id,
       entity: "profiles",
       entity_id: authId,

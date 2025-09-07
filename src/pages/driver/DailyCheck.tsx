@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import SignaturePad from '@/components/SignaturePad';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { getDailyCheckItems } from '@/lib/api/dailyCheckItems'; // Import getDailyCheckItems
 
 interface DailyCheckItem {
   id: string;
@@ -48,7 +49,7 @@ const DriverDailyCheck: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,19 +75,10 @@ const DriverDailyCheck: React.FC = () => {
         setTruckReg(currentProfile.truck_reg || '');
         setTrailerNo(currentProfile.trailer_no || '');
 
-        // Fetch active daily check items
-        const { data: itemsData, error: itemsError } = await supabase
-          .from("daily_check_items")
-          .select("id, title, description, is_active")
-          .eq("org_id", currentTenantId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: true });
-
-        if (itemsError) {
-          throw new Error(itemsError.message || "Failed to fetch daily check items.");
-        }
-
-        const active = (itemsData as DailyCheckItem[]) || [];
+        // Fetch active daily check items using the new API function
+        const fetchedItems = await getDailyCheckItems(currentOrgId);
+        const active = fetchedItems.filter(item => item.is_active);
+        
         setActiveItems(active);
         setCheckStates(active.map(item => ({
           item_id: item.id,
@@ -106,7 +98,7 @@ const DriverDailyCheck: React.FC = () => {
       }
     };
     fetchItemsAndProfile();
-  }, [user, profile, userRole, currentTenantId, isLoadingAuth, navigate]);
+  }, [user, profile, userRole, currentOrgId, isLoadingAuth, navigate]);
 
   const handleCheckChange = (itemId: string, field: keyof CheckItemState, value: any) => {
     setCheckStates(prevStates =>
@@ -187,7 +179,7 @@ const DriverDailyCheck: React.FC = () => {
         duration_seconds: duration_seconds,
         signature: signature,
         items: itemsPayload,
-        org_id: currentTenantId, // Include org_id for direct insert fallback
+        org_id: currentOrgId, // Include org_id for direct insert fallback
         driver_id: currentProfile.id, // Include driver_id for direct insert fallback
       };
 

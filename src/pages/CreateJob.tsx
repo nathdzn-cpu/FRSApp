@@ -47,7 +47,7 @@ const CreateJob: React.FC = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient(); // Initialize useQueryClient
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id';
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Changed from tenantId
   const currentProfile = profile;
   const canAccess = userRole === 'admin' || userRole === 'office';
   const canSeePrice = canAccess;
@@ -62,8 +62,8 @@ const CreateJob: React.FC = () => {
   }, [user, canAccess, navigate, isLoadingAuth]);
 
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', currentTenantId],
-    queryFn: () => getProfiles(currentTenantId),
+    queryKey: ['profiles', currentOrgId],
+    queryFn: () => getProfiles(currentOrgId), // Pass orgId
     staleTime: 5 * 60 * 1000,
     enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
   });
@@ -89,7 +89,7 @@ const CreateJob: React.FC = () => {
         seq: index + 1,
       }));
 
-      const promise = createJob(currentTenantId, newJobData, newStopsData, currentProfile.id);
+      const promise = createJob(currentOrgId, newJobData, newStopsData, currentProfile.id); // Pass orgId
 
       toast.promise(promise, {
         loading: 'Creating job...',

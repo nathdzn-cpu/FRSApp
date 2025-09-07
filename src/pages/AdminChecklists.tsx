@@ -23,7 +23,7 @@ const AdminChecklists: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const currentTenantId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
+  const currentOrgId = profile?.org_id || 'demo-tenant-id'; // Use profile's org_id
   const currentProfile = profile; // Use profile from AuthContext
 
   useEffect(() => {
@@ -40,13 +40,13 @@ const AdminChecklists: React.FC = () => {
       setError(null);
       try {
         const fetchedTenants = await getTenants();
-        const defaultTenantId = currentProfile?.org_id || fetchedTenants[0]?.id;
+        const defaultOrgId = currentProfile?.org_id || fetchedTenants[0]?.id;
 
-        if (defaultTenantId) {
-          const fetchedProfiles = await getProfiles(defaultTenantId);
+        if (defaultOrgId) {
+          const fetchedProfiles = await getProfiles(defaultOrgId);
           setProfiles(fetchedProfiles);
 
-          const fetchedChecklists = await getDailyChecklists(defaultTenantId);
+          const fetchedChecklists = await getDailyChecklists(defaultOrgId);
           setChecklists(fetchedChecklists);
           if (fetchedChecklists.length > 0) {
             setSelectedChecklist(fetchedChecklists[0]);
@@ -88,7 +88,7 @@ const AdminChecklists: React.FC = () => {
     if (!selectedChecklist || !currentProfile) return;
 
     try {
-      const promise = updateDailyChecklist(currentTenantId, selectedChecklist.id, editingItems, currentProfile.id);
+      const promise = updateDailyChecklist(currentOrgId, selectedChecklist.id, editingItems, currentProfile.id);
       toast.promise(promise, {
         loading: 'Saving checklist...',
         success: 'Checklist saved successfully!',
@@ -96,7 +96,7 @@ const AdminChecklists: React.FC = () => {
       });
       await promise;
       // Re-fetch to ensure UI is updated with latest data
-      const updatedChecklists = await getDailyChecklists(currentTenantId);
+      const updatedChecklists = await getDailyChecklists(currentOrgId);
       setChecklists(updatedChecklists);
       setSelectedChecklist(updatedChecklists.find(cl => cl.id === selectedChecklist.id));
     } catch (err) {
