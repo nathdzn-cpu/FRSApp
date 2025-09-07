@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles, createJob } from '@/lib/supabase';
-import { Profile } from '@/utils/mockData';
+import { getProfiles, createJob, getJobs } from '@/lib/supabase'; // Added getJobs
+import { Profile, Job } from '@/utils/mockData'; // Added Job
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,30 +14,31 @@ import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card'; // Import Card components
 
 interface JobFormValues {
-  ref?: string;
   override_ref?: boolean;
   manual_ref?: string;
-  pickup_eta?: string;
-  delivery_eta?: string;
+  date_created: Date;
+  price: number | null;
+  assigned_driver_id: string | null;
+  notes: string | null;
   collections: Array<{
     name: string;
     address_line1: string;
-    address_line2?: string;
+    address_line2?: string | null;
     city: string;
     postcode: string;
-    window_from?: string;
-    window_to?: string;
-    notes?: string;
+    window_from?: string | null;
+    window_to?: string | null;
+    notes?: string | null;
   }>;
   deliveries: Array<{
     name: string;
     address_line1: string;
-    address_line2?: string;
+    address_line2?: string | null;
     city: string;
     postcode: string;
-    window_from?: string;
-    window_to?: string;
-    notes?: string;
+    window_from?: string | null;
+    window_to?: string | null;
+    notes?: string | null;
   }>;
 }
 
@@ -45,6 +46,7 @@ const CreateJob: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
+  const [generatedOrderNumber, setGeneratedOrderNumber] = useState<string>('Generating...');
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -59,11 +61,40 @@ const CreateJob: React.FC = () => {
     }
   }, [user, canAccess, navigate, isLoadingAuth]);
 
-  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
+  // Fetch all profiles to get drivers
+  const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId],
     queryFn: () => getProfiles(currentOrgId),
     staleTime: 5 * 60 * 1000,
     enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
+  });
+
+  const drivers = allProfiles.filter(p => p.role === 'driver');
+
+  // Fetch existing jobs to generate the next order number
+  const { data: existingJobs = [], isLoading: isLoadingExistingJobs, error: existingJobsError } = useQuery<Job[], Error>({
+    queryKey: ['allJobRefs', currentOrgId],
+    queryFn: () => getJobs(currentOrgId, 'admin'), // Fetch all jobs as admin to get all refs
+    staleTime: 0, // Always refetch to get latest refs
+    enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
+    onSuccess: (data) => {
+      const existingRefNumbers = new Set(
+        data
+          .filter(job => job.ref.startsWith('FRS-'))
+          .map(job => parseInt(job.ref.substring(4), 10))
+          .filter(num => !isNaN(num))
+      );
+
+      let nextNumber = 1;
+      while (existingRefNumbers.has(nextNumber)) {
+        nextNumber++;
+      }
+      setGeneratedOrderNumber(`FRS-${nextNumber.toString().padStart(3, '0')}`);
+    },
+    onError: (err) => {
+      console.error("Failed to fetch existing job references:", err);
+      setGeneratedOrderNumber('Error generating ref');
+    }
   });
 
   const handleSubmit = async (values: JobFormValues) => {
@@ -73,11 +104,15 @@ const CreateJob: React.FC = () => {
     }
 
     try {
+      const jobRef = values.override_ref && values.manual_ref ? values.manual_ref : generatedOrderNumber;
+
       const newJobData = {
-        ref: values.override_ref ? values.manual_ref : undefined,
+        ref: jobRef,
         status: 'planned' as const,
-        pickup_eta: values.pickup_eta || null,
-        delivery_eta: values.delivery_eta || null,
+        date_created: values.date_created.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        price: values.price,
+        assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
+        notes: values.notes,
       };
 
       const newStopsData = [...values.collections, ...values.deliveries].map((stop, index) => ({
@@ -91,7 +126,8 @@ const CreateJob: React.FC = () => {
       toast.promise(promise, {
         loading: 'Creating job...',
         success: (newJob) => {
-          queryClient.invalidateQueries({ queryKey: ['jobs'] });
+          queryClient.invalidateQueries({ queryKey: ['jobs'] }); // Invalidate general jobs list
+          queryClient.invalidateQueries({ queryKey: ['allJobRefs'] }); // Invalidate job refs for new generation
           navigate(`/jobs/${newJob.id}`);
           return `Job ${newJob.ref} created successfully!`;
         },
@@ -103,19 +139,22 @@ const CreateJob: React.FC = () => {
     }
   };
 
-  if (isLoadingAuth || isLoadingProfiles) {
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingExistingJobs;
+  const error = allProfilesError || existingJobsError;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700">Loading profiles...</p>
+        <p className="ml-2 text-gray-700">Loading job creation data...</p>
       </div>
     );
   }
 
-  if (profilesError) {
+  if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <p className="text-red-500 text-lg mb-4">Error loading profiles: {profilesError.message}</p>
+        <p className="text-red-500 text-lg mb-4">Error loading data: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
@@ -134,14 +173,13 @@ const CreateJob: React.FC = () => {
           <Button onClick={() => { navigate('/'); }} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
           </Button>
-          {/* Removed Clear Form button as state will reset on unmount */}
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
 
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardContent className="p-0">
-            <JobForm onSubmit={handleSubmit} profiles={profiles} canSeePrice={false} />
+            <JobForm onSubmit={handleSubmit} drivers={drivers} generatedRef={generatedOrderNumber} />
           </CardContent>
         </Card>
       </div>

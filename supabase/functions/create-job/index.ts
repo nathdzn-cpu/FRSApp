@@ -58,7 +58,7 @@ serve(async (req) => {
       throw new Error("Actor ID mismatch. User can only create jobs as themselves.");
     }
 
-    // 3) Allocate job reference if not provided
+    // 3) Allocate job reference if not provided (or if client-side generation is overridden)
     let newJobRef = jobData.ref;
     if (!newJobRef) {
       // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
@@ -90,9 +90,11 @@ serve(async (req) => {
       org_id: org_id,
       ref: newJobRef,
       status: jobData.status || 'planned',
-      pickup_eta: jobData.pickup_eta || null,
-      delivery_eta: jobData.delivery_eta || null,
-      created_at: new Date().toISOString(),
+      date_created: jobData.date_created, // New field
+      price: jobData.price || null, // New field
+      assigned_driver_id: jobData.assigned_driver_id || null, // New field
+      notes: jobData.notes || null, // New field
+      created_at: new Date().toISOString(), // Use current time for DB created_at
       deleted_at: null,
     };
 
@@ -117,8 +119,8 @@ serve(async (req) => {
       address_line2: stop.address_line2 || null,
       city: stop.city,
       postcode: stop.postcode,
-      window_from: stop.window_from || null,
-      window_to: stop.window_to || null,
+      window_from: stop.window_from || null, // Keep window_from
+      window_to: stop.window_to || null,     // Keep window_to
       notes: stop.notes || null,
       created_at: new Date().toISOString(),
     }));

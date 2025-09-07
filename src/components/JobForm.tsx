@@ -17,24 +17,49 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/utils/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatGBP } from '@/lib/money'; // Import for price formatting
+
+// Helper to format time input to HH:MM
+const formatTimeInput = (value: string) => {
+  if (!value) return '';
+  const cleaned = value.replace(/[^0-9]/g, '');
+  if (cleaned.length === 0) return '';
+  if (cleaned.length === 1) return `0${cleaned}:00`;
+  if (cleaned.length === 2) {
+    const hour = parseInt(cleaned, 10);
+    return `${String(hour).padStart(2, '0')}:00`;
+  }
+  if (cleaned.length === 3) {
+    const hour = parseInt(cleaned.substring(0, 2), 10);
+    const minute = parseInt(cleaned.substring(2, 3), 10);
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+  const hour = parseInt(cleaned.substring(0, 2), 10);
+  const minute = parseInt(cleaned.substring(2, 4), 10);
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
 
 const stopSchema = z.object({
   name: z.string().min(1, { message: 'Stop name is required.' }),
   address_line1: z.string().min(1, { message: 'Address line 1 is required.' }),
-  address_line2: z.string().optional(),
+  address_line2: z.string().optional().nullable(),
   city: z.string().min(1, { message: 'City is required.' }),
   postcode: z.string().min(1, { message: 'Postcode is required.' }),
   window_from: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
   window_to: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
 });
 
 const formSchema = z.object({
-  ref: z.string().optional(),
   override_ref: z.boolean().optional(),
   manual_ref: z.string().optional(),
-  pickup_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
-  delivery_eta: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM)' }).optional().or(z.literal('')),
+  date_created: z.date({ required_error: 'Date Created is required.' }),
+  price: z.preprocess(
+    (val) => (val === "" ? null : Number(val)),
+    z.number().min(0, { message: 'Price must be non-negative.' }).nullable().optional()
+  ),
+  assigned_driver_id: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
   collections: z.array(stopSchema).min(0),
   deliveries: z.array(stopSchema).min(1, { message: 'At least one delivery point is required.' }),
 });
@@ -43,16 +68,23 @@ type JobFormValues = z.infer<typeof formSchema>;
 
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
-  profiles: Profile[];
-  canSeePrice: boolean;
-  defaultValues?: Partial<JobFormValues>;
-  generatedRef?: string;
+  drivers: Profile[]; // Only drivers for assignment
+  generatedRef: string; // The auto-generated order number
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defaultValues, generatedRef }) => {
+const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, generatedRef }) => {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues, // Initialize directly with defaultValues prop
+    defaultValues: {
+      override_ref: false,
+      manual_ref: '',
+      date_created: new Date(), // Default to today
+      price: null,
+      assigned_driver_id: null,
+      notes: '',
+      collections: [],
+      deliveries: [{ name: '', address_line1: '', city: '', postcode: '' }], // At least one delivery by default
+    },
   });
 
   const { fields: collectionFields, append: appendCollection, remove: removeCollection } = useFieldArray({
@@ -75,12 +107,13 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
             <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-0 pt-4">
+            {/* Order Number */}
             <div>
               <FormItem>
                 <FormLabel className="text-gray-700">Order Number</FormLabel>
                 <FormControl>
                   <Input
-                    value={overrideOrderNumber ? form.watch('manual_ref') : (generatedRef || 'Generated on submit')}
+                    value={overrideOrderNumber ? form.watch('manual_ref') : generatedRef}
                     readOnly={!overrideOrderNumber}
                     disabled={!overrideOrderNumber}
                     onChange={(e) => form.setValue('manual_ref', e.target.value, { shouldValidate: true })}
@@ -102,7 +135,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel className="text-gray-700">
-                        Override order number
+                        Override auto-generated order number
                       </FormLabel>
                     </div>
                   </FormItem>
@@ -110,28 +143,111 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
               />
             </div>
 
+            {/* Date Created */}
             <FormField
               control={form.control}
-              name="pickup_eta"
+              name="date_created"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-gray-700">Date Created</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Price */}
+            <FormField
+              control={form.control}
+              name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Pickup ETA (HH:MM)</FormLabel>
+                  <FormLabel className="text-gray-700">Price (GBP)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 09:00" {...field} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g., 123.45"
+                      {...field}
+                      value={field.value === null ? '' : field.value}
+                      onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                      onBlur={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          form.setValue('price', parseFloat(val.toFixed(2)));
+                        }
+                        field.onBlur();
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Assign Driver */}
             <FormField
               control={form.control}
-              name="delivery_eta"
+              name="assigned_driver_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Delivery ETA (HH:MM)</FormLabel>
+                  <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a driver" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-white shadow-sm rounded-xl">
+                      <SelectItem value="null">Unassigned</SelectItem>
+                      {drivers.map(driver => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.full_name} ({driver.truck_reg || 'N/A'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Notes */}
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel className="text-gray-700">Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 17:00" {...field} />
+                    <Textarea placeholder="Any general notes for this job..." {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,7 +259,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
             </Button>
           </CardHeader>
@@ -230,7 +346,14 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                         <FormItem>
                           <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., 09:00" {...stopField} />
+                            <Input
+                              placeholder="e.g., 09:00"
+                              {...stopField}
+                              onBlur={(e) => {
+                                stopField.onChange(formatTimeInput(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -243,7 +366,14 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                         <FormItem>
                           <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., 12:00" {...stopField} />
+                            <Input
+                              placeholder="e.g., 12:00"
+                              {...stopField}
+                              onBlur={(e) => {
+                                stopField.onChange(formatTimeInput(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -257,7 +387,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       <FormItem className="sm:col-span-2">
                         <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} />
+                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -275,7 +405,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
         <Card className="bg-white shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
             </Button>
           </CardHeader>
@@ -362,7 +492,14 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                         <FormItem>
                           <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., 14:00" {...stopField} />
+                            <Input
+                              placeholder="e.g., 14:00"
+                              {...stopField}
+                              onBlur={(e) => {
+                                stopField.onChange(formatTimeInput(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -375,7 +512,14 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                         <FormItem>
                           <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., 17:00" {...stopField} />
+                            <Input
+                              placeholder="e.g., 17:00"
+                              {...stopField}
+                              onBlur={(e) => {
+                                stopField.onChange(formatTimeInput(e.target.value));
+                                stopField.onBlur();
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -389,7 +533,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, profiles, canSeePrice, defa
                       <FormItem className="sm:col-span-2">
                         <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} />
+                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

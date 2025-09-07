@@ -98,7 +98,7 @@ export const getJobDocuments = async (orgId: string, jobId: string): Promise<Doc
 
 interface CreateJobPayload {
   jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>;
-  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id'>[];
+  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[]; // Added created_at to omit
   org_id: string;
   actor_id: string;
 }
@@ -106,15 +106,17 @@ interface CreateJobPayload {
 export const createJob = async (
   orgId: string,
   jobData: Omit<Job, 'id' | 'org_id' | 'created_at' | 'deleted_at'>,
-  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id'>[],
+  stopsData: Omit<JobStop, 'id' | 'org_id' | 'job_id' | 'created_at'>[],
   actorId: string
 ): Promise<Job> => {
   const payload: CreateJobPayload = {
     jobData: {
       ref: jobData.ref,
       status: jobData.status,
-      pickup_eta: jobData.pickup_eta,
-      delivery_eta: jobData.delivery_eta,
+      date_created: jobData.date_created, // New field
+      price: jobData.price, // New field
+      assigned_driver_id: jobData.assigned_driver_id, // New field
+      notes: jobData.notes, // New field
     },
     stopsData,
     org_id: orgId,
@@ -181,8 +183,10 @@ export const cloneJob = async (jobId: string, orgId: string, actorId: string): P
     org_id: orgId,
     ref: newJobRef,
     status: 'planned',
-    pickup_eta: originalJob.pickup_eta,
-    delivery_eta: originalJob.delivery_eta,
+    date_created: originalJob.date_created, // Cloned date
+    price: originalJob.price, // Cloned price
+    assigned_driver_id: originalJob.assigned_driver_id, // Cloned assigned driver
+    notes: originalJob.notes, // Cloned notes
     deleted_at: null,
   };
 
