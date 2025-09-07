@@ -1,10 +1,10 @@
 "use client";
 
-import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js'; // Import AuthChangeEvent
 import { Profile } from '@/utils/mockData';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } => 'react-router-dom';
 import { toast } from 'sonner';
 
 type UserRole = 'admin' | 'office' | 'driver' | undefined;
@@ -30,6 +30,8 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const currentUserIdRef = useRef<string | null>(initialUser?.id || null); // Track current user ID
+
   // Effect for initial session load and auth state changes
   useEffect(() => {
     let mounted = true;
@@ -39,20 +41,34 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       if (mounted) {
         setSession(data.session || null);
         setUser(data.session?.user || null); // Ensure user is set here
+        currentUserIdRef.current = data.session?.user?.id || null; // Update ref
         setIsLoadingAuth(false); // Set to false after initial session check
       }
     });
 
     // Listen for login/logout events
-    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => { // Add event type
+    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       console.log("Supabase auth event:", event, session?.user?.id); // Added for debugging
       if (mounted) {
-        // Only update session/user state for SIGNED_IN and SIGNED_OUT events
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          setSession(session);
-          setUser(session?.user || null);
-          // isLoadingAuth should already be false after initial load.
-          // If it was true, this would set it to false.
+        if (event === 'SIGNED_IN') {
+          // Only update state if it's a different user or no user was previously set
+          if (session?.user?.id && session.user.id !== currentUserIdRef.current) {
+            setSession(session);
+            setUser(session.user);
+            currentUserIdRef.current = session.user.id; // Update ref
+            setIsLoadingAuth(false); // Ensure it's false after a definitive auth state change
+          } else if (!session?.user?.id && currentUserIdRef.current) {
+            // Edge case: SIGNED_IN event with no user, but we thought we had one. Treat as sign out.
+            setSession(null);
+            setUser(null);
+            currentUserIdRef.current = null;
+            setIsLoadingAuth(false);
+          }
+          // If it's a duplicate SIGNED_IN for the same user, do nothing.
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          currentUserIdRef.current = null; // Clear ref on sign out
           setIsLoadingAuth(false); // Ensure it's false after a definitive auth state change
         }
         // For TOKEN_REFRESHED and USER_UPDATED, we explicitly do nothing to prevent re-renders.
