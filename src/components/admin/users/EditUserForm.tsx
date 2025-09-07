@@ -21,7 +21,7 @@ const editUserFormSchema = z.object({
   dob: z.date().optional().nullable(),
   phone: z.string().min(1, { message: 'Contact number is required.' }).optional().or(z.literal('')),
   role: z.enum(['driver', 'office', 'admin'], { required_error: 'Role is required.' }),
-  user_id: z.string().min(1, { message: 'Internal User ID is required.' }).optional().or(z.literal('')),
+  // user_id removed from schema
   truck_reg: z.string().optional().or(z.literal('')),
   trailer_no: z.string().optional().or(z.literal('')),
 });
@@ -41,7 +41,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
       dob: defaultValues.dob ? parseISO(defaultValues.dob) : undefined,
       phone: defaultValues.phone || '',
       role: defaultValues.role,
-      user_id: defaultValues.user_id || '',
+      // user_id removed from defaultValues
       truck_reg: defaultValues.truck_reg || '',
       trailer_no: defaultValues.trailer_no || '',
     },
@@ -144,19 +144,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="user_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Internal User ID</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., auth_user_id_123" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* user_id field removed */}
             {form.watch('role') === 'driver' && (
               <>
                 <FormField

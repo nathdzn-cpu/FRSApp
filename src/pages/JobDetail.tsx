@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, FileDown, Copy, XCircle, FileText, Edit, Clock, CheckCircle, UserPlus } from 'lucide-react';
 import JobTimeline from '@/components/JobTimeline';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DateTimePicker from '@/components/DateTimePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import new component
 
 interface JobFormValues {
   order_number?: string | null;
@@ -74,6 +75,8 @@ const JobDetail: React.FC = () => {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isAssignDriverDialogOpen, setIsAssignDriverDialogOpen] = useState(false); // New state for assign driver dialog
+  const [isAssigningDriver, setIsAssigningDriver] = useState(false); // New state for assign driver loading
   const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
   const [selectedProgressStatus, setSelectedProgressStatus] = useState<Job['status'] | ''>('');
   const [progressUpdateDateTime, setProgressUpdateDateTime] = useState<Date | undefined>(new Date());
@@ -271,6 +274,41 @@ const JobDetail: React.FC = () => {
     }
   };
 
+  const handleAssignDriver = async (driverId: string | null) => {
+    if (!job || !currentProfile) {
+      toast.error("Job or user profile not found. Cannot assign driver.");
+      return;
+    }
+    setIsAssigningDriver(true);
+    try {
+      const jobUpdates: Partial<Job> = {
+        assigned_driver_id: driverId,
+      };
+
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        job_updates: jobUpdates,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: driverId ? 'Assigning driver...' : 'Unassigning driver...',
+        success: driverId ? 'Driver assigned successfully!' : 'Driver unassigned successfully!',
+        error: (err) => `Failed to assign driver: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      refetchJobData();
+    } catch (err: any) {
+      console.error("Error assigning driver:", err);
+      toast.error("An unexpected error occurred while assigning the driver.");
+    } finally {
+      setIsAssigningDriver(false);
+    }
+  };
+
   const handleProgressUpdate = async () => {
     if (!job || !currentProfile || !selectedProgressStatus || !progressUpdateDateTime) {
       toast.error("Please select a status, date, and time for the progress update.");
@@ -371,7 +409,7 @@ const JobDetail: React.FC = () => {
               </Badge>
             </CardTitle>
             <div className="flex space-x-2">
-              {canEditJob && (
+              {isOfficeOrAdmin && (
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -392,18 +430,26 @@ const JobDetail: React.FC = () => {
                   </DialogContent>
                 </Dialog>
               )}
+              {isOfficeOrAdmin && (
+                <Button variant="outline" onClick={() => setIsAssignDriverDialogOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" /> Assign Driver
+                </Button>
+              )}
               {isOfficeOrAdmin && job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <>
-                  <Dialog open={isProgressUpdateDialogOpen} onOpenChange={setIsProgressUpdateDialogOpen}>
-                    <DialogTrigger asChild>
+                  <AlertDialog open={isProgressUpdateDialogOpen} onOpenChange={setIsProgressUpdateDialogOpen}>
+                    <AlertDialogTrigger asChild>
                       <Button variant="outline">
                         <CheckCircle className="h-4 w-4 mr-2" /> Update Progress
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
-                      <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</DialogTitle>
-                      </DialogHeader>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Log a new status update for this job.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
                           <Label htmlFor="progress-status">New Status</Label>
@@ -448,8 +494,8 @@ const JobDetail: React.FC = () => {
                           Save Progress
                         </AlertDialogAction>
                       </AlertDialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -501,7 +547,7 @@ const JobDetail: React.FC = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive"> {/* Changed to destructive variant */}
+                      <Button variant="destructive">
                         <XCircle className="h-4 w-4 mr-2" /> Cancel Job
                       </Button>
                     </AlertDialogTrigger>
@@ -601,6 +647,16 @@ const JobDetail: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Assign Driver Dialog */}
+        <AssignDriverDialog
+          open={isAssignDriverDialogOpen}
+          onOpenChange={setIsAssignDriverDialogOpen}
+          drivers={allProfiles.filter(p => p.role === 'driver')}
+          currentAssignedDriverId={job.assigned_driver_id}
+          onAssign={handleAssignDriver}
+          isAssigning={isAssigningDriver}
+        />
       </div>
     </div>
   );
