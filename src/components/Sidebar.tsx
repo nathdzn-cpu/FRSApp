@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin, ChevronDown, Star } from 'lucide-react';
+import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin, ChevronDown } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -109,21 +109,6 @@ const Sidebar: React.FC = () => {
             )}
             {renderNavLinks()}
           </div>
-          {/* Pro Feature Card */}
-          <div className="p-4 border-t border-[var(--saas-border)] mt-auto">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg rounded-xl">
-              <CardContent className="p-4 text-center">
-                <Star className="h-6 w-6 mx-auto mb-2 text-yellow-300" />
-                <p className="text-sm font-semibold mb-2">Unlock Pro Features!</p>
-                <p className="text-xs text-blue-100 mb-3">
-                  Access priority support, real-time tracking, and full analytics.
-                </p>
-                <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50">
-                  Go Pro Today
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
         </SheetContent>
       </Sheet>
     );
@@ -166,21 +151,6 @@ const Sidebar: React.FC = () => {
           </div>
         )}
         {renderNavLinks()}
-      </div>
-      {/* Pro Feature Card */}
-      <div className="p-4 border-t border-[var(--saas-border)] mt-auto">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg rounded-xl">
-          <CardContent className="p-4 text-center">
-            <Star className="h-6 w-6 mx-auto mb-2 text-yellow-300" />
-            <p className="text-sm font-semibold mb-2">Unlock Pro Features!</p>
-            <p className="text-xs text-blue-100 mb-3">
-              Access priority support, real-time tracking, and full analytics.
-            </p>
-            <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50">
-              Go Pro Today
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </aside>
   );

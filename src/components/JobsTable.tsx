@@ -89,10 +89,10 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"> {/* Card-style container */}
-      <Table className="min-w-full divide-y divide-gray-200"> {/* Remove harsh grid lines */}
+    <div className="rounded-lg overflow-hidden shadow-sm"> {/* Removed border */}
+      <Table className="min-w-full divide-y divide-gray-200">
         <TableHeader className="bg-gray-50">
-          <TableRow className="hover:bg-gray-50"> {/* No hover effect on header */}
+          <TableRow className="hover:bg-gray-50">
             <TableHead
               className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer"
               onClick={() => handleSort('driver')}
@@ -125,7 +125,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
             <TableHead className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="bg-white divide-y divide-gray-100"> {/* Subtle dividers */}
+        <TableBody className="bg-white divide-y divide-gray-100">
           {sortedJobs.map((job) => {
             const driverInfo = getDriverInfo(job.assigned_driver_id);
             const isCancelled = job.status === 'cancelled';
@@ -133,7 +133,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
 
             return (
-              <TableRow key={job.id} className="hover:bg-blue-50 transition-colors duration-150"> {/* Hover highlight */}
+              <TableRow key={job.id} className="hover:bg-blue-50 transition-colors duration-150">
                 <TableCell className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 mr-3">

@@ -80,7 +80,8 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       newDateTime = setSeconds(newDateTime, 0);
     }
     setSelectedDate(newDateTime);
-    onChange(newDateTime);
+    // The onChange prop is not used here, as the state is managed internally
+    // and the final dateTime is passed to onSubmit.
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,7 +92,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
     }
 
     const { formattedTime, error } = formatAndValidateTimeInput(rawInput);
-    setInternalTimeError(error);
+    setTimeError(error); // Use local state for timeError
 
     if (formattedTime && selectedDate) {
       const [hoursStr, minutesStr] = formattedTime.split(':');
@@ -101,7 +102,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       let newDateTime = setHours(selectedDate, hours);
       newDateTime = setMinutes(newDateTime, minutes);
       newDateTime = setSeconds(newDateTime, 0);
-      onChange(newDateTime);
+      setSelectedDate(newDateTime); // Update selectedDate with new time
     } else if (formattedTime && !selectedDate) {
       // If no date is selected, default to today's date with the chosen time
       let newDateTime = new Date();
@@ -109,14 +110,13 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
       newDateTime = setSeconds(newDateTime, 0);
       setSelectedDate(newDateTime);
-      onChange(newDateTime);
     } else {
       // If time is invalid or empty, clear the time part of the date
       if (selectedDate) {
         const newDateTime = setHours(setMinutes(setSeconds(selectedDate, 0), 0), 0);
-        onChange(newDateTime);
+        setSelectedDate(newDateTime);
       } else {
-        onChange(undefined);
+        setSelectedDate(undefined);
       }
     }
   };

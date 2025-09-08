@@ -128,7 +128,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const isJobCompleted = job.status === 'delivered' || job.status === 'pod_received';
 
   return (
-    <div className="min-h-screen bg-[var(--saas-background)] p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8"> {/* Removed min-h-screen */}
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard

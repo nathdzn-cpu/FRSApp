@@ -112,7 +112,7 @@ const CreateJob: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
+      <div className="flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading job creation data...</p>
       </div>
@@ -121,7 +121,7 @@ const CreateJob: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Error loading data: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -135,7 +135,7 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
+    <div className="w-full">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => { navigate('/'); }} variant="outline">

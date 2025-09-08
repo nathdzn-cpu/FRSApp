@@ -205,7 +205,7 @@ const DriverDailyCheck: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
+      <div className="flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading daily check items...</p>
       </div>
@@ -214,7 +214,7 @@ const DriverDailyCheck: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -228,7 +228,7 @@ const DriverDailyCheck: React.FC = () => {
   }
 
   return (
-    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
+    <div className="w-full">
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard

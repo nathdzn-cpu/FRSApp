@@ -127,7 +127,7 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
+      <div className="flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading dashboard...</p>
       </div>
@@ -137,7 +137,7 @@ const Index = () => {
   if (error) {
     console.error("Dashboard query error:", error);
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">Dashboard failed to load</p>
         <p className="text-sm text-gray-700">{error.message}</p>
       </div>
@@ -146,7 +146,7 @@ const Index = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">You are not logged in.</p>
         <Button onClick={() => navigate('/login')} variant="outline">
           Log In
@@ -158,7 +158,7 @@ const Index = () => {
   if (!profile || userRole === undefined) {
     console.warn("Profile or role missing:", { profile, userRole });
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">No role assigned to your user account.</p>
         <pre className="text-xs bg-gray-100 p-2 rounded">{JSON.stringify(profile, null, 2)}</pre>
         <Button onClick={() => navigate('/login')} variant="outline" className="mt-4">
@@ -169,8 +169,8 @@ const Index = () => {
   }
 
   return (
-    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
-      <div className="max-w-7xl mx-auto"> {/* Centering content */}
+    <div className="w-full">
+      <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Haulage Office Dashboard</h1>
           <div className="flex items-center space-x-2">
