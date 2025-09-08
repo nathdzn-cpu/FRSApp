@@ -122,7 +122,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name")
       .eq("id", authUser.user.id)
       .single();
 
@@ -293,7 +293,12 @@ serve(async (req) => {
               }
             }
           }
+        } else {
+          // If newAssignedDriverId is null, it means the job is unassigned.
+          // We still need to get the name of the person who performed the action.
+          newDriverName = "Unassigned";
         }
+
 
         // Log reassignment to job_progress_log
         const { error: reassignmentLogError } = await admin
