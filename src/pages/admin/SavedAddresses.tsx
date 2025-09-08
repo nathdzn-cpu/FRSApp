@@ -344,7 +344,7 @@ const AdminSavedAddresses: React.FC = () => {
               ) : (
                 <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-gray-50"> {/* Kept header background */}
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Address</TableHead>
@@ -353,7 +353,7 @@ const AdminSavedAddresses: React.FC = () => {
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}
                       {addresses.map(address => (
                         <TableRow key={address.id}>
                           <TableCell className="font-medium">{address.name || '-'}</TableCell>
@@ -380,7 +380,7 @@ const AdminSavedAddresses: React.FC = () => {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+                                <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
@@ -408,7 +408,7 @@ const AdminSavedAddresses: React.FC = () => {
         {/* Edit Address Dialog */}
         {editingAddress && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col"> {/* Removed max-w-md and max-h-[90vh] */}
+            <DialogContent className="flex flex-col">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Saved Address</DialogTitle>
                 <DialogDescription>

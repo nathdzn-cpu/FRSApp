@@ -23,7 +23,7 @@ const StatCard: React.FC<StatCardProps> = ({
   valueColorClass = 'text-gray-900',
 }) => {
   return (
-    <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
+    <Card className="bg-white shadow-sm rounded-xl"> {/* Removed border border-gray-200 */}
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
         {Icon && <Icon className={cn("h-4 w-4", iconColorClass)} />}

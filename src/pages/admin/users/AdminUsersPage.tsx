@@ -197,7 +197,7 @@ const AdminUsersPage: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
+      <div className="flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading users...</p>
       </div>
@@ -206,7 +206,7 @@ const AdminUsersPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -217,7 +217,7 @@ const AdminUsersPage: React.FC = () => {
 
   if (!user || userRole !== 'admin') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -295,9 +295,9 @@ const AdminUsersPage: React.FC = () => {
             {filteredUsers.length === 0 ? (
               <p className="text-gray-600">No users found matching your criteria.</p>
             ) : (
-              <div className="rounded-md border overflow-hidden">
+              <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50"> {/* Kept header background */}
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
@@ -309,7 +309,7 @@ const AdminUsersPage: React.FC = () => {
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}
                     {filteredUsers.map((user, index) => (
                       <TableRow key={user.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
                         <TableCell className="font-medium">{user.full_name}</TableCell>

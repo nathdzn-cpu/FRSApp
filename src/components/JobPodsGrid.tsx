@@ -52,7 +52,7 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
       </div>
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col"> {/* Removed max-w-3xl and max-h-[90vh] */}
+        <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">Document Viewer</DialogTitle>
           </DialogHeader>

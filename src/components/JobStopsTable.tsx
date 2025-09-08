@@ -16,7 +16,7 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
   return (
     <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-gray-50"> {/* Kept header background */}
           <TableRow>
             <TableHead>Seq</TableHead>
             <TableHead>Type</TableHead>
@@ -26,7 +26,7 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
             <TableHead>Notes</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}
           {stops.sort((a, b) => a.seq - b.seq).map((stop, index) => (
             <TableRow key={stop.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
               <TableCell>{stop.seq}</TableCell>
