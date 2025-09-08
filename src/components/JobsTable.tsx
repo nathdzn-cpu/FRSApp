@@ -1,15 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { Job, Profile } from '@/utils/mockData';
 import { format } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { ArrowDown, ArrowUp, User } from 'lucide-react'; // Import User icon
+import { ArrowDown, ArrowUp, User, MoreHorizontal, Edit, FileText, Truck, CheckCircle } from 'lucide-react'; // Import MoreHorizontal and other icons
 import { cn } from '@/lib/utils';
 import { formatAddressPart } from '@/lib/utils/formatUtils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Import Avatar components
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button'; // Import Button for dropdown trigger
+import JobProgressUpdateDialog from './job-detail/JobProgressUpdateDialog'; // Import Status Update Dialog
+import AssignDriverDialog from './AssignDriverDialog'; // Import Assign Driver Dialog
+import JobAttachmentsDialog from './JobAttachmentsDialog'; // Import new Attachments Dialog
+import { updateJob, updateJobProgress } from '@/lib/api/jobs'; // Import API functions for actions
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface JobsTableProps {
   jobs: Job[];
@@ -19,10 +32,25 @@ interface JobsTableProps {
 type SortColumn = 'order_number' | 'status' | 'collection' | 'delivery' | 'driver';
 type SortDirection = 'asc' | 'desc';
 
+type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments';
+
+interface DialogState {
+  type: DialogType | null;
+  job: Job | null;
+}
+
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
-  const { userRole } = useAuth();
+  const { user, profile, userRole } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [sortColumn, setSortColumn] = useState<SortColumn>('status');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
+  const [isActionBusy, setIsActionBusy] = useState(false); // To disable actions during API calls
+
+  const currentOrgId = profile?.org_id || '';
+  const currentProfile = profile;
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -88,8 +116,80 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
     return null;
   };
 
+  const handleUpdateProgress = async (entries: any[]) => { // entries will be ProgressUpdateEntry[]
+    if (!dialogState.job || !currentProfile || !userRole || entries.length === 0) {
+      toast.error("No job or user profile/role found, or no status updates to log.");
+      return;
+    }
+
+    setIsActionBusy(true);
+    try {
+      const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+
+      for (const entry of sortedEntries) {
+        const payload = {
+          job_id: dialogState.job.id,
+          org_id: currentOrgId,
+          actor_id: currentProfile.id,
+          actor_role: userRole,
+          new_status: entry.status,
+          timestamp: entry.dateTime.toISOString(),
+          notes: entry.notes.trim() || undefined,
+        };
+        await updateJobProgress(payload);
+      }
+      toast.success('Job progress updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] }); // Invalidate job detail too
+      setDialogState({ type: null, job: null });
+    } catch (err: any) {
+      console.error("Error updating job progress:", err);
+      toast.error("An unexpected error occurred while updating job progress.");
+      throw err;
+    } finally {
+      setIsActionBusy(false);
+    }
+  };
+
+  const handleAssignDriver = async (driverId: string | null) => {
+    if (!dialogState.job || !currentProfile || !userRole) {
+      toast.error("No job or user profile/role found. Cannot assign driver.");
+      return;
+    }
+    setIsActionBusy(true);
+    try {
+      const jobUpdates: Partial<Job> = {
+        assigned_driver_id: driverId,
+      };
+
+      const payload = {
+        job_id: dialogState.job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        actor_role: userRole,
+        job_updates: jobUpdates,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: driverId ? 'Assigning driver...' : 'Unassigning driver...',
+        success: driverId ? 'Driver assigned successfully!' : 'Driver unassigned successfully!',
+        error: (err) => `Failed to assign driver: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
+      setDialogState({ type: null, job: null });
+    } catch (err: any) {
+      console.error("Error assigning driver:", err);
+      toast.error("An unexpected error occurred while assigning the driver.");
+    } finally {
+      setIsActionBusy(false);
+    }
+  };
+
   return (
-    <div className="rounded-lg overflow-hidden shadow-sm"> {/* Removed border */}
+    <div className="rounded-lg overflow-hidden shadow-sm">
       <Table className="min-w-full divide-y divide-gray-200">
         <TableHeader className="bg-gray-50">
           <TableRow className="hover:bg-gray-50">
@@ -130,7 +230,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
             const driverInfo = getDriverInfo(job.assigned_driver_id);
             const isCancelled = job.status === 'cancelled';
             const isDelivered = job.status === 'delivered' || job.status === 'pod_received';
-            const isPlanned = job.status === 'planned'; // New check for planned status
+            const isPlanned = job.status === 'planned';
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
 
             return (
@@ -157,8 +257,8 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                       "rounded-full px-3 py-1 text-xs font-medium",
                       isCancelled && 'bg-red-500 text-white hover:bg-red-600',
                       isDelivered && 'bg-green-500 text-white hover:bg-green-600',
-                      isPlanned && 'bg-yellow-500 text-white hover:bg-yellow-600', // Yellow for planned
-                      isInProgress && 'bg-blue-500 text-white hover:bg-blue-600', // Blue for in progress (includes accepted)
+                      isPlanned && 'bg-yellow-500 text-white hover:bg-yellow-600',
+                      isInProgress && 'bg-blue-500 text-white hover:bg-blue-600',
                     )}
                   >
                     {getDisplayStatus(job.status)}
@@ -175,15 +275,66 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                  <Link to={`/jobs/${job.order_number}`} className="text-blue-600 hover:underline"> {/* Updated Link */}
-                    Open
-                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="rounded-full">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
+                      <DropdownMenuItem onClick={() => setDialogState({ type: 'statusUpdate', job: job })} disabled={isActionBusy}>
+                        <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/jobs/${job.order_number}`)} disabled={isActionBusy}>
+                        <FileText className="mr-2 h-4 w-4" /> View Job
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDialogState({ type: 'assignDriver', job: job })} disabled={isActionBusy}>
+                        <Truck className="mr-2 h-4 w-4" /> Change Driver
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDialogState({ type: 'viewAttachments', job: job })} disabled={isActionBusy}>
+                        <Edit className="mr-2 h-4 w-4" /> View Attachments
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+
+      {/* Dialogs */}
+      {dialogState.type === 'statusUpdate' && dialogState.job && currentProfile && userRole && (
+        <JobProgressUpdateDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          job={dialogState.job}
+          currentProfile={currentProfile}
+          userRole={userRole}
+          onUpdateProgress={handleUpdateProgress}
+          isUpdatingProgress={isActionBusy}
+        />
+      )}
+
+      {dialogState.type === 'assignDriver' && dialogState.job && currentProfile && userRole && (
+        <AssignDriverDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          drivers={profiles.filter(p => p.role === 'driver')}
+          currentAssignedDriverId={dialogState.job.assigned_driver_id}
+          onAssign={handleAssignDriver}
+          isAssigning={isActionBusy}
+        />
+      )}
+
+      {dialogState.type === 'viewAttachments' && dialogState.job && currentOrgId && (
+        <JobAttachmentsDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          job={dialogState.job}
+          currentOrgId={currentOrgId}
+        />
+      )}
     </div>
   );
 };
