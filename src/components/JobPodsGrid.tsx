@@ -29,7 +29,7 @@ const JobPodsGrid: React.FC<JobPodsGridProps> = ({ documents }) => {
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {podDocuments.map((doc) => (
-          <div key={doc.id} className="relative group overflow-hidden rounded-lg shadow-sm border border-[var(--saas-border)] bg-[var(--saas-card-bg)]">
+          <div key={doc.id} className="relative group overflow-hidden rounded-lg shadow-sm bg-[var(--saas-card-bg)]"> {/* Removed border */}
             <img
               src={getPlaceholderImage(doc.type)}
               alt={doc.type}

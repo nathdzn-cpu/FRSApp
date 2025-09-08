@@ -273,7 +273,7 @@ const DriverDailyCheck: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {checkStates.map((check, index) => (
-                  <Card key={check.item_id} className="bg-[var(--saas-card-bg)] p-4 border border-[var(--saas-border)] rounded-md">
+                  <Card key={check.item_id} className="bg-[var(--saas-card-bg)] p-4 shadow-sm rounded-md"> {/* Removed border */}
                     <div className="flex items-center justify-between mb-2">
                       <Label htmlFor={`check-${check.item_id}`} className="text-lg font-medium text-gray-900">
                         {index + 1}. {check.title}

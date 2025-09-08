@@ -342,7 +342,7 @@ const AdminSavedAddresses: React.FC = () => {
               {addresses.length === 0 ? (
                 <p className="text-gray-600 dark:text-gray-400">No saved addresses found.</p>
               ) : (
-                <div className="rounded-md border overflow-hidden">
+                <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
                   <Table>
                     <TableHeader>
                       <TableRow>

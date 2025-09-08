@@ -70,7 +70,7 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
                   <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
                     <Clock size={16} />
                   </div>
-                  <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+                  <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm"> {/* Removed border */}
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-gray-900">{getDisplayStatus(log.action_type)}</span>
                       <div className="text-right">
@@ -109,7 +109,7 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {jobDocuments.map((doc) => (
-                <Card key={doc.id} className="p-3 shadow-sm rounded-md border border-gray-200">
+                <Card key={doc.id} className="p-3 shadow-sm rounded-md"> {/* Removed border */}
                   <div className="flex flex-col items-start mb-2">
                     <ImageIcon className="h-5 w-5 text-blue-600 mb-1" />
                     <span className="text-sm font-medium text-gray-900 truncate w-full">{doc.storage_path.split('/').pop()}</span>

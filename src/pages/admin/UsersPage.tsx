@@ -295,7 +295,7 @@ const AdminUsersPage: React.FC = () => {
             {filteredUsers.length === 0 ? (
               <p className="text-gray-600">No users found matching your criteria.</p>
             ) : (
-              <div className="rounded-md border overflow-hidden">
+              <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
                 <Table>
                   <TableHeader>
                     <TableRow>

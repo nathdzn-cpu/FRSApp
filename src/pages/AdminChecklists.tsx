@@ -160,7 +160,7 @@ const AdminChecklists: React.FC = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">{selectedChecklist.name} Items</h3>
                 <div className="space-y-4">
                   {editingItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center space-x-2 p-2 border border-[var(--saas-border)] rounded-md">
+                    <div key={item.id} className="flex items-center space-x-2 p-2 shadow-sm rounded-md"> {/* Removed border */}
                       <Input
                         value={item.text}
                         onChange={(e) => handleItemChange(index, 'text', e.target.value)}
