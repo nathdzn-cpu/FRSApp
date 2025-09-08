@@ -97,7 +97,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name")
       .eq("id", authUser.user.id)
       .single();
 
@@ -139,7 +139,7 @@ serve(async (req) => {
       id: newJobId,
       org_id: org_id,
       order_number: jobData.order_number || null, // Use provided order_number or null for trigger
-      status: jobData.status || 'planned',
+      status: jobData.status || 'planned', // Use status from jobData, default to 'planned'
       date_created: jobData.date_created,
       price: jobData.price || null,
       assigned_driver_id: jobData.assigned_driver_id || null,
@@ -196,6 +196,10 @@ serve(async (req) => {
     }
 
     // 6) Log job creation to job_progress_log
+    const logNotes = jobToInsert.status === 'planned'
+      ? `Job ${insertedJob.order_number} created with status 'Planned' (no driver assigned).`
+      : `Job ${insertedJob.order_number} created with status 'Accepted' (driver assigned).`;
+
     const { error: progressLogError } = await admin
       .from('job_progress_log')
       .insert({
@@ -203,8 +207,8 @@ serve(async (req) => {
         job_id: insertedJob.id,
         actor_id: actor_id,
         actor_role: actor_role,
-        action_type: 'job_created',
-        notes: `Job ${insertedJob.order_number} created.`,
+        action_type: jobToInsert.status, // Use the actual initial status
+        notes: logNotes,
         timestamp: new Date().toISOString(),
       });
     if (progressLogError) {

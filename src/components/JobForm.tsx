@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react'; // Added Loader2
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile, SavedAddress } from '@/utils/mockData';
@@ -69,21 +69,30 @@ type JobFormValues = z.infer<typeof formSchema>;
 interface JobFormProps {
   onSubmit: (values: JobFormValues) => void;
   drivers: Profile[]; // Only drivers for assignment
+  defaultValues?: Partial<JobFormValues>; // New prop for default values
+  isSubmitting?: boolean; // New prop for submission state
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
+const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isSubmitting = false }) => {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: defaultValues || {
       order_number: '', // Default to empty, trigger will generate if not provided
       date_created: new Date(), // Default to today
       price: null,
       assigned_driver_id: null,
       notes: '',
-      collections: [], // Changed to empty array
-      deliveries: [], // Changed to empty array
+      collections: [],
+      deliveries: [],
     },
   });
+
+  // Reset form with new defaultValues when they change (e.g., when cloning)
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form.reset]);
 
   // Local state for the price input string
   const [priceInputString, setPriceInputString] = useState<string>('');
@@ -141,6 +150,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       placeholder="Leave blank for auto-generate, or enter ORDER-XXX"
                       {...field}
                       value={field.value || ''} // Ensure controlled component
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -164,6 +174,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
+                          disabled={isSubmitting}
                         >
                           {field.value ? (
                             format(field.value, "PPP")
@@ -218,7 +229,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                           field.onBlur(); // Call react-hook-form's onBlur
                         }}
                         className="pl-7" // Add left padding for the £ symbol
-                        disabled={field.disabled}
+                        disabled={isSubmitting}
                       />
                     </div>
                   </FormControl>
@@ -234,7 +245,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <Select onValueChange={field.onChange} value={field.value || ''} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a driver" />
@@ -262,7 +273,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                 <FormItem className="md:col-span-2">
                   <FormLabel className="text-gray-700">Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Any general notes for this job..." {...field} value={field.value || ''} />
+                    <Textarea placeholder="Any general notes for this job..." {...field} value={field.value || ''} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -274,7 +285,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} disabled={isSubmitting}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
             </Button>
           </CardHeader>
@@ -283,7 +294,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
               <Card key={field.id} className="p-4 border-l-4 border-blue-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Collection #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)}>
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)} disabled={isSubmitting}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
                 </div>
@@ -300,6 +311,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                             value={stopField.value || ''}
                             onValueChange={stopField.onChange}
                             onAddressSelect={(address) => handleAddressSelect(index, 'collections', address)}
+                            disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormMessage />
@@ -316,6 +328,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                           <Input
                             placeholder="e.g., 123 High Street"
                             {...stopField}
+                            disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormMessage />
@@ -329,7 +342,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Unit 4" {...stopField} />
+                          <Input placeholder="e.g., Unit 4" {...stopField} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -342,7 +355,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">City</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., London" {...stopField} />
+                          <Input placeholder="e.g., London" {...stopField} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -364,6 +377,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatPostcode(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                         </div>
@@ -386,6 +400,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatTimeInput(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                           <FormMessage />
@@ -406,6 +421,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatTimeInput(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                           <FormMessage />
@@ -420,7 +436,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem className="sm:col-span-2">
                         <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} />
+                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -438,7 +454,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} disabled={isSubmitting}>
               <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
             </Button>
           </CardHeader>
@@ -447,7 +463,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
               <Card key={field.id} className="p-4 border-l-4 border-green-500 bg-gray-50 shadow-sm rounded-md">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-lg text-gray-900">Delivery #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)}>
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)} disabled={isSubmitting}>
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
                 </div>
@@ -464,6 +480,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                             value={stopField.value || ''}
                             onValueChange={stopField.onChange}
                             onAddressSelect={(address) => handleAddressSelect(index, 'deliveries', address)}
+                            disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormMessage />
@@ -480,6 +497,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                           <Input
                             placeholder="e.g., 123 High Street"
                             {...stopField}
+                            disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormMessage />
@@ -493,7 +511,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Loading Bay" {...stopField} />
+                          <Input placeholder="e.g., Loading Bay" {...stopField} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -506,7 +524,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem>
                         <FormLabel className="text-gray-700">City</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Manchester" {...stopField} />
+                          <Input placeholder="e.g., Manchester" {...stopField} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -528,6 +546,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatPostcode(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                         </div>
@@ -550,6 +569,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatTimeInput(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                           <FormMessage />
@@ -570,6 +590,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                                 stopField.onChange(formatTimeInput(e.target.value));
                                 stopField.onBlur();
                               }}
+                              disabled={isSubmitting}
                             />
                           </FormControl>
                           <FormMessage />
@@ -584,7 +605,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                       <FormItem className="sm:col-span-2">
                         <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} />
+                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -600,7 +621,9 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Job</Button>
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
+          {isSubmitting ? <span className="flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Job...</span> : 'Create Job'}
+        </Button>
       </form>
     </Form>
   );

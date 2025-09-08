@@ -13,6 +13,7 @@ import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
 import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import DriverJobDetailView from '@/components/driver/DriverJobDetailView'; // Import the new driver view
+import CloneJobDialog from '@/components/CloneJobDialog'; // Import the new CloneJobDialog
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
 interface JobFormValues {
@@ -65,6 +66,7 @@ const JobDetail: React.FC = () => {
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false); // New state for clone dialog
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -147,20 +149,16 @@ const JobDetail: React.FC = () => {
     });
   };
 
-  const handleCloneJob = async () => {
-    if (!job || !currentProfile || !userRole) return;
-    const promise = cloneJob(job.id, currentOrgId, currentProfile.id, userRole);
-    toast.promise(promise, {
-      loading: 'Cloning job...',
-      success: (clonedJob) => {
-        if (clonedJob) {
-          navigate(`/jobs/${clonedJob.order_number}`); // Navigate using order_number
-          return `Job ${clonedJob.order_number} cloned successfully!`;
-        }
-        return 'Job cloned, but no new job returned.';
-      },
-      error: 'Failed to clone job.',
-    });
+  const handleCloneJob = () => {
+    if (!job) {
+      toast.error("No job data available to clone.");
+      return;
+    }
+    setIsCloneDialogOpen(true);
+  };
+
+  const handleCloneSuccess = (newJobOrderNumber: string) => {
+    navigate(`/jobs/${newJobOrderNumber}`); // Navigate to the new job's detail page
   };
 
   const handleCancelJob = async () => {
@@ -369,7 +367,7 @@ const JobDetail: React.FC = () => {
             onUpdateProgress={handleUpdateProgress}
             onRequestPod={handleRequestPod}
             onExportPdf={handleExportPdf}
-            onCloneJob={handleCloneJob}
+            onCloneJob={handleCloneJob} // Now opens the dialog
             onCancelJob={handleCancelJob}
             isSubmittingEdit={isSubmittingEdit}
             isAssigningDriver={isAssigningDriver}
@@ -390,6 +388,16 @@ const JobDetail: React.FC = () => {
           currentOrgId={currentOrgId}
           onLogVisibilityChange={refetchJobData}
         />
+
+        {job && (
+          <CloneJobDialog
+            open={isCloneDialogOpen}
+            onOpenChange={setIsCloneDialogOpen}
+            originalJob={job}
+            originalStops={stops}
+            onCloneSuccess={handleCloneSuccess}
+          />
+        )}
       </div>
     </div>
   );

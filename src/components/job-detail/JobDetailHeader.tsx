@@ -36,7 +36,7 @@ interface JobDetailHeaderProps {
   onUpdateProgress: (entries: any[]) => Promise<void>; // Use any[] for now, will be ProgressUpdateEntry[]
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;
-  onCloneJob: () => Promise<void>;
+  onCloneJob: () => void; // Changed to void as it now triggers a dialog
   onCancelJob: () => Promise<void>;
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;
@@ -55,7 +55,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   onUpdateProgress,
   onRequestPod,
   onExportPdf,
-  onCloneJob,
+  onCloneJob, // Now a function to open the dialog
   onCancelJob,
   isSubmittingEdit,
   isAssigningDriver,
@@ -75,7 +75,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
         <Badge
           variant={
             job.status === 'planned'
-              ? 'secondary'
+              ? 'secondary' // Changed to secondary for planned
               : job.status === 'accepted' || job.status === 'assigned'
               ? 'default'
               : job.status === 'delivered'
@@ -95,7 +95,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                 <Edit className="h-4 w-4 mr-2" /> Edit Job
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+            <DialogContent className="flex flex-col">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Job: {job.order_number}</DialogTitle>
               </DialogHeader>
@@ -137,7 +137,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                   <FileText className="h-4 w-4 mr-2" /> Request POD
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
+              <AlertDialogContent className="overflow-y-auto">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Request Proof of Delivery (POD)?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -157,27 +157,9 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               <FileDown className="h-4 w-4 mr-2" /> Export PDF
             </Button>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">
-                  <Copy className="h-4 w-4 mr-2" /> Clone Job
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clone this Job?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will create a new job with all the same details and stops as this one. You can then edit the new job.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel asChild>
-                    <Button variant="outline">Dismiss</Button>
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={onCloneJob}>Clone Job</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button variant="outline" onClick={onCloneJob}> {/* Changed to call onCloneJob prop */}
+              <Copy className="h-4 w-4 mr-2" /> Clone Job
+            </Button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -185,7 +167,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                   <XCircle className="h-4 w-4 mr-2" /> Cancel Job
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
+              <AlertDialogContent className="overflow-y-auto">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
                   <AlertDialogDescription>

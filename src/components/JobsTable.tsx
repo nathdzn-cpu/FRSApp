@@ -130,6 +130,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
             const driverInfo = getDriverInfo(job.assigned_driver_id);
             const isCancelled = job.status === 'cancelled';
             const isDelivered = job.status === 'delivered' || job.status === 'pod_received';
+            const isPlanned = job.status === 'planned'; // New check for planned status
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
 
             return (
@@ -156,8 +157,8 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                       "rounded-full px-3 py-1 text-xs font-medium",
                       isCancelled && 'bg-red-500 text-white hover:bg-red-600',
                       isDelivered && 'bg-green-500 text-white hover:bg-green-600',
-                      isInProgress && 'bg-blue-500 text-white hover:bg-blue-600',
-                      job.status === 'planned' && 'bg-gray-200 text-gray-800 hover:bg-gray-300', // Grey for unassigned/planned
+                      isPlanned && 'bg-yellow-500 text-white hover:bg-yellow-600', // Yellow for planned
+                      isInProgress && 'bg-blue-500 text-white hover:bg-blue-600', // Blue for in progress (includes accepted)
                     )}
                   >
                     {getDisplayStatus(job.status)}

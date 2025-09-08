@@ -75,9 +75,11 @@ const CreateJob: React.FC = () => {
     }
 
     try {
+      const initialStatus = values.assigned_driver_id && values.assigned_driver_id !== 'null' ? 'accepted' : 'planned';
+
       const newJobData = {
         order_number: values.order_number || null, // Pass null if empty for auto-generation
-        status: 'planned' as const,
+        status: initialStatus as Job['status'], // Set initial status based on driver assignment
         date_created: values.date_created.toISOString().split('T')[0], // Format as YYYY-MM-DD
         price: values.price,
         assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
@@ -96,7 +98,7 @@ const CreateJob: React.FC = () => {
         loading: 'Creating job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          navigate(`/jobs/${newJob.id}`);
+          navigate(`/jobs/${newJob.order_number}`);
           return `Job ${newJob.order_number} created successfully!`;
         },
         error: 'Failed to create job.',
