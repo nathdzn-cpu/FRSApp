@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, ChevronDown, User as UserIcon, Settings } from 'lucide-react'; // Added Settings import
+import { LogOut, PlusCircle, ChevronDown, User as UserIcon, Settings } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -57,7 +57,8 @@ const Header: React.FC = () => {
             {pathnames.length > 0 && <BreadcrumbSeparator />}
             {breadcrumbs}
           </BreadcrumbList>
-        </div>
+        </Breadcrumb>
+      </div>
       <div className="flex items-center space-x-4">
         {canCreateJob && (
           <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
