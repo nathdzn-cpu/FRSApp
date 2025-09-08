@@ -58,7 +58,7 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]"> {/* Removed conflicting max-w-md and max-h-[90vh] as it's now handled by DialogContent */}
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">Assign Driver</DialogTitle>
           <DialogDescription>

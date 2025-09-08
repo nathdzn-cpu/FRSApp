@@ -182,7 +182,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="max-w-3xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <AlertDialogContent className="bg-white p-6 rounded-xl shadow-lg flex flex-col"> {/* Removed max-w-3xl and max-h-[90vh] */}
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
           <AlertDialogDescription>

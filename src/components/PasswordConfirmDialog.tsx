@@ -94,7 +94,7 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="flex flex-col max-h-[90vh] bg-[var(--saas-card-bg)]">
+      <AlertDialogContent className="flex flex-col bg-[var(--saas-card-bg)]"> {/* Removed max-h-[90vh] */}
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>

@@ -408,7 +408,7 @@ const AdminSavedAddresses: React.FC = () => {
         {/* Edit Address Dialog */}
         {editingAddress && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+            <DialogContent className="bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col"> {/* Removed max-w-md and max-h-[90vh] */}
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Saved Address</DialogTitle>
                 <DialogDescription>
