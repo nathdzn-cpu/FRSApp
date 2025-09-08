@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin, ChevronDown, Star } from 'lucide-react';
@@ -33,6 +33,7 @@ const Sidebar: React.FC = () => {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, userRole, logout } = useAuth();
+  const navigate = useNavigate();
 
   const filteredNavLinks = navLinks.filter(link =>
     !link.roles || (userRole && link.roles.includes(userRole))
