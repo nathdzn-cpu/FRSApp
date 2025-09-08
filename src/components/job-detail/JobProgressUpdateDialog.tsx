@@ -182,7 +182,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="bg-white p-6 rounded-xl shadow-lg flex flex-col"> {/* Removed max-w-3xl and max-h-[90vh] */}
+      <AlertDialogContent className="flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
           <AlertDialogDescription>
@@ -215,7 +215,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
               <div className="space-y-4 border-t pt-4 mt-4">
                 <h3 className="text-lg font-semibold">Log Entries:</h3>
                 {progressUpdateEntries.map((entry, index) => (
-                  <Card key={index} className="p-3 bg-gray-50 border border-gray-200">
+                  <Card key={index} className="p-3 bg-gray-50 shadow-sm rounded-md"> {/* Removed border */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                       {/* Status Display */}
                       <div className="flex flex-col sm:col-span-1">
