@@ -5,7 +5,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown } from 'lucide-react'; 
-import { Truck, Car, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react"; // Changed SteeringWheel to Car
+import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react"; // Changed Car to User
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ interface NavLinkItem {
 
 const navLinks: NavLinkItem[] = [
   { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
-  { to: '/drivers', icon: Car, label: 'Drivers', roles: ['admin', 'office'] }, // Updated icon to Car
+  { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] }, // Updated icon to User
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
   { to: '/map', icon: Map, label: 'Map', roles: ['admin', 'office', 'driver'] },
   { to: '/quotes', icon: FileText, label: 'Quotes', roles: ['admin', 'office'] },
