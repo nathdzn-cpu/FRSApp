@@ -85,7 +85,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
             <div className={`absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full ${isRemovedFromTimeline || isCancelledJob ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
               <Icon size={16} />
             </div>
-            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-[var(--saas-border)]">
+            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm"> {/* Removed border */}
               <div className="flex items-center justify-between mb-1">
                 <Badge variant={isRemovedFromTimeline || isCancelledJob ? 'destructive' : 'secondary'} className="capitalize">
                   {getDisplayStatus(log.action_type)}
