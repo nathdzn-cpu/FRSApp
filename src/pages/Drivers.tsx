@@ -1,55 +1,96 @@
-import React, { useEffect, useState } from 'react';
+"use client";
+
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles, getTenants } from '@/lib/supabase';
-import { Profile, Tenant } from '@/utils/mockData';
+import { getProfiles, getJobs } from '@/lib/supabase';
+import { Job, Profile, JobProgressLog } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, MapPin, Truck } from 'lucide-react';
+import { Loader2, ArrowLeft, UserPlus, Search, Truck, MapPin } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import DriverDetailDialog from '@/components/DriverDetailDialog'; // Import the new dialog component
+import dayjs from 'dayjs'; // Import dayjs for date calculations
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  const [drivers, setDrivers] = useState<Profile[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
+  const canCreateUser = userRole === 'admin' || userRole === 'office';
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!user || !profile) {
       setLoadingData(false);
       return;
     }
 
-    const fetchDrivers = async () => {
-      setLoadingData(true);
-      setError(null);
-      try {
-        const fetchedTenants = await getTenants();
-        const defaultOrgId = profile.org_id || fetchedTenants[0]?.id;
+    setLoadingData(true);
+    setError(null);
+    try {
+      // Fetch all profiles for the current organization
+      const fetchedProfiles = await getProfiles(currentOrgId, userRole);
+      setAllProfiles(fetchedProfiles);
 
-        if (defaultOrgId) {
-          const fetchedProfiles = await getProfiles(defaultOrgId, userRole); // Pass userRole
-          setDrivers(fetchedProfiles.filter(p => p.role === 'driver'));
-        }
-      } catch (err) {
-        console.error("Failed to fetch drivers:", err);
-        setError("Failed to load drivers. Please try again.");
-      } finally {
-        setLoadingData(false);
-      }
-    };
-    fetchDrivers();
-  }, [user, profile, isLoadingAuth, userRole]); // Added userRole to dependencies
+      // Fetch all jobs for the current organization
+      const fetchedJobs = await getJobs(currentOrgId, userRole, undefined, undefined, 'all');
+      setAllJobs(fetchedJobs);
+
+    } catch (err: any) {
+      console.error("Failed to fetch data for drivers page:", err);
+      setError(err.message || "Failed to load data. Please try again.");
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoadingAuth) return;
+    fetchData();
+  }, [user, profile, userRole, isLoadingAuth, currentOrgId]);
+
+  const drivers = useMemo(() => {
+    return allProfiles.filter(p => p.role === 'driver');
+  }, [allProfiles]);
+
+  const filteredDrivers = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return drivers;
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return drivers.filter(
+      (driver) =>
+        driver.full_name.toLowerCase().includes(lowerCaseSearchTerm) ||
+        (driver.truck_reg && driver.truck_reg.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (driver.trailer_no && driver.trailer_no.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  }, [drivers, searchTerm]);
+
+  const getJobsAssignedCount = (driverId: string) => {
+    return allJobs.filter(job => job.assigned_driver_id === driverId && !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+  };
+
+  const handleRowClick = (driver: Profile) => {
+    setSelectedDriver(driver);
+    setIsDetailDialogOpen(true);
+  };
 
   if (isLoadingAuth || loadingData) {
     return (
       <div className="flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700">Loading drivers...</p>
+        <p className="ml-2 text-gray-700">Loading drivers data...</p>
       </div>
     );
   }
@@ -65,6 +106,17 @@ const Drivers: React.FC = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+        <p className="text-red-600 font-bold mb-2">You are not logged in.</p>
+        <Button onClick={() => navigate('/login')} variant="outline">
+          Log In
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="max-w-7xl mx-auto">
@@ -73,48 +125,92 @@ const Drivers: React.FC = () => {
         </Button>
 
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="p-0 pb-4">
+          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Drivers List</CardTitle>
+            {canCreateUser && (
+              <Button onClick={() => navigate('/admin/users/new/driver')} className="bg-blue-600 text-white hover:bg-blue-700">
+                <UserPlus className="h-4 w-4 mr-2" /> New Driver
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            {drivers.length === 0 ? (
-              <p className="text-gray-600">No drivers found.</p>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Search drivers by name, vehicle reg, or trailer no..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              />
+            </div>
+
+            {filteredDrivers.length === 0 ? (
+              <p className="text-gray-600">No drivers found matching your criteria.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {drivers.map(driver => (
-                  <Card key={driver.id} className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-4">
-                    <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
-                      <CardTitle className="text-lg font-semibold text-gray-900">{driver.full_name}</CardTitle>
-                      <Badge variant="secondary" className="capitalize">{driver.role}</Badge>
-                    </CardHeader>
-                    <CardContent className="text-sm text-gray-700 p-0 pt-2">
-                      <p className="flex items-center mb-1">
-                        <Truck className="h-4 w-4 mr-2 text-gray-500" />
-                        Truck: {driver.truck_reg || 'N/A'}
-                      </p>
-                      <p className="flex items-center mb-1">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                        Last Location: {driver.last_location ?
-                          `${driver.last_location.lat.toFixed(2)}, ${driver.last_location.lon.toFixed(2)}` : 'N/A'}
-                      </p>
-                      {driver.last_location?.timestamp && (
-                        <p className="text-xs text-gray-500 ml-6">
-                          ({formatDistanceToNowStrict(parseISO(driver.last_location.timestamp), { addSuffix: true })})
-                        </p>
-                      )}
-                      <p className="flex items-center mt-2">
-                        <Badge variant="outline" className="capitalize">
-                          Last Job Status: {driver.last_job_status || 'N/A'}
-                        </Badge>
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="rounded-md overflow-hidden shadow-sm">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Vehicle Reg</TableHead>
+                      <TableHead>Trailer No</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Jobs Assigned</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="bg-white divide-y divide-gray-100">
+                    {filteredDrivers.map((driver, index) => (
+                      <TableRow
+                        key={driver.id}
+                        className={cn(
+                          "cursor-pointer hover:bg-gray-50 transition-colors",
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        )}
+                        onClick={() => handleRowClick(driver)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <Avatar className="h-8 w-8 mr-3">
+                              <AvatarFallback className="bg-blue-100 text-blue-600 text-xs font-medium">
+                                {driver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            {driver.full_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{driver.phone || '-'}</TableCell>
+                        <TableCell>{driver.truck_reg || '-'}</TableCell>
+                        <TableCell>{driver.trailer_no || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize">
+                            {driver.last_job_status || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getJobsAssignedCount(driver.id)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {selectedDriver && (
+        <DriverDetailDialog
+          open={isDetailDialogOpen}
+          onOpenChange={setIsDetailDialogOpen}
+          driver={selectedDriver}
+          allJobs={allJobs}
+          currentOrgId={currentOrgId}
+          onJobView={(orderNumber) => {
+            setIsDetailDialogOpen(false); // Close dialog before navigating
+            navigate(`/jobs/${orderNumber}`);
+          }}
+        />
+      )}
     </div>
   );
 };
