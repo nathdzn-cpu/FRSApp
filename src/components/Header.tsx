@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, ChevronDown, User as UserIcon } from 'lucide-react';
+import { LogOut, PlusCircle, ChevronDown, User as UserIcon, Settings } from 'lucide-react'; // Added Settings import
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
