@@ -269,14 +269,24 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   </Badge>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.collection_city && job.collection_postcode
-                    ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
-                    : '-'}
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>
+                    <span className="text-xs text-gray-600">
+                      {job.collection_city && job.collection_postcode
+                        ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
+                        : '-'}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.delivery_city && job.delivery_postcode
-                    ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
-                    : '-'}
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium text-gray-900">{formatAddressPart(job.delivery_name)}</span>
+                    <span className="text-xs text-gray-600">
+                      {job.delivery_city && job.delivery_postcode
+                        ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
+                        : '-'}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                   <DropdownMenu>

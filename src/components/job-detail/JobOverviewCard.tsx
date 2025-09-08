@@ -52,17 +52,35 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
           <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4 text-blue-600" /> Collections:
           </p>
-          {job.collection_city && job.collection_postcode
-            ? <p className="text-gray-700">{formatAddressPart(job.collection_city)}, {formatPostcode(job.collection_postcode)}</p>
-            : <p className="text-gray-600">No collection stops defined for this job.</p>}
+          {job.collection_name || (job.collection_city && job.collection_postcode) ? (
+            <div className="flex flex-col items-start">
+              <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>
+              <span className="text-sm text-gray-600">
+                {job.collection_city && job.collection_postcode
+                  ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
+                  : '-'}
+              </span>
+            </div>
+          ) : (
+            <p className="text-gray-600">No collection stops defined for this job.</p>
+          )}
         </div>
         <div>
           <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4 text-green-600" /> Deliveries:
           </p>
-          {job.delivery_city && job.delivery_postcode
-            ? <p className="text-gray-700">{formatAddressPart(job.delivery_city)}, {formatPostcode(job.delivery_postcode)}</p>
-            : <p className="text-gray-600">No delivery stops defined for this job.</p>}
+          {job.delivery_name || (job.delivery_city && job.delivery_postcode) ? (
+            <div className="flex flex-col items-start">
+              <span className="font-medium text-gray-900">{formatAddressPart(job.delivery_name)}</span>
+              <span className="text-sm text-gray-600">
+                {job.delivery_city && job.delivery_postcode
+                  ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
+                  : '-'}
+              </span>
+            </div>
+          ) : (
+            <p className="text-gray-600">No delivery stops defined for this job.</p>
+          )}
         </div>
       </div>
     </CardContent>

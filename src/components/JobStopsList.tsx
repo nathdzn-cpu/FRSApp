@@ -2,7 +2,7 @@ import React from 'react';
 import { JobStop } from '@/utils/mockData';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
-import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities
 
 interface JobStopsListProps {
   stops: JobStop[];
