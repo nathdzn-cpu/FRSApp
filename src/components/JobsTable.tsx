@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Added Link import
+import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,6 +12,7 @@ import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns'; // Import format and parseISO
 
 interface JobsTableProps {
   jobs: Job[];
@@ -109,21 +110,31 @@ const JobsTable: React.FC<JobsTableProps> = ({
                 <TableCell>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-sm text-gray-600">
                       {job.collection_city && job.collection_postcode
                         ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
                         : '-'}
                     </span>
+                    {job.pickup_eta && (
+                      <span className="text-sm text-gray-600">
+                        {format(parseISO(job.pickup_eta), 'dd MMM yyyy, HH:mm')}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-gray-900">{formatAddressPart(job.delivery_name)}</span>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-sm text-gray-600">
                       {job.delivery_city && job.delivery_postcode
                         ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
                         : '-'}
                     </span>
+                    {job.delivery_eta && (
+                      <span className="text-sm text-gray-600">
+                        {format(parseISO(job.delivery_eta), 'dd MMM yyyy, HH:mm')}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
