@@ -250,7 +250,11 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{job.order_number}</TableCell>
+                <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <Link to={`/jobs/${job.order_number}`} className="text-blue-600 hover:underline">
+                    {job.order_number}
+                  </Link>
+                </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap">
                   <Badge
                     className={cn(
