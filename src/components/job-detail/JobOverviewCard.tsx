@@ -6,6 +6,7 @@ import { Job, JobStop, Profile } from '@/utils/mockData';
 import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
+import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import getDisplayStatus
 
 interface JobOverviewCardProps {
   job: Job;

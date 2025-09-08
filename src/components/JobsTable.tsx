@@ -269,13 +269,13 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   </Badge>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.collection_name && job.collection_city
-                    ? `${formatAddressPart(job.collection_name)}, ${formatAddressPart(job.collection_city)}`
+                  {job.collection_city && job.collection_name
+                    ? `${formatAddressPart(job.collection_city)}, ${formatAddressPart(job.collection_name)}`
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.delivery_name && job.delivery_city
-                    ? `${formatAddressPart(job.delivery_name)}, ${formatAddressPart(job.delivery_city)}`
+                  {job.delivery_city && job.delivery_name
+                    ? `${formatAddressPart(job.delivery_city)}, ${formatAddressPart(job.delivery_name)}`
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
