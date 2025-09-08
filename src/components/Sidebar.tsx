@@ -115,7 +115,7 @@ const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-[var(--saas-border)] bg-[var(--saas-sidebar-bg)] shadow-md">
+    <aside className="flex h-screen w-64 flex-col bg-[var(--saas-sidebar-bg)] shadow-sm">
       <div className="flex h-14 items-center border-b border-[var(--saas-border)] px-4 lg:h-[60px] lg:px-6">
         <Link to="/" className="flex items-center gap-2 font-semibold">
           <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />

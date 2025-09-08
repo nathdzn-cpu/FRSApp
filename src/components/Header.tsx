@@ -45,7 +45,7 @@ const Header: React.FC = () => {
   });
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-[var(--saas-header-bg)] border-b border-[var(--saas-border)] shadow-sm">
+    <header className="flex items-center justify-between px-6 py-4 bg-[var(--saas-header-bg)] shadow-sm">
       <div className="flex items-center gap-4">
         <Breadcrumb>
           <BreadcrumbList>
@@ -57,8 +57,7 @@ const Header: React.FC = () => {
             {pathnames.length > 0 && <BreadcrumbSeparator />}
             {breadcrumbs}
           </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+        </div>
       <div className="flex items-center space-x-4">
         {canCreateJob && (
           <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
