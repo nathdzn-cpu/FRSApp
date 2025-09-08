@@ -49,7 +49,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Driver Details</CardTitle>
           </CardHeader>
@@ -80,7 +80,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white shadow-sm rounded-xl max-h-60 overflow-y-auto">
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl max-h-60 overflow-y-auto">
                         {years.map((year) => (
                           <SelectItem key={year} value={year}>{year}</SelectItem>
                         ))}
@@ -102,7 +102,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white shadow-sm rounded-xl">
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                         {months.map((month) => (
                           <SelectItem key={month} value={month}>{month}</SelectItem>
                         ))}
@@ -124,7 +124,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                           <SelectValue placeholder="Day" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white shadow-sm rounded-xl">
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                         {days.map((day) => (
                           <SelectItem key={day} value={day}>{day}</SelectItem>
                         ))}

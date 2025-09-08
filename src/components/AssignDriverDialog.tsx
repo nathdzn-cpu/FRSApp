@@ -58,7 +58,7 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">Assign Driver</DialogTitle>
           <DialogDescription>
@@ -84,7 +84,7 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
               Clear Assignment
             </Button>
 
-            <ScrollArea className="h-60 w-full rounded-md border">
+            <ScrollArea className="h-60 w-full rounded-md border border-[var(--saas-border)]">
               <div className="p-2">
                 {filteredDrivers.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">No drivers found.</p>

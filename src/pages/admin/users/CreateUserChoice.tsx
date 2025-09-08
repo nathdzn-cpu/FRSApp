@@ -21,7 +21,7 @@ const CreateUserChoice: React.FC = () => {
 
   if (isLoadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading authentication...</p>
       </div>
@@ -33,13 +33,13 @@ const CreateUserChoice: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-xl mx-auto">
         <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Create New User</CardTitle>
           </CardHeader>

@@ -19,7 +19,7 @@ const JobStopsList: React.FC<JobStopsListProps> = ({ stops, type }) => {
   return (
     <div className="space-y-4">
       {sortedStops.map((stop, index) => (
-        <Card key={stop.id} className={`p-4 shadow-sm rounded-md ${type === 'collection' ? 'border-l-4 border-blue-500' : 'border-l-4 border-green-500'}`}>
+        <Card key={stop.id} className={`p-4 shadow-sm rounded-md ${type === 'collection' ? 'border-l-4 border-blue-500' : 'border-l-4 border-green-500'} bg-[var(--saas-card-bg)]`}>
           <CardContent className="p-0">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className={`h-4 w-4 ${type === 'collection' ? 'text-blue-600' : 'text-green-600'}`} />

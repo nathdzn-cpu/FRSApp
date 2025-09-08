@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Settings: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-7xl mx-auto">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Settings</CardTitle>
           </CardHeader>

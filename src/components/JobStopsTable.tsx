@@ -14,7 +14,7 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
   }
 
   return (
-    <div className="rounded-md border border-gray-200 overflow-hidden">
+    <div className="rounded-md border border-[var(--saas-border)] overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

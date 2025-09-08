@@ -50,7 +50,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">User Profile</CardTitle>
           </CardHeader>
@@ -80,7 +80,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white shadow-sm rounded-xl">
+                    <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="office">Office</SelectItem>
                       <SelectItem value="driver">Driver</SelectItem>
@@ -115,7 +115,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) 
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                    <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value || undefined}

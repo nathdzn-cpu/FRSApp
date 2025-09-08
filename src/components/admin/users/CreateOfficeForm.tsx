@@ -36,7 +36,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Office User Details</CardTitle>
           </CardHeader>

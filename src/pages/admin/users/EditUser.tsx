@@ -52,7 +52,7 @@ const EditUser: React.FC = () => {
       setLoadingData(true);
       setError(null);
       try {
-        const allProfiles = await getProfiles(currentOrgId);
+        const allProfiles = await getProfiles(currentOrgId, userRole); // Pass userRole
         setCurrentAdminProfile(allProfiles.find(p => p.user_id === user.id));
         setUserToEdit(allProfiles.find(p => p.id === id));
       } catch (err: any) {
@@ -76,7 +76,7 @@ const EditUser: React.FC = () => {
       dob: values.dob ? values.dob.toISOString().split('T')[0] : undefined,
       phone: values.phone || undefined,
       role: values.role,
-      user_id: values.user_id || undefined,
+      // user_id removed from schema
       truck_reg: values.truck_reg || undefined,
       trailer_no: values.trailer_no || undefined,
     };
@@ -143,7 +143,7 @@ const EditUser: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading user data...</p>
       </div>
@@ -152,8 +152,8 @@ const EditUser: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <p className="text-red-500 text-lg mb-4">Error: {error}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
+        <p className="text-red-500 text-lg mb-4">Error: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
@@ -163,7 +163,7 @@ const EditUser: React.FC = () => {
 
   if (!user || userRole !== 'admin') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Access denied</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -174,7 +174,7 @@ const EditUser: React.FC = () => {
 
   if (!userToEdit) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-gray-700 text-lg mb-4">User not found.</p>
         <Button onClick={() => navigate('/admin/users')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
@@ -184,20 +184,20 @@ const EditUser: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit User: {userToEdit.full_name}</h1>
-        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <CardContent className="p-0">
             <EditUserForm onSubmit={handleSubmit} defaultValues={userToEdit} />
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6 mt-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mt-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">User Actions</CardTitle>
           </CardHeader>

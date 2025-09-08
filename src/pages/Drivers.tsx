@@ -32,7 +32,7 @@ const Drivers: React.FC = () => {
         const defaultOrgId = profile.org_id || fetchedTenants[0]?.id;
 
         if (defaultOrgId) {
-          const fetchedProfiles = await getProfiles(defaultOrgId);
+          const fetchedProfiles = await getProfiles(defaultOrgId, userRole); // Pass userRole
           setDrivers(fetchedProfiles.filter(p => p.role === 'driver'));
         }
       } catch (err) {
@@ -43,11 +43,11 @@ const Drivers: React.FC = () => {
       }
     };
     fetchDrivers();
-  }, [user, profile, isLoadingAuth]);
+  }, [user, profile, isLoadingAuth, userRole]); // Added userRole to dependencies
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading drivers...</p>
       </div>
@@ -56,7 +56,7 @@ const Drivers: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">{error}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -66,13 +66,13 @@ const Drivers: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Drivers List</CardTitle>
           </CardHeader>
@@ -82,7 +82,7 @@ const Drivers: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {drivers.map(driver => (
-                  <Card key={driver.id} className="bg-white shadow-sm rounded-xl p-4">
+                  <Card key={driver.id} className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-4">
                     <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
                       <CardTitle className="text-lg font-semibold text-gray-900">{driver.full_name}</CardTitle>
                       <Badge variant="secondary" className="capitalize">{driver.role}</Badge>

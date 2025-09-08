@@ -33,7 +33,7 @@ const CreateDriver: React.FC = () => {
       setError(null);
       try {
         // Fetch all profiles to find the current admin's profile for actor_id
-        const profiles = await getProfiles(currentOrgId);
+        const profiles = await getProfiles(currentOrgId, userRole); // Pass userRole
         const adminProfile = profiles.find(p => p.user_id === user.id);
         if (!adminProfile) {
           throw new Error("Admin profile not found in the database.");
@@ -87,7 +87,7 @@ const CreateDriver: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading...</p>
       </div>
@@ -96,7 +96,7 @@ const CreateDriver: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Error: {error}</p>
         <Button onClick={() => navigate('/admin/users')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
@@ -109,7 +109,7 @@ const CreateDriver: React.FC = () => {
   // but as a fallback, if somehow rendering here without admin role.
   if (!user || userRole !== 'admin' || !currentOrgId) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">You do not have permission to access this page.</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -119,14 +119,14 @@ const CreateDriver: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/admin/users/new')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Type Selection
         </Button>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Driver</h1>
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardContent className="p-0">
             <CreateDriverForm onSubmit={handleSubmit} />
           </CardContent>

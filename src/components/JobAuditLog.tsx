@@ -32,6 +32,7 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   pod_requested: FileText,
   pod_uploaded: FileText,
   document_uploaded: FileText,
+  image_uploaded: FileText, // Added for generic image uploads
   location_ping: MapPin,
   note_added: MessageSquare,
   status_changed: Clock,
@@ -69,7 +70,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
 
   return (
     <div className="relative pl-8">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--saas-border)]" />
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
@@ -84,7 +85,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
             <div className={`absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full ${isRemovedFromTimeline || isCancelledJob ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
               <Icon size={16} />
             </div>
-            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-[var(--saas-border)]">
               <div className="flex items-center justify-between mb-1">
                 <Badge variant={isRemovedFromTimeline || isCancelledJob ? 'destructive' : 'secondary'} className="capitalize">
                   {getDisplayStatus(log.action_type)}

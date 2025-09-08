@@ -26,14 +26,14 @@ import AdminSavedAddresses from './pages/admin/SavedAddresses'; // Import the ne
 
 function App() {
   return (
-    <Router> {/* BrowserRouter starts here */}
+    <Router>
       <AuthContextProvider initialSession={null} initialUser={null}>
         <Toaster richColors position="top-right" />
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-[var(--saas-background)]"> {/* Overall app background */}
           <Sidebar />
-          <div className="flex flex-col flex-1">
+          <div className="flex flex-col flex-1"> {/* Main content area (header + pages) */}
             <Header />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto p-6 lg:p-8"> {/* Page content padding */}
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -48,7 +48,7 @@ function App() {
                 <Route path="/admin/users/new/office" element={<CreateOffice />} />
                 <Route path="/admin/users/:id/edit" element={<EditUser />} />
                 <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
-                <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} /> {/* New: Saved Addresses Route */}
+                <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/env-debug" element={<EnvDebug />} />
                 <Route path="*" element={<NotFound />} />
@@ -57,7 +57,7 @@ function App() {
           </div>
         </div>
       </AuthContextProvider>
-    </Router> // BrowserRouter ends here
+    </Router>
   );
 }
 

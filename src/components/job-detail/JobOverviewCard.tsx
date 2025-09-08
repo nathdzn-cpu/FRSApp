@@ -45,7 +45,7 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[var(--saas-border)]">
         <div>
           <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4 text-blue-600" /> Collections:

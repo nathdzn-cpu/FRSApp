@@ -127,7 +127,7 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading dashboard...</p>
       </div>
@@ -137,7 +137,7 @@ const Index = () => {
   if (error) {
     console.error("Dashboard query error:", error);
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">Dashboard failed to load</p>
         <p className="text-sm text-gray-700">{error.message}</p>
       </div>
@@ -146,7 +146,7 @@ const Index = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">You are not logged in.</p>
         <Button onClick={() => navigate('/login')} variant="outline">
           Log In
@@ -158,7 +158,7 @@ const Index = () => {
   if (!profile || userRole === undefined) {
     console.warn("Profile or role missing:", { profile, userRole });
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">No role assigned to your user account.</p>
         <pre className="text-xs bg-gray-100 p-2 rounded">{JSON.stringify(profile, null, 2)}</pre>
         <Button onClick={() => navigate('/login')} variant="outline" className="mt-4">
@@ -169,8 +169,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
+      <div className="max-w-7xl mx-auto"> {/* Centering content */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Haulage Office Dashboard</h1>
           <div className="flex items-center space-x-2">
@@ -179,11 +179,7 @@ const Index = () => {
                 <Users className="h-4 w-4 mr-2" /> Admin Users
               </Button>
             )}
-            {canCreateJob && (
-              <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
-                <PlusCircle className="h-4 w-4 mr-2" /> Create New Job
-              </Button>
-            )}
+            {/* "Create New Job" button is now in the Header component */}
           </div>
         </div>
 
@@ -223,8 +219,8 @@ const Index = () => {
           />
         </div>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="flex flex-col sm:flex-row justify-between items-center p-0 pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 -mx-6 px-6 pt-6 -mt-6"> {/* Sticky header */}
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-center p-0 pb-4 sticky top-0 bg-[var(--saas-card-bg)] z-10 border-b border-[var(--saas-border)] -mx-6 px-6 pt-6 -mt-6">
             <CardTitle className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Jobs</CardTitle>
             <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
               {/* Status Filter Buttons */}

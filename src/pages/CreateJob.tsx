@@ -60,8 +60,8 @@ const CreateJob: React.FC = () => {
 
   // Fetch all profiles to get drivers
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', currentOrgId],
-    queryFn: () => getProfiles(currentOrgId),
+    queryKey: ['profiles', currentOrgId, userRole], // Pass userRole
+    queryFn: () => getProfiles(currentOrgId, userRole), // Pass userRole
     staleTime: 5 * 60 * 1000,
     enabled: canAccess && !!user && !!currentProfile && !isLoadingAuth,
   });
@@ -112,7 +112,7 @@ const CreateJob: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading job creation data...</p>
       </div>
@@ -121,7 +121,7 @@ const CreateJob: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-500 text-lg mb-4">Error loading data: {error.message}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -135,7 +135,7 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => { navigate('/'); }} variant="outline">
@@ -145,7 +145,7 @@ const CreateJob: React.FC = () => {
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardContent className="p-0">
             <JobForm onSubmit={handleSubmit} drivers={drivers} /> {/* Removed generatedRef prop */}
           </CardContent>

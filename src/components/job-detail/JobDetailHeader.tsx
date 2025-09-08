@@ -95,7 +95,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                 <Edit className="h-4 w-4 mr-2" /> Edit Job
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+            <DialogContent className="max-w-4xl bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Job: {job.order_number}</DialogTitle>
               </DialogHeader>
@@ -137,7 +137,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                   <FileText className="h-4 w-4 mr-2" /> Request POD
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Request Proof of Delivery (POD)?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -163,7 +163,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                   <Copy className="h-4 w-4 mr-2" /> Clone Job
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clone this Job?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -185,7 +185,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
                   <XCircle className="h-4 w-4 mr-2" /> Cancel Job
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+              <AlertDialogContent className="max-h-[90vh] overflow-y-auto bg-[var(--saas-card-bg)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
                   <AlertDialogDescription>

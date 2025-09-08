@@ -25,14 +25,14 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
 
   return (
     <Tabs defaultValue="timeline" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm rounded-xl p-1"> {/* Changed to 4 columns */}
+      <TabsList className="grid w-full grid-cols-4 bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-1"> {/* Changed to 4 columns */}
         <TabsTrigger value="timeline">Timeline</TabsTrigger>
         <TabsTrigger value="audit-log">Audit Log</TabsTrigger> {/* New Audit Log tab */}
         <TabsTrigger value="stops">Stops Table</TabsTrigger>
         <TabsTrigger value="pods">PODs</TabsTrigger>
       </TabsList>
       <TabsContent value="timeline" className="mt-4">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Job Timeline</CardTitle>
           </CardHeader>
@@ -47,7 +47,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
         </Card>
       </TabsContent>
       <TabsContent value="audit-log" className="mt-4"> {/* New Audit Log tab content */}
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Job Audit Log</CardTitle>
           </CardHeader>
@@ -57,7 +57,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
         </Card>
       </TabsContent>
       <TabsContent value="stops" className="mt-4">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Job Stops Table</CardTitle>
           </CardHeader>
@@ -67,7 +67,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
         </Card>
       </TabsContent>
       <TabsContent value="pods" className="mt-4">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Proof of Delivery (PODs)</CardTitle>
           </CardHeader>

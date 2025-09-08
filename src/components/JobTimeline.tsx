@@ -36,6 +36,7 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   eta_set: Clock,
   pod_requested: FileText,
   pod_uploaded: FileText,
+  image_uploaded: FileText, // Added for generic image uploads
   driver_reassigned: UserCog, // Icon for driver reassignment
   status_changed: Clock, // For generic status changes via edit
   stop_added: MapPin, // For stop additions
@@ -119,7 +120,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
 
   return (
     <div className="relative pl-8">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--saas-border)]" />
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
@@ -128,7 +129,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
             <div className="absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
               <Icon size={16} />
             </div>
-            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm border border-[var(--saas-border)]">
               <div className="flex items-center justify-between mb-1">
                 <Badge variant="secondary" className="capitalize">
                   {getDisplayStatus(log.action_type)}
