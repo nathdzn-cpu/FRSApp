@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
-import JobsTable from '@/components/JobsTable';
 import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle } from 'lucide-react'; // Added Truck, CheckCircle2, XCircle for StatCard icons
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -16,23 +15,39 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { Input } from '@/components/ui/input'; // Import Input for search bar
 import StatCard from '@/components/StatCard'; // Import the new StatCard component
+import JobCard from '@/components/JobCard'; // Import the new JobCard component
+import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog'; // Import Status Update Dialog
+import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import Assign Driver Dialog
+import JobAttachmentsDialog from '@/components/JobAttachmentsDialog'; // Import new Attachments Dialog
+import { updateJob, updateJobProgress } from '@/lib/api/jobs'; // Import API functions for actions
+import { toast } from 'sonner';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 
+type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments';
+
+interface DialogState {
+  type: DialogType | null;
+  job: Job | null;
+}
+
 const Index = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
   const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active'); // New state for job status filter
   const [searchTerm, setSearchTerm] = useState(''); // New state for search term
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
+  const [isActionBusy, setIsActionBusy] = useState(false); // To disable actions during API calls
   const navigate = useNavigate();
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
@@ -123,6 +138,82 @@ const Index = () => {
   const activeJobs = jobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
   const completedJobs = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
   const cancelledJobs = jobs.filter(job => job.status === 'cancelled').length;
+
+  const handleJobCardAction = (type: DialogType, job: Job) => {
+    setDialogState({ type, job });
+  };
+
+  const handleUpdateProgress = async (entries: any[]) => { // entries will be ProgressUpdateEntry[]
+    if (!dialogState.job || !currentProfile || !userRole || entries.length === 0) {
+      toast.error("No job or user profile/role found, or no status updates to log.");
+      return;
+    }
+
+    setIsActionBusy(true);
+    try {
+      const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+
+      for (const entry of sortedEntries) {
+        const payload = {
+          job_id: dialogState.job.id,
+          org_id: currentOrgId,
+          actor_id: currentProfile.id,
+          actor_role: userRole,
+          new_status: entry.status,
+          timestamp: entry.dateTime.toISOString(),
+          notes: entry.notes.trim() || undefined,
+        };
+        await updateJobProgress(payload);
+      }
+      toast.success('Job progress updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] }); // Invalidate job detail too
+      setDialogState({ type: null, job: null });
+    } catch (err: any) {
+      console.error("Error updating job progress:", err);
+      toast.error("An unexpected error occurred while updating job progress.");
+      throw err;
+    } finally {
+      setIsActionBusy(false);
+    }
+  };
+
+  const handleAssignDriver = async (driverId: string | null) => {
+    if (!dialogState.job || !currentProfile || !userRole) {
+      toast.error("No job or user profile/role found. Cannot assign driver.");
+      return;
+    }
+    setIsActionBusy(true);
+    try {
+      const jobUpdates: Partial<Job> = {
+        assigned_driver_id: driverId,
+      };
+
+      const payload = {
+        job_id: dialogState.job.id,
+        org_id: currentOrgId,
+        actor_id: currentProfile.id,
+        actor_role: userRole,
+        job_updates: jobUpdates,
+      };
+
+      const promise = updateJob(payload);
+      toast.promise(promise, {
+        loading: driverId ? 'Assigning driver...' : 'Unassigning driver...',
+        success: driverId ? 'Driver assigned successfully!' : 'Driver unassigned successfully!',
+        error: (err) => `Failed to assign driver: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
+      setDialogState({ type: null, job: null });
+    } catch (err: any) {
+      console.error("Error assigning driver:", err);
+      toast.error("An unexpected error occurred while assigning the driver.");
+    } finally {
+      setIsActionBusy(false);
+    }
+  };
 
 
   if (isLoading) {
@@ -340,7 +431,19 @@ const Index = () => {
           </CardHeader>
           <CardContent className="p-0 pt-4">
             {filteredJobs.length > 0 ? (
-              <JobsTable jobs={filteredJobs} profiles={profiles} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    profiles={profiles}
+                    userRole={userRole}
+                    currentProfile={currentProfile}
+                    currentOrgId={currentOrgId}
+                    onAction={handleJobCardAction}
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-gray-600">No jobs found for this tenant with the selected filter.</p>
             )}
@@ -348,6 +451,39 @@ const Index = () => {
         </Card>
       </div>
       <MadeWithDyad />
+
+      {/* Dialogs */}
+      {dialogState.type === 'statusUpdate' && dialogState.job && currentProfile && userRole && (
+        <JobProgressUpdateDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          job={dialogState.job}
+          currentProfile={currentProfile}
+          userRole={userRole}
+          onUpdateProgress={handleUpdateProgress}
+          isUpdatingProgress={isActionBusy}
+        />
+      )}
+
+      {dialogState.type === 'assignDriver' && dialogState.job && currentProfile && userRole && (
+        <AssignDriverDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          drivers={profiles.filter(p => p.role === 'driver')}
+          currentAssignedDriverId={dialogState.job.assigned_driver_id}
+          onAssign={handleAssignDriver}
+          isAssigning={isActionBusy}
+        />
+      )}
+
+      {dialogState.type === 'viewAttachments' && dialogState.job && currentOrgId && (
+        <JobAttachmentsDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          job={dialogState.job}
+          currentOrgId={currentOrgId}
+        />
+      )}
     </div>
   );
 };

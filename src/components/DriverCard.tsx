@@ -22,45 +22,52 @@ const DriverCard: React.FC<DriverCardProps> = ({ driver, jobsAssignedCount, onVi
   return (
     <Card
       className={cn(
-        "bg-white rounded-xl shadow-sm p-4 flex flex-col justify-between transition-all duration-200 ease-in-out",
-        "hover:scale-[1.02] hover:shadow-lg",
-        "max-w-sm w-full" // Default max-width, full width on smaller screens
+        "relative overflow-hidden rounded-xl shadow-lg p-4 bg-gradient-to-br from-blue-50 to-indigo-100",
+        "hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out",
+        "flex flex-col justify-between max-w-sm w-full" // Default max-width, full width on smaller screens
       )}
     >
-      <CardHeader className="flex flex-row items-center justify-between p-0 pb-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">
-              {driverInitials}
-            </AvatarFallback>
-          </Avatar>
-          <CardTitle className="text-lg font-bold text-gray-900">{driver.full_name}</CardTitle>
+      {/* Animated Orbs */}
+      <div className="absolute top-[-20px] left-[-20px] w-24 h-24 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow sm:block hidden" />
+      <div className="absolute bottom-[-30px] right-[-30px] w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-pulse-slower sm:block hidden" />
+      <div className="absolute top-[50%] left-[50%] w-20 h-20 bg-violet-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow sm:block hidden" />
+
+      <div className="relative z-10 flex flex-col h-full">
+        <CardHeader className="flex flex-row items-center justify-between p-0 pb-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">
+                {driverInitials}
+              </AvatarFallback>
+            </Avatar>
+            <CardTitle className="text-lg font-bold text-gray-900">{driver.full_name}</CardTitle>
+          </div>
+          <Badge
+            variant={isActive ? 'default' : 'secondary'}
+            className={cn(
+              "capitalize",
+              isActive ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            )}
+          >
+            {isActive ? 'Active' : 'Off Duty'}
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-0 pt-3 space-y-2 text-sm text-gray-700 flex-grow">
+          <p className="flex items-center gap-2">
+            <Phone className="h-4 w-4 text-gray-500" /> {driver.phone || 'N/A'}
+          </p>
+          <p className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-gray-500" /> {driver.truck_reg || 'N/A'} {driver.trailer_no ? `(Trailer: ${driver.trailer_no})` : ''}
+          </p>
+          <p className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-gray-500" /> Jobs Assigned: {jobsAssignedCount}
+          </p>
+        </CardContent>
+        <div className="relative z-10 pt-4 border-t border-gray-200 mt-auto">
+          <Button onClick={() => onViewDetails(driver)} className="w-full bg-blue-600 text-white hover:bg-blue-700">
+            <ArrowRight className="h-4 w-4 mr-2" /> View Details
+          </Button>
         </div>
-        <Badge
-          variant={isActive ? 'default' : 'secondary'}
-          className={cn(
-            "capitalize",
-            isActive ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          )}
-        >
-          {isActive ? 'Active' : 'Off Duty'}
-        </Badge>
-      </CardHeader>
-      <CardContent className="p-0 pt-3 space-y-2 text-sm text-gray-700 flex-grow">
-        <p className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-gray-500" /> {driver.phone || 'N/A'}
-        </p>
-        <p className="flex items-center gap-2">
-          <Truck className="h-4 w-4 text-gray-500" /> {driver.truck_reg || 'N/A'} {driver.trailer_no ? `(Trailer: ${driver.trailer_no})` : ''}
-        </p>
-        <p className="flex items-center gap-2">
-          <Briefcase className="h-4 w-4 text-gray-500" /> Jobs Assigned: {jobsAssignedCount}
-        </p>
-      </CardContent>
-      <div className="pt-4 border-t border-gray-100 mt-4">
-        <Button onClick={() => onViewDetails(driver)} className="w-full bg-blue-600 text-white hover:bg-blue-700">
-          <ArrowRight className="h-4 w-4 mr-2" /> View Details
-        </Button>
       </div>
     </Card>
   );
