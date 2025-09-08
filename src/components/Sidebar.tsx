@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin, ChevronDown } from 'lucide-react';
+import { Menu, Briefcase, Users, ClipboardList, Shield, Settings, CalendarCheck, MapPin, ChevronDown, FileText } from 'lucide-react'; // Added FileText for Quotes
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,8 @@ const navLinks: NavLinkItem[] = [
   { to: '/', icon: Briefcase, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
   { to: '/drivers', icon: Users, label: 'Drivers', roles: ['admin', 'office'] },
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
+  { to: '/map', icon: MapPin, label: 'Map', roles: ['admin', 'office', 'driver'] }, // New Map link
+  { to: '/quotes', icon: FileText, label: 'Quotes', roles: ['admin', 'office'] }, // New Quotes link
   { to: '/admin/checklists', icon: ClipboardList, label: 'Admin Checklists', roles: ['admin'] },
   { to: '/admin/users', icon: Shield, label: 'Admin Users', roles: ['admin'] },
   { to: '/admin/saved-addresses', icon: MapPin, label: 'Saved Addresses', roles: ['admin', 'office'] },

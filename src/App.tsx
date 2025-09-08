@@ -22,7 +22,9 @@ import NotFound from './pages/NotFound';
 import LoginPage from './pages/Login';
 import EnvDebug from './pages/EnvDebug';
 import AdminDailyChecks from './pages/admin/DailyChecks';
-import AdminSavedAddresses from './pages/admin/SavedAddresses'; // Import the new AdminSavedAddresses page
+import AdminSavedAddresses from './pages/admin/SavedAddresses';
+import Map from './pages/Map'; // Import new Map page
+import Quotes from './pages/Quotes'; // Import new Quotes page
 
 function App() {
   return (
@@ -41,6 +43,8 @@ function App() {
                 <Route path="/jobs/new" element={<CreateJob />} />
                 <Route path="/drivers" element={<Drivers />} />
                 <Route path="/daily-check" element={<DriverDailyCheck />} />
+                <Route path="/map" element={<Map />} /> {/* New Map route */}
+                <Route path="/quotes" element={<Quotes />} /> {/* New Quotes route */}
                 <Route path="/admin/checklists" element={<AdminChecklists />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/admin/users/new" element={<CreateUserChoice />} />
