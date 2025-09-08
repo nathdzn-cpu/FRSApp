@@ -189,6 +189,24 @@ const AdminSavedAddresses: React.FC = () => {
     }
   };
 
+  const handleDeleteAddress = async (id: string) => {
+    if (!currentProfile || !userRole) {
+      toast.error("User profile or role not found. Cannot delete address.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteSavedAddress(currentOrgId, id, userRole);
+      toast.success("Address deleted successfully!");
+      await loadAddresses();
+    } catch (e: any) {
+      console.error("Error deleting address:", e);
+      toast.error(`Failed to delete address: ${e.message || String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (isLoadingAuth || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
@@ -396,7 +414,7 @@ const AdminSavedAddresses: React.FC = () => {
                 <DialogDescription>
                   Make changes to the address here. Click save when you're done.
                 </DialogDescription>
-              </DialogDescription>
+              </DialogHeader>
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="space-y-4">
                   <div className="space-y-2">

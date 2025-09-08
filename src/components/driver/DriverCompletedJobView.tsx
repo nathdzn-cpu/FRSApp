@@ -50,7 +50,7 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
   };
 
   return (
-    <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+    <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
       <CardHeader className="p-0 pb-4 text-center">
         <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
         <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number} - Complete!</CardTitle>

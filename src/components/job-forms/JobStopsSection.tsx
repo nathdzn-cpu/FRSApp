@@ -70,7 +70,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({
   };
 
   return (
-    <Card className="bg-white shadow-sm rounded-xl p-6">
+    <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
       <div className="flex flex-row items-center justify-between p-0 pb-4">
         <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
         {isOfficeOrAdmin && (

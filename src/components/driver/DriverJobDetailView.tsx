@@ -128,7 +128,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const isJobCompleted = job.status === 'delivered' || job.status === 'pod_received';
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[var(--saas-background)] p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -144,7 +144,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
             refetchJobData={refetchJobData}
           />
         ) : (
-          <Card className="bg-white shadow-sm rounded-xl p-6 mb-6">
+          <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
             <CardHeader className="p-0 pb-4">
               <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
             </CardHeader>

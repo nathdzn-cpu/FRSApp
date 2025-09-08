@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { parseISO } from 'date-fns';
 import JobDetailsSection from './job-forms/JobDetailsSection';
 import JobStopsSection from './job-forms/JobStopsSection';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 // Helper to format time input to HH:MM (kept here as it's used in stopSchema)
 const formatTimeInput = (value: string) => {
@@ -107,7 +108,7 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
     <FormProvider {...formMethods}>
       <Form {...formMethods}>
         <form onSubmit={formMethods.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="bg-white shadow-sm rounded-xl p-6">
+          <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
             <CardHeader className="p-0 pb-4">
               <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>
             </CardHeader>

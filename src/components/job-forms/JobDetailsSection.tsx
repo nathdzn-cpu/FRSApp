@@ -77,7 +77,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="bg-white shadow-sm rounded-xl">
+              <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                 {['planned', 'assigned', 'accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received', 'cancelled'].map(status => (
                   <SelectItem key={status} value={status}>
                     {getDisplayStatus(status as Job['status'])}
@@ -117,7 +117,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
                   </Button>
                 </FormControl>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+              <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
                 <Calendar
                   mode="single"
                   selected={field.value}
@@ -183,7 +183,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
                   <SelectValue placeholder="Select a driver" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="bg-white shadow-sm rounded-xl">
+              <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                 <SelectItem value="null">Unassigned</SelectItem>
                 {drivers.map(driver => (
                   <SelectItem key={driver.id} value={driver.id}>

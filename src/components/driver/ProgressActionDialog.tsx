@@ -137,7 +137,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <AlertDialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">{title}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -163,7 +163,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
                     {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={selectedDate}

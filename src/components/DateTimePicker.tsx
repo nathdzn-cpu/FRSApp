@@ -110,7 +110,7 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, label,
             {selectedDate ? format(selectedDate, "PPP HH:mm") : <span>Pick a date and time</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+        <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
           <Calendar
             mode="single"
             selected={selectedDate}

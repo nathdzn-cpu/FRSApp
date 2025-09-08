@@ -124,7 +124,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Job Details</CardTitle>
           </CardHeader>
@@ -174,7 +174,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
+                    <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -240,7 +240,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
                         <SelectValue placeholder="Select a driver" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white shadow-sm rounded-xl">
+                    <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                       <SelectItem value="null">Unassigned</SelectItem>
                       {drivers.map(driver => (
                         <SelectItem key={driver.id} value={driver.id}>
@@ -271,7 +271,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
@@ -435,7 +435,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm rounded-xl p-6">
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })}>
