@@ -20,7 +20,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { Input } from '@/components/ui/input'; // Import Input for search bar
 import StatCard from '@/components/StatCard'; // Import the new StatCard component
-import JobCard from '@/components/JobCard'; // Import the new JobCard component
+import JobsTable from '@/components/JobsTable'; // Import the new JobsTable component
 import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog'; // Import Status Update Dialog
 import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import Assign Driver Dialog
 import JobAttachmentsDialog from '@/components/JobAttachmentsDialog'; // Import new Attachments Dialog
@@ -139,7 +139,7 @@ const Index = () => {
   const completedJobs = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
   const cancelledJobs = jobs.filter(job => job.status === 'cancelled').length;
 
-  const handleJobCardAction = (type: DialogType, job: Job) => {
+  const handleJobTableAction = (type: DialogType, job: Job) => {
     setDialogState({ type, job });
   };
 
@@ -430,23 +430,14 @@ const Index = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            {filteredJobs.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    profiles={profiles}
-                    userRole={userRole}
-                    currentProfile={currentProfile}
-                    currentOrgId={currentOrgId}
-                    onAction={handleJobCardAction}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">No jobs found for this tenant with the selected filter.</p>
-            )}
+            <JobsTable
+              jobs={filteredJobs}
+              profiles={profiles}
+              userRole={userRole}
+              currentProfile={currentProfile}
+              currentOrgId={currentOrgId}
+              onAction={handleJobTableAction}
+            />
           </CardContent>
         </Card>
       </div>
