@@ -414,7 +414,7 @@ const AdminSavedAddresses: React.FC = () => {
                 <DialogDescription>
                   Make changes to the address here. Click save when you're done.
                 </DialogDescription>
-              </DialogHeader>
+              </DialogDescription>
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="space-y-4">
                   <div className="space-y-2">

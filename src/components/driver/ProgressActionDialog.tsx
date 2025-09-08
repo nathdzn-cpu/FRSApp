@@ -80,14 +80,18 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       newDateTime = setSeconds(newDateTime, 0);
     }
     setSelectedDate(newDateTime);
+    onChange(newDateTime);
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     setTimeInput(rawInput);
+    if (onTimeInputChange) {
+      onTimeInputChange(rawInput); // Pass raw input to parent for external validation
+    }
 
     const { formattedTime, error } = formatAndValidateTimeInput(rawInput);
-    setTimeError(error);
+    setInternalTimeError(error);
 
     if (formattedTime && selectedDate) {
       const [hoursStr, minutesStr] = formattedTime.split(':');
@@ -97,7 +101,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       let newDateTime = setHours(selectedDate, hours);
       newDateTime = setMinutes(newDateTime, minutes);
       newDateTime = setSeconds(newDateTime, 0);
-      setSelectedDate(newDateTime);
+      onChange(newDateTime);
     } else if (formattedTime && !selectedDate) {
       // If no date is selected, default to today's date with the chosen time
       let newDateTime = new Date();
@@ -105,13 +109,14 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
       newDateTime = setSeconds(newDateTime, 0);
       setSelectedDate(newDateTime);
+      onChange(newDateTime);
     } else {
       // If time is invalid or empty, clear the time part of the date
       if (selectedDate) {
         const newDateTime = setHours(setMinutes(setSeconds(selectedDate, 0), 0), 0);
-        setSelectedDate(newDateTime);
+        onChange(newDateTime);
       } else {
-        setSelectedDate(undefined);
+        onChange(undefined);
       }
     }
   };
@@ -181,7 +186,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
                 <Clock className="h-4 w-4 text-gray-500" />
                 <Input
                   id="time-input"
-                  type="text"
+                  type="text" // Changed to text to allow custom formatting
                   value={timeInput}
                   onChange={handleTimeChange}
                   onBlur={(e) => {
