@@ -12,7 +12,7 @@ import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns'; // Import format and parseISO
+import { format, parseISO } from 'date-fns';
 
 interface JobsTableProps {
   jobs: Job[];
@@ -73,7 +73,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
 
             return (
-              <TableRow key={job.id} className="hover:bg-gray-50 transition-colors">
+              <TableRow key={job.id} className="hover:bg-gray-50 transition-colors py-4"> {/* Added py-4 here */}
                 <TableCell className="font-medium">
                   <Link to={`/jobs/${job.order_number}`} className="text-blue-700 hover:underline">
                     {job.order_number}
