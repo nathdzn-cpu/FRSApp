@@ -37,7 +37,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/jobs/:id" element={<JobDetail />} />
+                <Route path="/jobs/:orderNumber" element={<JobDetail />} /> {/* Updated route */}
                 <Route path="/jobs/new" element={<CreateJob />} />
                 <Route path="/drivers" element={<Drivers />} />
                 <Route path="/daily-check" element={<DriverDailyCheck />} />

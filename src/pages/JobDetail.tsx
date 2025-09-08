@@ -57,7 +57,7 @@ interface ProgressUpdateEntry {
 }
 
 const JobDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { orderNumber } = useParams<{ orderNumber: string }>(); // Changed from id to orderNumber
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
@@ -84,20 +84,21 @@ const JobDetail: React.FC = () => {
     documents: Document[];
     progressLogs: JobProgressLog[];
   }, Error>({
-    queryKey: ['jobDetail', id, userRole],
+    queryKey: ['jobDetail', orderNumber, userRole], // Updated query key to use orderNumber
     queryFn: async () => {
-      if (!id || !currentOrgId || !currentProfile || !userRole) {
-        throw new Error("Missing job ID, organization ID, current profile, or user role.");
+      if (!orderNumber || !currentOrgId || !currentProfile || !userRole) {
+        throw new Error("Missing job order number, organization ID, current profile, or user role.");
       }
 
-      const fetchedJob = await getJobById(currentOrgId, id, userRole);
+      const fetchedJob = await getJobById(currentOrgId, orderNumber, userRole); // Fetch by orderNumber
       if (!fetchedJob) {
         throw new Error("Job not found or you don't have permission to view it.");
       }
 
-      const fetchedStops = await getJobStops(currentOrgId, id);
-      const fetchedDocuments = await getJobDocuments(currentOrgId, id);
-      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, id);
+      // Use the actual job.id (UUID) for fetching related data
+      const fetchedStops = await getJobStops(currentOrgId, fetchedJob.id);
+      const fetchedDocuments = await getJobDocuments(currentOrgId, fetchedJob.id);
+      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, fetchedJob.id);
 
       return {
         job: fetchedJob,
@@ -106,7 +107,7 @@ const JobDetail: React.FC = () => {
         progressLogs: fetchedProgressLogs,
       };
     },
-    enabled: !!id && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth,
+    enabled: !!orderNumber && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth,
     retry: false,
   });
 
@@ -153,7 +154,7 @@ const JobDetail: React.FC = () => {
       loading: 'Cloning job...',
       success: (clonedJob) => {
         if (clonedJob) {
-          navigate(`/jobs/${clonedJob.id}`);
+          navigate(`/jobs/${clonedJob.order_number}`); // Navigate using order_number
           return `Job ${clonedJob.order_number} cloned successfully!`;
         }
         return 'Job cloned, but no new job returned.';

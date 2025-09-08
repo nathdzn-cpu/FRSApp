@@ -51,7 +51,7 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
   return data as Job[];
 };
 
-export const getJobById = async (orgId: string, jobId: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
+export const getJobById = async (orgId: string, orderNumber: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
   let query;
 
   if (role === 'driver') {
@@ -59,7 +59,7 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
     query = supabase
       .from('jobs')
       .select('*')
-      .eq('id', jobId)
+      .eq('order_number', orderNumber) // Query by order_number
       .eq('org_id', orgId)
       .single();
   } else {
@@ -67,7 +67,7 @@ export const getJobById = async (orgId: string, jobId: string, role: 'admin' | '
     query = supabase
       .from('jobs_with_stop_details') // Query the new view
       .select('*')
-      .eq('id', jobId)
+      .eq('order_number', orderNumber) // Query by order_number
       .eq('org_id', orgId)
       .single();
   }

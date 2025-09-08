@@ -174,7 +174,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                  <Link to={`/jobs/${job.id}`} className="text-blue-600 hover:underline">
+                  <Link to={`/jobs/${job.order_number}`} className="text-blue-600 hover:underline"> {/* Updated Link */}
                     Open
                   </Link>
                 </TableCell>
