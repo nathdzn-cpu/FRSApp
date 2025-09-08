@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
   // If the AuthContext's initial profile fetch is still ongoing, we show a loading state.
   if (isLoadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700 dark:text-gray-300">Loading user profile...</p>
       </div>
@@ -44,8 +44,8 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md shadow-sm rounded-xl p-8 bg-white dark:bg-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)] p-4">
+      <Card className="w-full max-w-md shadow-sm rounded-xl p-8 bg-[var(--saas-card-bg)]">
         <CardHeader className="text-center">
           <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="mx-auto mb-4 h-24 w-auto" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">FRS Haulage Login</CardTitle>
