@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { ArrowDown, ArrowUp, User, MoreHorizontal, Edit, FileText, Truck, CheckCircle } from 'lucide-react'; // Import MoreHorizontal and other icons
 import { cn } from '@/lib/utils';
-import { formatAddressPart } from '@/lib/utils/formatUtils';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import formatPostcode
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -94,12 +94,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
       } else if (sortColumn === 'order_number') {
         compare = (a.order_number || '').localeCompare(b.order_number || '');
       } else if (sortColumn === 'collection') {
-        const collectionA = (a.collection_name || '').toLowerCase();
-        const collectionB = (b.collection_name || '').toLowerCase();
+        const collectionA = (a.collection_city || '').toLowerCase(); // Sort by city
+        const collectionB = (b.collection_city || '').toLowerCase();
         compare = collectionA.localeCompare(collectionB);
       } else if (sortColumn === 'delivery') {
-        const deliveryA = (a.delivery_name || '').toLowerCase();
-        const deliveryB = (b.delivery_name || '').toLowerCase();
+        const deliveryA = (a.delivery_city || '').toLowerCase(); // Sort by city
+        const deliveryB = (b.delivery_city || '').toLowerCase();
         compare = deliveryA.localeCompare(deliveryB);
       }
 
@@ -269,13 +269,13 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, profiles }) => {
                   </Badge>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.collection_city && job.collection_name
-                    ? `${formatAddressPart(job.collection_city)}, ${formatAddressPart(job.collection_name)}`
+                  {job.collection_city && job.collection_postcode
+                    ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {job.delivery_city && job.delivery_name
-                    ? `${formatAddressPart(job.delivery_city)}, ${formatAddressPart(job.delivery_name)}`
+                  {job.delivery_city && job.delivery_postcode
+                    ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
                     : '-'}
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">

@@ -7,6 +7,7 @@ import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
 import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import getDisplayStatus
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import formatPostcode
 
 interface JobOverviewCardProps {
   job: Job;
@@ -51,13 +52,17 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
           <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4 text-blue-600" /> Collections:
           </p>
-          <JobStopsList stops={collectionStops} type="collection" />
+          {job.collection_city && job.collection_postcode
+            ? <p className="text-gray-700">{formatAddressPart(job.collection_city)}, {formatPostcode(job.collection_postcode)}</p>
+            : <p className="text-gray-600">No collection stops defined for this job.</p>}
         </div>
         <div>
           <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4 text-green-600" /> Deliveries:
           </p>
-          <JobStopsList stops={deliveryStops} type="delivery" />
+          {job.delivery_city && job.delivery_postcode
+            ? <p className="text-gray-700">{formatAddressPart(job.delivery_city)}, {formatPostcode(job.delivery_postcode)}</p>
+            : <p className="text-gray-600">No delivery stops defined for this job.</p>}
         </div>
       </div>
     </CardContent>
