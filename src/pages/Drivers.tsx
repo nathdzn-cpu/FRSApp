@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import DriverDetailDialog from '@/components/DriverDetailDialog'; // Import the new dialog component
 import dayjs from 'dayjs'; // Import dayjs for date calculations
+import DriverCard from '@/components/DriverCard'; // Import the new DriverCard component
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ const Drivers: React.FC = () => {
     return allJobs.filter(job => job.assigned_driver_id === driverId && !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
   };
 
-  const handleRowClick = (driver: Profile) => {
+  const handleViewDetails = (driver: Profile) => {
     setSelectedDriver(driver);
     setIsDetailDialogOpen(true);
   };
@@ -147,51 +148,15 @@ const Drivers: React.FC = () => {
             {filteredDrivers.length === 0 ? (
               <p className="text-gray-600">No drivers found matching your criteria.</p>
             ) : (
-              <div className="rounded-md overflow-hidden shadow-sm">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Vehicle Reg</TableHead>
-                      <TableHead>Trailer No</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Jobs Assigned</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="bg-white divide-y divide-gray-100">
-                    {filteredDrivers.map((driver, index) => (
-                      <TableRow
-                        key={driver.id}
-                        className={cn(
-                          "cursor-pointer hover:bg-gray-50 transition-colors",
-                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                        )}
-                        onClick={() => handleRowClick(driver)}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center">
-                            <Avatar className="h-8 w-8 mr-3">
-                              <AvatarFallback className="bg-blue-100 text-blue-600 text-xs font-medium">
-                                {driver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            {driver.full_name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{driver.phone || '-'}</TableCell>
-                        <TableCell>{driver.truck_reg || '-'}</TableCell>
-                        <TableCell>{driver.trailer_no || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="capitalize">
-                            {driver.last_job_status || 'N/A'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{getJobsAssignedCount(driver.id)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredDrivers.map((driver) => (
+                  <DriverCard
+                    key={driver.id}
+                    driver={driver}
+                    jobsAssignedCount={getJobsAssignedCount(driver.id)}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))}
               </div>
             )}
           </CardContent>
