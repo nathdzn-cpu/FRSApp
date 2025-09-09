@@ -11,7 +11,7 @@ export const getProfiles = async (orgId: string, userRole: 'admin' | 'office' | 
     // RLS on 'profiles' table should ensure a driver only sees their own profile.
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo, avatar_url")
+      .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo, avatar_url") // Added avatar_url
       .eq("org_id", orgId); // RLS will filter this further to just the driver's own profile
 
     if (error) {

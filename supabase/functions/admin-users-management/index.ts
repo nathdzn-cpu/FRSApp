@@ -78,7 +78,7 @@ serve(async (req) => {
       case "read_all":
         const { data: readProfiles, error: readError } = await admin
           .from("profiles")
-          .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo")
+          .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo, avatar_url")
           .eq("org_id", effective_org_id)
           .order("created_at", { ascending: false });
         if (readError) throw readError;

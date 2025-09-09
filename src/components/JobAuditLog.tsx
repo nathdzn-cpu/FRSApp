@@ -74,7 +74,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
 
   return (
     <div className="relative pl-8">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--saas-border)]" />
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);

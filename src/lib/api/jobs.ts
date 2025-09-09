@@ -5,22 +5,13 @@ import { callFn } from '../callFunction'; // Import callFn
 export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver', startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' = 'active'): Promise<Job[]> => {
   let query;
 
-  if (role === 'driver') {
-    // Drivers query the base 'jobs' table directly to ensure RLS is enforced.
-    // The 'jobs' table does not have denormalized stop details, so those fields will be undefined.
-    query = supabase
-      .from('jobs')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: false });
-  } else {
-    // Admin and Office roles query the view for denormalized stop details.
-    query = supabase
-      .from('jobs_with_stop_details') // Query the new view
-      .select('*')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: false });
-  }
+  // Use jobs_with_stop_details for all roles. RLS on the underlying tables will handle security.
+  // This ensures drivers can see collection/delivery details on their dashboard.
+  query = supabase
+    .from('jobs_with_stop_details')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('created_at', { ascending: false });
 
   // Apply status filter
   if (statusFilter === 'active') {
@@ -54,23 +45,13 @@ export const getJobs = async (orgId: string, role: 'admin' | 'office' | 'driver'
 export const getJobById = async (orgId: string, orderNumber: string, role: 'admin' | 'office' | 'driver'): Promise<Job | undefined> => {
   let query;
 
-  if (role === 'driver') {
-    // Drivers query the base 'jobs' table directly to ensure RLS is enforced.
-    query = supabase
-      .from('jobs')
-      .select('*')
-      .eq('order_number', orderNumber) // Query by order_number
-      .eq('org_id', orgId)
-      .single();
-  } else {
-    // Admin and Office roles query the view for denormalized stop details.
-    query = supabase
-      .from('jobs_with_stop_details') // Query the new view
-      .select('*')
-      .eq('order_number', orderNumber) // Query by order_number
-      .eq('org_id', orgId)
-      .single();
-  }
+  // Use jobs_with_stop_details for all roles. RLS will handle security.
+  query = supabase
+    .from('jobs_with_stop_details') // Query the new view for all roles
+    .select('*')
+    .eq('order_number', orderNumber) // Query by order_number
+    .eq('org_id', orgId)
+    .single();
 
   const { data, error } = await query;
 
