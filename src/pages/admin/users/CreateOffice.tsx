@@ -56,12 +56,13 @@ const CreateOffice: React.FC = () => {
     }
 
     try {
+      const dobString = `${values.dob_year}-${values.dob_month}-${values.dob_day}`;
       const newOfficeData = {
         full_name: values.full_name,
+        dob: dobString,
         phone: values.phone,
         role: 'office' as const,
         email: values.email,
-        password: values.password,
         is_demo: false, // Default to non-demo for manual creation
       };
 

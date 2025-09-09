@@ -28,13 +28,6 @@ function userClient(authHeader: string | null) {
   });
 }
 
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 64);
-
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -65,7 +58,7 @@ serve(async (req) => {
 
     // 2) Parse body and determine operation
     const body = await req.json().catch(() => ({}));
-    const { op, id, full_name, email, password, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role } = body; // Destructure actor_role
+    const { op, id, full_name, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role } = body;
 
     // Ensure org_id from body matches user's org_id
     if (body_org_id && body_org_id !== me.org_id) {
@@ -93,7 +86,12 @@ serve(async (req) => {
         break;
 
       case "create":
-        if (!full_name || !email || !password || !phone || !role) throw new Error("Missing required fields for user creation.");
+        if (!full_name || !phone || !role || !dob) throw new Error("Missing required fields for user creation (full_name, phone, role, dob).");
+
+        // Generate email and password
+        const email = full_name.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
+        const [year, month, day] = dob.split('-');
+        const password = `${day}${month}${year}`;
 
         const { data: createdAuthUser, error: cErr } = await admin.auth.admin.createUser({
           email,
@@ -122,7 +120,6 @@ serve(async (req) => {
         }
 
         // Wait a moment for the trigger to complete, then update the profile
-        // A small delay can help ensure the trigger has run, though Supabase usually handles this quickly.
         await new Promise(resolve => setTimeout(resolve, 100)); 
 
         const { data: updatedProfile, error: uErr } = await admin
@@ -133,8 +130,6 @@ serve(async (req) => {
           .single();
 
         if (uErr) {
-          // If update fails, it means the profile wasn't created by the trigger,
-          // or there's another issue. We should still try to delete the auth user.
           await admin.auth.admin.deleteUser(newAuthId).catch(e => console.error("Failed to rollback auth user:", e.message));
           throw new Error("Profile update failed after auth user creation: " + uErr.message);
         }

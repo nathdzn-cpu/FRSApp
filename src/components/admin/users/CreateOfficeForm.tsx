@@ -8,12 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Generate years for DOB dropdown (e.g., 1900 to current year)
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => (1900 + i).toString()).reverse();
+const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 const officeFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
+  dob_year: z.string().min(1, { message: 'Year is required.' }),
+  dob_month: z.string().min(1, { message: 'Month is required.' }),
+  dob_day: z.string().min(1, { message: 'Day is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 type OfficeFormValues = z.infer<typeof officeFormSchema>;
@@ -27,9 +36,11 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
     resolver: zodResolver(officeFormSchema),
     defaultValues: {
       full_name: '',
+      dob_year: '',
+      dob_month: '',
+      dob_day: '',
       phone: '',
       email: '',
-      password: '',
     },
   });
 
@@ -54,6 +65,74 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-3 gap-2">
+              <FormField
+                control={form.control}
+                name="dob_year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Year</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl max-h-60 overflow-y-auto">
+                        {years.map((year) => (
+                          <SelectItem key={year} value={year}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dob_month"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Month</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
+                        {months.map((month) => (
+                          <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dob_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Day</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Day" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
+                        {days.map((day) => (
+                          <SelectItem key={day} value={day}>{day}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="phone"
@@ -75,19 +154,6 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
                   <FormLabel className="text-gray-700">Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="jane.doe@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Temporary Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

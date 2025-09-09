@@ -160,7 +160,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     console.log("AuthContextProvider: login called for:", userIdOrEmail);
     let emailToLogin = userIdOrEmail;
     if (!userIdOrEmail.includes('@')) {
-      emailToLogin = `${userIdOrEmail}@login.local`;
+      emailToLogin = userIdOrEmail.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });

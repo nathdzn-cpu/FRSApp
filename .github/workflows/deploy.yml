@@ -1,34 +1,28 @@
-name: 🚀 Deploy to cPanel
+name: Deploy to Website via FTP
 
 on:
   push:
-    branches:
-      - main  # deploys when you push to main branch
+    branches: [ "main" ]   # runs when you push to main branch
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
-          server: ${{ secrets.CPANEL_FTP_HOST }}
-          username: ${{ secrets.CPANEL_FTP_USER }}
-          password: ${{ secrets.CPANEL_FTP_PASS }}
-          local-dir: ./dist
-          server-dir: ${{ secrets.CPANEL_FTP_PATH }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # CHANGE this to match your website folder:
+          server-dir: /home/haulage/public_html/
+          # always end with /
+          local-dir: ./dist/

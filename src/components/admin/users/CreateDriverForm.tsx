@@ -23,7 +23,6 @@ const driverFormSchema = z.object({
   dob_day: z.string().min(1, { message: 'Day is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 type DriverFormValues = z.infer<typeof driverFormSchema>;
@@ -42,7 +41,6 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
       dob_day: '',
       phone: '',
       email: '',
-      password: '',
     },
   });
 
@@ -156,19 +154,6 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                   <FormLabel className="text-gray-700">Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700">Temporary Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

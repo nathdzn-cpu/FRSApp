@@ -65,7 +65,6 @@ const CreateDriver: React.FC = () => {
         phone: values.phone,
         role: 'driver' as const,
         email: values.email,
-        password: values.password,
         is_demo: false, // Default to non-demo for manual creation
       };
 
