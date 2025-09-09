@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, User as UserIcon } from 'lucide-react'; // Import UserIcon
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/api/notifications';
@@ -12,9 +12,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
 import { Notification } from '@/utils/mockData';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
+import { getProfiles } from '@/lib/api/profiles'; // Import getProfiles
 
 const NotificationBell: React.FC = () => {
-  const { user, userRole } = useAuth();
+  const { user, userRole, profile: currentUserProfile } = useAuth(); // Get current user's profile
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -24,6 +26,14 @@ const NotificationBell: React.FC = () => {
     enabled: !!user && (userRole === 'admin' || userRole === 'office'),
     refetchOnWindowFocus: true,
     staleTime: 60 * 1000, // 1 minute
+  });
+
+  // Fetch all profiles to get avatar_urls for notification actors
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['allProfilesForNotifications', currentUserProfile?.org_id],
+    queryFn: () => getProfiles(currentUserProfile!.org_id!, userRole),
+    enabled: !!currentUserProfile?.org_id && !!userRole,
+    staleTime: 5 * 60 * 1000, // Cache profiles for 5 minutes
   });
 
   useEffect(() => {
@@ -96,19 +106,35 @@ const NotificationBell: React.FC = () => {
         {notifications.length === 0 ? (
           <DropdownMenuItem disabled>No notifications yet.</DropdownMenuItem>
         ) : (
-          notifications.map(notification => (
-            <DropdownMenuItem
-              key={notification.id}
-              className={cn("flex flex-col items-start gap-1 cursor-pointer", !notification.is_read && "bg-blue-50")}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <p className="font-semibold">{notification.title}</p>
-              <p className="text-sm text-gray-600">{notification.message}</p>
-              <p className="text-xs text-gray-400 self-end">
-                {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-              </p>
-            </DropdownMenuItem>
-          ))
+          notifications.map(notification => {
+            const actor = allProfiles.find(p => p.id === notification.user_id); // Assuming notification.user_id is the actor
+            const actorInitials = actor?.full_name ? actor.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+
+            return (
+              <DropdownMenuItem
+                key={notification.id}
+                className={cn("flex items-start gap-2 cursor-pointer p-2", !notification.is_read && "bg-blue-50")}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  {actor?.avatar_url ? (
+                    <AvatarImage src={actor.avatar_url} alt={actor.full_name} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                      <UserIcon className="h-4 w-4" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex flex-col flex-grow">
+                  <p className="font-semibold text-sm">{notification.title}</p>
+                  <p className="text-xs text-gray-600">{notification.message}</p>
+                  <p className="text-xs text-gray-400 self-end mt-1">
+                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+            );
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>

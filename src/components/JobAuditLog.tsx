@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react'; // Added EyeOff, Eye
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
 
 interface JobAuditLogProps {
   progressLogs: JobProgressLog[];
@@ -57,9 +58,11 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
 };
 
 const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => {
-  const getActorName = (actorId: string) => {
+  const getActorInfo = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
-    return actor ? actor.full_name : 'Unknown User';
+    const fullName = actor ? actor.full_name : 'Unknown User';
+    const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    return { fullName, initials, avatar_url: actor?.avatar_url || null };
   };
 
   if (progressLogs.length === 0) {
@@ -77,6 +80,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
         const logDate = parseISO(log.timestamp);
         const isRemovedFromTimeline = log.visible_in_timeline === false;
         const isCancelledJob = log.action_type === 'cancelled';
+        const actorInfo = getActorInfo(log.actor_id);
 
         const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred.`;
 
@@ -92,7 +96,16 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                     {message}
                   </p>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <User className="h-3 w-3" /> by {getActorName(log.actor_id)}
+                    <Avatar className="h-4 w-4">
+                      {actorInfo.avatar_url ? (
+                        <AvatarImage src={actorInfo.avatar_url} alt={actorInfo.fullName} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                          {actorInfo.initials}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    by {actorInfo.fullName}
                   </p>
                   {isRemovedFromTimeline && (
                     <p className="text-xs text-red-600 flex items-center mt-1">

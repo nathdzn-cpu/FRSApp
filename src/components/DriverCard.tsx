@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
 import { Badge } from '@/components/ui/badge';
 import { Phone, Truck, Briefcase, MapPin, ArrowRight } from 'lucide-react';
 import { Profile } from '@/utils/mockData';
@@ -36,9 +36,13 @@ const DriverCard: React.FC<DriverCardProps> = ({ driver, jobsAssignedCount, onVi
         <CardHeader className="flex flex-row items-center justify-between p-0 pb-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">
-                {driverInitials}
-              </AvatarFallback>
+              {driver.avatar_url ? (
+                <AvatarImage src={driver.avatar_url} alt={driver.full_name} className="object-cover" />
+              ) : (
+                <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">
+                  {driverInitials}
+                </AvatarFallback>
+              )}
             </Avatar>
             <CardTitle className="text-lg font-bold text-gray-900">{driver.full_name}</CardTitle>
           </div>

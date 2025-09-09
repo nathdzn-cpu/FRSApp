@@ -54,7 +54,14 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
         toast.error("Failed to load user profile.");
       } else if (fetchedProfile) {
         console.log("AuthContextProvider: Profile fetched successfully:", fetchedProfile);
-        setProfile(fetchedProfile as Profile);
+        // Fetch avatar URL
+        const { data: publicUrlData } = supabase.storage
+          .from('profile-pictures')
+          .getPublicUrl(`${currentUser.id}.png`); // Assuming .png extension
+
+        const avatarUrl = publicUrlData?.publicUrl || null;
+
+        setProfile({ ...fetchedProfile as Profile, avatar_url: avatarUrl });
         setUserRole((fetchedProfile as Profile).role || undefined);
       } else {
         console.log("AuthContextProvider: No profile row found for this user.");

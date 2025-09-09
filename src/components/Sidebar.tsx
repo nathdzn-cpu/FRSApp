@@ -9,7 +9,7 @@ import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-r
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -90,8 +90,12 @@ const Sidebar: React.FC = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                        <Avatar className="h-10 w-10"> {/* Adjusted size */}
+                          {profile.avatar_url ? (
+                            <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
+                          ) : (
+                            <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                          )}
                         </Avatar>
                         <div className="flex flex-col items-start">
                           <span className="font-medium text-gray-900">{userName}</span>
@@ -133,8 +137,12 @@ const Sidebar: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                    <Avatar className="h-10 w-10"> {/* Adjusted size */}
+                      {profile.avatar_url ? (
+                        <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex flex-col items-start">
                       <span className="font-medium text-gray-900">{userName}</span>

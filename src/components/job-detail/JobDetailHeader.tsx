@@ -36,7 +36,7 @@ interface JobDetailHeaderProps {
   onUpdateProgress: (entries: any[]) => Promise<void>; // Use any[] for now, will be ProgressUpdateEntry[]
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;
-  onCloneJob: () => void; // Changed to void as it now triggers a dialog
+  onCloneJob: () => void; // Changed to call onCloneJob prop
   onCancelJob: () => Promise<void>;
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;

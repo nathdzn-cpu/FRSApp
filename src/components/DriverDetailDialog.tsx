@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge"; // Added Badge import
 import {
   User as UserIcon,
@@ -125,7 +125,11 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
           <Card className="lg:col-span-1 bg-gray-50 shadow-sm rounded-xl p-4">
             <CardHeader className="p-0 pb-3 flex flex-row items-center gap-3">
               <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-medium">{driverInitials}</AvatarFallback>
+                {driver.avatar_url ? (
+                  <AvatarImage src={driver.avatar_url} alt={driver.full_name} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-medium">{driverInitials}</AvatarFallback>
+                )}
               </Avatar>
               <CardTitle className="text-xl font-semibold text-gray-900">{driver.full_name}</CardTitle>
             </CardHeader>

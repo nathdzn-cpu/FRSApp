@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, PlusCircle, ChevronDown, User as UserIcon, Settings } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import NotificationBell from './NotificationBell';
@@ -71,9 +71,13 @@ const Header: React.FC = () => {
         {user && profile && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full"> {/* Adjusted size */}
+                <Avatar className="h-10 w-10"> {/* Adjusted size */}
+                  {profile.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                  )}
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

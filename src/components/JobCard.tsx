@@ -4,7 +4,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit } from 'lucide-react';
@@ -34,7 +34,7 @@ const JobCard: React.FC<JobCardProps> = ({
 
   const getDriverInfo = (assignedDriverId: string | null | undefined) => {
     if (!assignedDriverId) {
-      return { name: 'Unassigned', reg: '', initials: 'UA' };
+      return { name: 'Unassigned', reg: '', initials: 'UA', avatar_url: null };
     }
     const driver = profiles.find(p => p.id === assignedDriverId && p.role === 'driver');
     const fullName = driver?.full_name || 'Unknown Driver';
@@ -43,6 +43,7 @@ const JobCard: React.FC<JobCardProps> = ({
       name: fullName,
       reg: driver?.truck_reg || 'N/A',
       initials: initials,
+      avatar_url: driver?.avatar_url || null,
     };
   };
 
@@ -89,9 +90,13 @@ const JobCard: React.FC<JobCardProps> = ({
           {/* Driver Info */}
           <div className="flex items-center text-sm text-gray-700">
             <Avatar className="h-7 w-7 mr-2">
-              <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
-                {driverInfo.initials}
-              </AvatarFallback>
+              {driverInfo.avatar_url ? (
+                <AvatarImage src={driverInfo.avatar_url} alt={driverInfo.name} className="object-cover" />
+              ) : (
+                <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
+                  {driverInfo.initials}
+                </AvatarFallback>
+              )}
             </Avatar>
             <div>
               <div className="font-medium text-gray-900">{driverInfo.name}</div>

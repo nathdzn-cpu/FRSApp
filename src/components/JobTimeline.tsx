@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
 
 interface JobTimelineProps {
   progressLogs: JobProgressLog[];
@@ -56,9 +57,11 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
     setLocalProgressLogs(progressLogs);
   }, [progressLogs]);
 
-  const getActorName = (actorId: string) => {
+  const getActorInfo = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
-    return actor ? actor.full_name : 'Unknown User';
+    const fullName = actor ? actor.full_name : 'Unknown User';
+    const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    return { fullName, initials, avatar_url: actor?.avatar_url || null };
   };
 
   const getIconColor = (actionType: string) => {
@@ -129,6 +132,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
+        const actorInfo = getActorInfo(log.actor_id);
         return (
           <div key={log.id} className="mb-6 relative">
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", getIconColor(log.action_type))}>
@@ -139,7 +143,16 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
                 <div>
                   <CardTitle className="text-base font-semibold">{getDisplayStatus(log.action_type)}</CardTitle>
                   <CardDescription className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                    <User className="h-3 w-3" /> by {getActorName(log.actor_id)}
+                    <Avatar className="h-4 w-4">
+                      {actorInfo.avatar_url ? (
+                        <AvatarImage src={actorInfo.avatar_url} alt={actorInfo.fullName} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                          {actorInfo.initials}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    by {actorInfo.fullName}
                   </CardDescription>
                 </div>
                 <div className="text-right flex-shrink-0">

@@ -8,6 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
 import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import getDisplayStatus
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import formatPostcode
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar and related components
 
 interface JobOverviewCardProps {
   job: Job;
@@ -19,6 +20,14 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
   const collectionStops = stops.filter(s => s.type === 'collection');
   const deliveryStops = stops.filter(s => s.type === 'delivery');
 
+  const assignedDriver = job.assigned_driver_id
+    ? allProfiles.find(p => p.id === job.assigned_driver_id)
+    : undefined;
+
+  const driverInitials = assignedDriver?.full_name
+    ? assignedDriver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    : 'UA';
+
   return (
     <CardContent className="p-0 pt-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
@@ -28,7 +37,22 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
         </div>
         <div>
           <p className="font-medium text-gray-900">Assigned Driver:</p>
-          <p>{job.assigned_driver_id ? allProfiles.find(p => p.id === job.assigned_driver_id)?.full_name || 'Unknown' : 'Unassigned'}</p>
+          {assignedDriver ? (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-7 w-7">
+                {assignedDriver.avatar_url ? (
+                  <AvatarImage src={assignedDriver.avatar_url} alt={assignedDriver.full_name} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
+                    {driverInitials}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <p>{assignedDriver.full_name}</p>
+            </div>
+          ) : (
+            <p>Unassigned</p>
+          )}
         </div>
         <div>
           <p className="font-medium text-gray-900">Price:</p>

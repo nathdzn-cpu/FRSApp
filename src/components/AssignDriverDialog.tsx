@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
 import { Profile } from '@/utils/mockData';
 import { Loader2, User, Truck, CheckCircle2, XCircle } from 'lucide-react'; // Added CheckCircle2, XCircle
 import { cn } from '@/lib/utils';
@@ -95,9 +95,13 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
                   <>
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                     <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-green-100 text-green-700 text-sm font-medium">
-                        {currentAssignedDriver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
+                      {currentAssignedDriver.avatar_url ? (
+                        <AvatarImage src={currentAssignedDriver.avatar_url} alt={currentAssignedDriver.full_name} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-green-100 text-green-700 text-sm font-medium">
+                          {currentAssignedDriver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">Currently Assigned: {currentAssignedDriver.full_name}</span>
@@ -150,9 +154,13 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
                         )}
                       >
                         <Avatar className="h-8 w-8 mr-3">
-                          <AvatarFallback className="bg-gray-200 text-gray-700">
-                            <User className="h-5 w-5" />
-                          </AvatarFallback>
+                          {driver.avatar_url ? (
+                            <AvatarImage src={driver.avatar_url} alt={driver.full_name} className="object-cover" />
+                          ) : (
+                            <AvatarFallback className="bg-gray-200 text-gray-700">
+                              <User className="h-5 w-5" />
+                            </AvatarFallback>
+                          )}
                         </Avatar>
                         <div className="flex flex-col items-start">
                           <span className="font-medium">{driver.full_name}</span>
