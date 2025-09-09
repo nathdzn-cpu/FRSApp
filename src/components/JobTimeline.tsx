@@ -134,7 +134,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", getIconColor(log.action_type))}>
               <Icon size={16} />
             </div>
-            <Card className={cn("ml-8", index % 2 === 0 ? 'bg-white' : 'bg-gray-50')}>
+            <Card className={cn("ml-8", "bg-white", "shadow-md")}>
               <CardHeader className="flex flex-row items-start justify-between p-4 pb-2">
                 <div>
                   <CardTitle className="text-base font-semibold">{getDisplayStatus(log.action_type)}</CardTitle>

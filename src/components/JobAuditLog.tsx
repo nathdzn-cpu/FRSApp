@@ -85,7 +85,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", isRemovedFromTimeline || isCancelledJob ? 'bg-red-500' : 'bg-gray-500')}>
               <Icon size={16} />
             </div>
-            <div className={cn("ml-8 p-3 rounded-lg", index % 2 === 0 ? 'bg-white' : 'bg-gray-50')}>
+            <div className={cn("ml-8 p-3 rounded-lg", "bg-white", "shadow-md")}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-800 mb-1">
