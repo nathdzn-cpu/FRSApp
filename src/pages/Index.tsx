@@ -136,8 +136,10 @@ const Index = () => {
       job.order_number?.toLowerCase().includes(lowerCaseSearchTerm) ||
       job.collection_name?.toLowerCase().includes(lowerCaseSearchTerm) ||
       job.collection_city?.toLowerCase().includes(lowerCaseSearchTerm) ||
+      job.collection_postcode?.toLowerCase().includes(lowerCaseSearchTerm) ||
       job.delivery_name?.toLowerCase().includes(lowerCaseSearchTerm) ||
       job.delivery_city?.toLowerCase().includes(lowerCaseSearchTerm) ||
+      job.delivery_postcode?.toLowerCase().includes(lowerCaseSearchTerm) ||
       profiles.find(p => p.id === job.assigned_driver_id)?.full_name.toLowerCase().includes(lowerCaseSearchTerm)
     );
   }, [jobs, searchTerm, profiles]);
