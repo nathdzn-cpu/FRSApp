@@ -7,10 +7,24 @@ export interface Tenant {
   created_at: string;
 }
 
+export interface Organisation {
+  id: string;
+  name: string;
+  created_at: string;
+  logo_url?: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  postcode?: string | null;
+  contact_number?: string | null;
+  website?: string | null;
+}
+
 export interface Profile {
   id: string;
   org_id: string;
   full_name: string;
+  avatar_url?: string | null;
   dob?: string;
   phone?: string;
   role: 'driver' | 'office' | 'admin';

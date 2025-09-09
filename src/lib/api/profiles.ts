@@ -128,3 +128,35 @@ export const purgeAllNonAdminUsers = async (orgId: string, actorId: string, acto
   const result = await callFn<{ ok: boolean; removed: number }>('admin-users-management', payload);
   return result;
 };
+
+export const uploadAvatar = async (profileId: string, file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${profileId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+        throw uploadError;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return data.publicUrl;
+};
+
+export const updateProfile = async (profileId: string, updates: Partial<Profile>): Promise<Profile> => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profileId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error updating profile:', error);
+        throw new Error(error.message);
+    }
+    return data;
+};

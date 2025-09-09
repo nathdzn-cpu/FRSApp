@@ -11,3 +11,4 @@ export * from './api/dailyCheckResponses';
 export * from './api/savedAddresses'; // New: Export saved addresses API
 export * from './api/quotes'; // New: Export quotes API
 export * from './api/notifications'; // New: Export notifications API
+export * from './api/organisation'; // New: Export organisation API
