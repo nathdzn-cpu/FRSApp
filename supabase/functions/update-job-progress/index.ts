@@ -10,6 +10,36 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
 };
 
+// Helper to invoke another Edge Function
+async function invokeEdgeFunction(functionName: string, payload: any) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"); // Use service key for function-to-function
+  if (!supabaseUrl || !serviceKey) {
+    console.error("Missing Supabase URL or Service Role Key for Edge Function invocation.");
+    return;
+  }
+
+  const url = `${supabaseUrl}/functions/v1/${functionName}`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error invoking ${functionName}: ${response.status} - ${errorText}`);
+    } else {
+      console.log(`Successfully invoked ${functionName}.`);
+    }
+  } catch (error) {
+    console.error(`Failed to invoke ${functionName}: ${error.message}`);
+  }
+}
+
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -50,7 +80,7 @@ serve(async (req) => {
 
     const { data: me, error: meErr } = await user
       .from("profiles")
-      .select("id, role, org_id")
+      .select("id, role, org_id, full_name")
       .eq("id", authUser.user.id)
       .single();
 
@@ -93,7 +123,7 @@ serve(async (req) => {
     // Fetch current job status for audit log and driver-specific check
     const { data: oldJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status, assigned_driver_id") // Fetch assigned_driver_id
+      .select("status, assigned_driver_id, order_number") // Fetch order_number for notifications
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
@@ -200,6 +230,59 @@ serve(async (req) => {
     });
     if (auditError) {
       console.error("DEBUG: audit insert failed", auditError.message);
+    }
+
+    // 7) Create notifications for office/admin users if update is from a driver
+    if (actor_role === 'driver') {
+      const { data: officeAdminProfiles, error: profileError } = await admin
+        .from("profiles")
+        .select("id, user_id")
+        .eq("org_id", org_id)
+        .in("role", ["admin", "office"]);
+
+      if (profileError) {
+        console.error("Error fetching office/admin profiles for notification:", profileError.message);
+      } else if (officeAdminProfiles && officeAdminProfiles.length > 0) {
+        const notificationTitle = `Job Update: ${updatedJob.order_number}`;
+        const notificationMessage = `${me.full_name} updated status to "${new_status.replace(/_/g, ' ')}".`;
+
+        const notificationsToInsert = officeAdminProfiles
+          .filter(p => p.id !== actor_id) // Don't notify the actor
+          .map(p => ({
+            user_id: p.id,
+            org_id: org_id,
+            title: notificationTitle,
+            message: notificationMessage,
+            link_to: `/jobs/${updatedJob.order_number}`,
+          }));
+
+        if (notificationsToInsert.length > 0) {
+          const { error: insertNotificationsError } = await admin
+            .from("notifications")
+            .insert(notificationsToInsert);
+
+          if (insertNotificationsError) {
+            console.error("Error inserting notifications:", insertNotificationsError.message);
+          }
+        }
+
+        // 8) Send push notifications
+        const { data: devices } = await admin
+          .from('profile_devices')
+          .select('expo_push_token')
+          .in('profile_id', officeAdminProfiles.map(p => p.id));
+
+        if (devices && devices.length > 0) {
+          for (const device of devices) {
+            await invokeEdgeFunction('send-push-notification', {
+              to: device.expo_push_token,
+              title: notificationTitle,
+              body: notificationMessage,
+              data: { url: `/jobs/${updatedJob.order_number}` }
+            });
+          }
+        }
+      }
     }
 
     return new Response(

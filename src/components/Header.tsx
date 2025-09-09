@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
   const { user, profile, userRole, logout } = useAuth();
@@ -17,6 +18,7 @@ const Header: React.FC = () => {
   const location = useLocation();
 
   const canCreateJob = userRole === 'admin' || userRole === 'office';
+  const canSeeBell = userRole === 'admin' || userRole === 'office';
 
   const userInitials = profile?.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'JD';
   const userName = profile?.full_name || 'John Doe';
@@ -65,6 +67,7 @@ const Header: React.FC = () => {
             <PlusCircle className="h-4 w-4 mr-2" /> New Job
           </Button>
         )}
+        {canSeeBell && <NotificationBell />}
         {user && profile && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

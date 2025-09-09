@@ -2,7 +2,7 @@ name: Deploy to Website via FTP
 
 on:
   push:
-    branches: [ "main" ]   # runs when you push to main branch
+    branches: [ "main" ]   # deploys when you push to main branch
 
 jobs:
   deploy:
@@ -19,10 +19,8 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          # CHANGE this to match your website folder:
-          server-dir: /home/haulage/public_html/
-          # always end with /
+          server: ${{ secrets.CPANEL_FTP_HOST }}
+          username: ${{ secrets.CPANEL_FTP_USER }}
+          password: ${{ secrets.CPANEL_FTP_PASS }}
+          server-dir: /home/haulage/FRSApp/   # or /home/haulage/haulageapp/ for your subdomain
           local-dir: ./dist/

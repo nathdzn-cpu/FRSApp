@@ -188,6 +188,18 @@ export interface Quote {
   job_id?: string | null;
 }
 
+// New interface for Notifications
+export interface Notification {
+  id: string;
+  user_id: string;
+  org_id: string;
+  title: string;
+  message: string;
+  link_to?: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 // Seed Data
 const demoTenantId = uuidv4();
 const aliceAdminId = uuidv4();
