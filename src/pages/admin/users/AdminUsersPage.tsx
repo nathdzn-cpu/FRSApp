@@ -25,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import PasswordConfirmDialog from '@/components/PasswordConfirmDialog'; // Import the new component
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -227,7 +228,7 @@ const AdminUsersPage: React.FC = () => {
   }
 
   return (
-    <div className="w-full"> {/* Removed min-h-screen and explicit padding, handled by App.tsx main */}
+    <div className="w-full">
       <div className="max-w-7xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -295,9 +296,9 @@ const AdminUsersPage: React.FC = () => {
             {filteredUsers.length === 0 ? (
               <p className="text-gray-600">No users found matching your criteria.</p>
             ) : (
-              <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
+              <div className="rounded-md overflow-hidden shadow-sm">
                 <Table>
-                  <TableHeader className="bg-gray-50"> {/* Kept header background */}
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
@@ -309,10 +310,23 @@ const AdminUsersPage: React.FC = () => {
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}
+                  <TableBody className="divide-y divide-gray-100">
                     {filteredUsers.map((user, index) => (
                       <TableRow key={user.id} className={index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}>
-                        <TableCell className="font-medium">{user.full_name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              {user.avatar_url ? (
+                                <AvatarImage src={user.avatar_url} alt={user.full_name} className="object-cover" />
+                              ) : (
+                                <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                                  {user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            {user.full_name}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="capitalize">{user.role}</Badge>
                         </TableCell>

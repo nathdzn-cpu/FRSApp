@@ -56,6 +56,16 @@ export const computeNextDriverAction = (
   // This might indicate a data loading issue or an incomplete job setup.
   if (safeStops.length === 0) {
     console.error(`Job ${job.order_number} has no stops defined. Cannot compute next driver action.`);
+    // Allow accepting the job even if stops are not loaded
+    if (job.status === 'assigned' || job.status === 'planned') {
+      return {
+        label: driverActionLabels['accepted'],
+        nextStatus: 'accepted',
+        stopId: '',
+        promptLabel: driverPromptLabels['accepted'],
+        stopContext: 'Job Acceptance',
+      };
+    }
     return null;
   }
 

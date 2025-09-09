@@ -457,10 +457,6 @@ const Index = () => {
             {userRole === 'driver' ? (
               <DriverJobsTable
                 jobs={filteredJobs}
-                profiles={profiles}
-                userRole={userRole}
-                currentProfile={currentProfile}
-                currentOrgId={currentOrgId}
                 onAction={handleJobTableAction}
               />
             ) : (
