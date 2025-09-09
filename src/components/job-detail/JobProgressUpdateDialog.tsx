@@ -43,6 +43,7 @@ interface JobProgressUpdateDialogProps {
   userRole: 'admin' | 'office' | 'driver';
   onUpdateProgress: (entries: ProgressUpdateEntry[]) => Promise<void>;
   isUpdatingProgress: boolean;
+  driverActiveJobs?: Job[]; // New prop: list of all active jobs for the driver
 }
 
 const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
@@ -53,6 +54,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
   userRole,
   onUpdateProgress,
   isUpdatingProgress,
+  driverActiveJobs = [], // Default to empty array
 }) => {
   const [selectedNewStatus, setSelectedNewStatus] = useState<Job['status'] | ''>('');
   const [progressUpdateEntries, setProgressUpdateEntries] = useState<ProgressUpdateEntry[]>([]);
@@ -163,6 +165,23 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
     if (hasErrors) {
       toast.error("Please ensure all date and time entries are valid.");
       return;
+    }
+
+    // Driver progression restriction: Only one job past 'accepted' at a time
+    if (userRole === 'driver') {
+      const statusesBeyondAccepted = ['on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received'];
+      const isProgressingBeyondAccepted = progressUpdateEntries.some(entry => statusesBeyondAccepted.includes(entry.status));
+
+      if (isProgressingBeyondAccepted) {
+        const otherActiveJobs = driverActiveJobs.filter(activeJob =>
+          activeJob.id !== job.id && statusesBeyondAccepted.includes(activeJob.status)
+        );
+
+        if (otherActiveJobs.length > 0) {
+          toast.error("You already have an active job in progress. Please complete or cancel it before starting another.");
+          return; // Block the update
+        }
+      }
     }
 
     await onUpdateProgress(progressUpdateEntries);

@@ -15,6 +15,7 @@ import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAct
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import DriverCompletedJobView from './DriverCompletedJobView'; // Import the new component
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
 
 interface DriverJobDetailViewProps {
   job: Job;
@@ -25,6 +26,7 @@ interface DriverJobDetailViewProps {
   currentOrgId: string;
   userRole: 'driver';
   refetchJobData: () => void;
+  driverActiveJobs: Job[]; // New prop: list of all active jobs for the driver
 }
 
 const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
@@ -36,6 +38,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   currentOrgId,
   userRole,
   refetchJobData,
+  driverActiveJobs, // Use the new prop
 }) => {
   const navigate = useNavigate();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
@@ -58,6 +61,21 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
     notes: string,
     stopId?: string
   ) => {
+    // Driver progression restriction: Only one job past 'accepted' at a time
+    const statusesBeyondAccepted = ['on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received'];
+    const isProgressingBeyondAccepted = statusesBeyondAccepted.includes(newStatus);
+
+    if (isProgressingBeyondAccepted) {
+      const otherActiveJobs = driverActiveJobs.filter(activeJob =>
+        activeJob.id !== job.id && statusesBeyondAccepted.includes(activeJob.status)
+      );
+
+      if (otherActiveJobs.length > 0) {
+        toast.error("You already have an active job in progress. Please complete or cancel it before starting another.");
+        return; // Block the update
+      }
+    }
+
     setIsUpdatingProgress(true);
     try {
       const payload = {

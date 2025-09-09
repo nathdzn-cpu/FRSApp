@@ -26,6 +26,7 @@ import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import Assi
 import JobAttachmentsDialog from '@/components/JobAttachmentsDialog'; // Import new Attachments Dialog
 import { updateJob, updateJobProgress } from '@/lib/api/jobs'; // Import API functions for actions
 import { toast } from 'sonner';
+import ActiveJobBanner from '@/components/driver/ActiveJobBanner'; // Import ActiveJobBanner
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -116,8 +117,16 @@ const Index = () => {
     onError: (err) => console.error("Jobs query failed", err),
   });
 
-  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;
-  const error = tenantsError || profilesError || jobsError;
+  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
+  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
+    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
+    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
+    staleTime: 30 * 1000, // Shorter stale time for active jobs
+    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
+  });
+
+  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs || isLoadingDriverActiveJobs;
+  const error = tenantsError || profilesError || jobsError || driverActiveJobsError;
 
   // Filter jobs by search term on the client side
   const filteredJobs = React.useMemo(() => {
@@ -168,6 +177,7 @@ const Index = () => {
       toast.success('Job progress updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] }); // Invalidate job detail too
+      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] }); // Invalidate driver active jobs
       setDialogState({ type: null, job: null });
     } catch (err: any) {
       console.error("Error updating job progress:", err);
@@ -206,6 +216,7 @@ const Index = () => {
       await promise;
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
+      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] }); // Invalidate driver active jobs
       setDialogState({ type: null, job: null });
     } catch (err: any) {
       console.error("Error assigning driver:", err);
@@ -273,6 +284,10 @@ const Index = () => {
             {/* "Create New Job" button is now in the Header component */}
           </div>
         </div>
+
+        {userRole === 'driver' && driverActiveJobs.length > 0 && (
+          <ActiveJobBanner activeJobs={driverActiveJobs} onDismiss={() => queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] })} />
+        )}
 
         {/* Stat Cards Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -453,6 +468,7 @@ const Index = () => {
           userRole={userRole}
           onUpdateProgress={handleUpdateProgress}
           isUpdatingProgress={isActionBusy}
+          driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
         />
       )}
 

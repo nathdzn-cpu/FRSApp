@@ -60,8 +60,8 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
         address_line2: s.address_line2 || null,
         city: s.city,
         postcode: s.postcode,
-        window_from: s.window_from || null,
-        window_to: s.window_to || null,
+        window_from: s.window_from || '', // Default to empty string
+        window_to: s.window_to || '',     // Default to empty string
         notes: s.notes || null,
       })),
       deliveries: originalStops.filter(s => s.type === 'delivery').map(s => ({
@@ -70,8 +70,8 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
         address_line2: s.address_line2 || null,
         city: s.city,
         postcode: s.postcode,
-        window_from: s.window_from || null,
-        window_to: s.window_to || null,
+        window_from: s.window_from || '', // Default to empty string
+        window_to: s.window_to || '',     // Default to empty string
         notes: s.notes || null,
       })),
     };
