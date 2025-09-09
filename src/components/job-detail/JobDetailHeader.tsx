@@ -16,11 +16,11 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CardHeader, CardTitle } from '@/components/ui/card'; // Added CardHeader here
+import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle } from 'lucide-react';
 import JobEditForm from '@/components/JobEditForm';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
-import JobProgressUpdateDialog from './JobProgressUpdateDialog'; // Import the new dialog component
+import JobProgressUpdateDialog from './JobProgressUpdateDialog';
 import { Job, JobStop, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
@@ -33,14 +33,15 @@ interface JobDetailHeaderProps {
   currentOrgId: string;
   onEditSubmit: (values: any) => Promise<void>;
   onAssignDriver: (driverId: string | null) => Promise<void>;
-  onUpdateProgress: (entries: any[]) => Promise<void>; // Use any[] for now, will be ProgressUpdateEntry[]
+  onUpdateProgress: (entries: any[]) => Promise<void>;
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;
-  onCloneJob: () => void; // Changed to call onCloneJob prop
+  onCloneJob: () => void;
   onCancelJob: () => Promise<void>;
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;
   isUpdatingProgress: boolean;
+  driverActiveJobs?: Job[]; // New prop
 }
 
 const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
@@ -55,11 +56,12 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   onUpdateProgress,
   onRequestPod,
   onExportPdf,
-  onCloneJob, // Now a function to open the dialog
+  onCloneJob,
   onCancelJob,
   isSubmittingEdit,
   isAssigningDriver,
   isUpdatingProgress,
+  driverActiveJobs = [], // Default to empty array
 }) => {
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -75,7 +77,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
         <Badge
           variant={
             job.status === 'planned'
-              ? 'secondary' // Changed to secondary for planned
+              ? 'secondary'
               : job.status === 'accepted' || job.status === 'assigned'
               ? 'default'
               : job.status === 'delivered'
@@ -129,6 +131,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               userRole={userRole}
               onUpdateProgress={onUpdateProgress}
               isUpdatingProgress={isUpdatingProgress}
+              driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
             />
 
             <AlertDialog>
@@ -157,7 +160,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               <FileDown className="h-4 w-4 mr-2" /> Export PDF
             </Button>
 
-            <Button variant="outline" onClick={onCloneJob}> {/* Changed to call onCloneJob prop */}
+            <Button variant="outline" onClick={onCloneJob}>
               <Copy className="h-4 w-4 mr-2" /> Clone Job
             </Button>
 

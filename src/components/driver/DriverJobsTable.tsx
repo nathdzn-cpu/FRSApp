@@ -7,23 +7,23 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react'; // Added Camera
+import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 
-interface JobsTableProps {
+interface DriverJobsTableProps {
   jobs: Job[];
   profiles: Profile[];
-  userRole: 'admin' | 'office' | 'driver' | undefined;
+  userRole: 'driver';
   currentProfile: Profile | null;
   currentOrgId: string;
-  onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void; // Added uploadImage
+  onAction: (type: 'statusUpdate' | 'viewAttachments' | 'uploadImage', job: Job) => void;
 }
 
-const JobsTable: React.FC<JobsTableProps> = ({
+const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
   jobs,
   profiles,
   userRole,
@@ -49,7 +49,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
   };
 
   if (jobs.length === 0) {
-    return <p className="text-gray-600">No jobs found for this tenant with the selected filter.</p>;
+    return <p className="text-gray-600">No jobs found for you with the selected filter.</p>;
   }
 
   return (
@@ -59,7 +59,6 @@ const JobsTable: React.FC<JobsTableProps> = ({
           <TableRow>
             <TableHead className="text-gray-700 font-medium">Order Number</TableHead>
             <TableHead className="text-gray-700 font-medium">Status</TableHead>
-            <TableHead className="text-gray-700 font-medium">Driver</TableHead>
             <TableHead className="text-gray-700 font-medium">Collection</TableHead>
             <TableHead className="text-gray-700 font-medium">Delivery</TableHead>
             <TableHead className="text-center text-gray-700 font-medium">Actions</TableHead>
@@ -92,25 +91,6 @@ const JobsTable: React.FC<JobsTableProps> = ({
                   >
                     {getDisplayStatus(job.status)}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Avatar className="h-7 w-7 mr-2">
-                      {driverInfo.avatar_url ? (
-                        <AvatarImage src={driverInfo.avatar_url} alt={driverInfo.name} className="object-cover" />
-                      ) : (
-                        <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
-                          {driverInfo.initials}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <div className="font-medium text-gray-900">{driverInfo.name}</div>
-                      {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
-                        <div className="text-xs text-gray-500">{driverInfo.reg}</div>
-                      )}
-                    </div>
-                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start">
@@ -150,14 +130,8 @@ const JobsTable: React.FC<JobsTableProps> = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
-                      <DropdownMenuItem onClick={() => onAction('statusUpdate', job)}>
-                        <CheckCircle className="mr-2 h-4 w-4" /> Update Status
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/jobs/${job.order_number}`)}>
                         <FileText className="mr-2 h-4 w-4" /> View Job
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onAction('assignDriver', job)}>
-                        <Truck className="mr-2 h-4 w-4" /> Change Driver
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onAction('viewAttachments', job)}>
                         <Edit className="mr-2 h-4 w-4" /> View Attachments
@@ -177,4 +151,4 @@ const JobsTable: React.FC<JobsTableProps> = ({
   );
 };
 
-export default JobsTable;
+export default DriverJobsTable;

@@ -4,7 +4,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit } from 'lucide-react';
@@ -19,7 +19,7 @@ interface JobCardProps {
   userRole: 'admin' | 'office' | 'driver' | undefined;
   currentProfile: Profile | null;
   currentOrgId: string;
-  onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments', job: Job) => void;
+  onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void; // Added uploadImage
 }
 
 const JobCard: React.FC<JobCardProps> = ({
@@ -157,6 +157,9 @@ const JobCard: React.FC<JobCardProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onAction('viewAttachments', job)}>
                 <Edit className="mr-2 h-4 w-4" /> View Attachments
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAction('uploadImage', job)}>
+                <Camera className="mr-2 h-4 w-4" /> Upload Image
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

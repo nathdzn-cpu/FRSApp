@@ -1,3 +1,5 @@
+"use client";
+
 import { Job, JobStop, JobProgressLog } from '@/utils/mockData';
 import {
   collectionStopStatusSequence,
@@ -27,10 +29,13 @@ interface NextDriverAction {
  */
 export const computeNextDriverAction = (
   job: Job,
-  stops: JobStop[],
-  progressLogs: JobProgressLog[],
+  stops: JobStop[] | undefined, // Allow undefined
+  progressLogs: JobProgressLog[] | undefined, // Allow undefined
   userId: string,
 ): NextDriverAction | null => {
+  const safeStops = stops ?? [];
+  const safeProgressLogs = progressLogs ?? [];
+
   // If job is cancelled or already delivered, no further actions
   if (job.status === 'cancelled' || job.status === 'delivered' || job.status === 'pod_received') {
     return null;
@@ -47,14 +52,21 @@ export const computeNextDriverAction = (
     };
   }
 
+  // If no stops are defined, and job is not yet complete, we can't determine further actions.
+  // This might indicate a data loading issue or an incomplete job setup.
+  if (safeStops.length === 0) {
+    console.error(`Job ${job.order_number} has no stops defined. Cannot compute next driver action.`);
+    return null;
+  }
+
   // Sort stops by sequence number
-  const sortedStops = [...stops].sort((a, b) => a.seq - b.seq);
+  const sortedStops = [...safeStops].sort((a, b) => a.seq - b.seq);
 
   const collectionStops = sortedStops.filter(s => s.type === 'collection');
   const deliveryStops = sortedStops.filter(s => s.type === 'delivery');
 
   for (const stop of sortedStops) {
-    const stopLogs = progressLogs.filter(log => log.stop_id === stop.id);
+    const stopLogs = safeProgressLogs.filter(log => log.stop_id === stop.id);
     let currentStopStatus: Job['status'] | 'pending' = 'pending';
 
     // Determine the latest status for this specific stop

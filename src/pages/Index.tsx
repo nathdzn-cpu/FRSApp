@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
-import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle } from 'lucide-react'; // Added Truck, CheckCircle2, XCircle for StatCard icons
+import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle, Camera } from 'lucide-react'; // Added Camera for ImageUploadDialog
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -18,20 +18,22 @@ import { Label } from '@/components/ui/label';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { Input } from '@/components/ui/input'; // Import Input for search bar
-import StatCard from '@/components/StatCard'; // Import the new StatCard component
-import JobsTable from '@/components/JobsTable'; // Import the new JobsTable component
-import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog'; // Import Status Update Dialog
-import AssignDriverDialog from '@/components/AssignDriverDialog'; // Import Assign Driver Dialog
-import JobAttachmentsDialog from '@/components/JobAttachmentsDialog'; // Import new Attachments Dialog
-import { updateJob, updateJobProgress } from '@/lib/api/jobs'; // Import API functions for actions
+import { Input } from '@/components/ui/input';
+import StatCard from '@/components/StatCard';
+import JobsTable from '@/components/JobsTable';
+import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog';
+import AssignDriverDialog from '@/components/AssignDriverDialog';
+import JobAttachmentsDialog from '@/components/JobAttachmentsDialog';
+import { updateJob, updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
-import ActiveJobBanner from '@/components/driver/ActiveJobBanner'; // Import ActiveJobBanner
+import ActiveJobBanner from '@/components/driver/ActiveJobBanner';
+import DriverJobsTable from '@/components/driver/DriverJobsTable'; // Import new DriverJobsTable
+import ImageUploadDialog from '@/components/driver/ImageUploadDialog'; // Import new ImageUploadDialog
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 
-type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments';
+type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage'; // Added uploadImage
 
 interface DialogState {
   type: DialogType | null;
@@ -43,12 +45,12 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active'); // New state for job status filter
-  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active');
+  const [searchTerm, setSearchTerm] = useState('');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
-  const [isActionBusy, setIsActionBusy] = useState(false); // To disable actions during API calls
+  const [isActionBusy, setIsActionBusy] = useState(false);
   const navigate = useNavigate();
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
@@ -101,18 +103,18 @@ const Index = () => {
 
   // Fetch profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', selectedOrgId, userRole], // Add userRole to query key
-    queryFn: () => getProfiles(currentOrgId, userRole), // Pass userRole
+    queryKey: ['profiles', selectedOrgId, userRole],
+    queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
-    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth && !!userRole, // Ensure userRole is defined
+    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth && !!userRole,
     onError: (err) => console.error("Profiles query failed", err),
   });
 
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter], // Add jobStatusFilter to query key
-    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate, jobStatusFilter), // Pass jobStatusFilter to getJobs
-    staleTime: 60 * 1000, // Cache jobs for 1 minute
+    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter],
+    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate, jobStatusFilter),
+    staleTime: 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
     onError: (err) => console.error("Jobs query failed", err),
   });
@@ -121,7 +123,7 @@ const Index = () => {
   const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
     queryKey: ['driverActiveJobs', currentOrgId, user?.id],
     queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
-    staleTime: 30 * 1000, // Shorter stale time for active jobs
+    staleTime: 30 * 1000,
     enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
 
@@ -146,9 +148,9 @@ const Index = () => {
 
   // Calculate job statistics for StatCards
   const totalJobs = jobs.length;
-  const activeJobs = jobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
-  const completedJobs = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
-  const cancelledJobs = jobs.filter(job => job.status === 'cancelled').length;
+  const activeJobsCount = jobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+  const completedJobsCount = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
+  const cancelledJobsCount = jobs.filter(job => job.status === 'cancelled').length;
 
   const handleJobTableAction = (type: DialogType, job: Job) => {
     setDialogState({ type, job });
@@ -178,8 +180,8 @@ const Index = () => {
       }
       toast.success('Job progress updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] }); // Invalidate job detail too
-      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] }); // Invalidate driver active jobs
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
+      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] });
       setDialogState({ type: null, job: null });
     } catch (err: any) {
       console.error("Error updating job progress:", err);
@@ -218,7 +220,7 @@ const Index = () => {
       await promise;
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
-      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] }); // Invalidate driver active jobs
+      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] });
       setDialogState({ type: null, job: null });
     } catch (err: any) {
       console.error("Error assigning driver:", err);
@@ -226,6 +228,12 @@ const Index = () => {
     } finally {
       setIsActionBusy(false);
     }
+  };
+
+  const handleImageUploadSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job?.order_number, userRole] });
+    setDialogState({ type: null, job: null });
   };
 
 
@@ -283,7 +291,6 @@ const Index = () => {
                 <Users className="h-4 w-4 mr-2" /> Admin Users
               </Button>
             )}
-            {/* "Create New Job" button is now in the Header component */}
           </div>
         </div>
 
@@ -303,7 +310,7 @@ const Index = () => {
           />
           <StatCard
             title="Active Jobs"
-            value={activeJobs}
+            value={activeJobsCount}
             icon={Truck}
             iconColorClass="text-yellow-600"
             valueColorClass="text-yellow-800"
@@ -311,7 +318,7 @@ const Index = () => {
           />
           <StatCard
             title="Completed Jobs"
-            value={completedJobs}
+            value={completedJobsCount}
             icon={CheckCircle2}
             iconColorClass="text-green-600"
             valueColorClass="text-green-800"
@@ -319,7 +326,7 @@ const Index = () => {
           />
           <StatCard
             title="Cancelled Jobs"
-            value={cancelledJobs}
+            value={cancelledJobsCount}
             icon={XCircle}
             iconColorClass="text-red-600"
             valueColorClass="text-red-800"
@@ -447,14 +454,25 @@ const Index = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <JobsTable
-              jobs={filteredJobs}
-              profiles={profiles}
-              userRole={userRole}
-              currentProfile={currentProfile}
-              currentOrgId={currentOrgId}
-              onAction={handleJobTableAction}
-            />
+            {userRole === 'driver' ? (
+              <DriverJobsTable
+                jobs={filteredJobs}
+                profiles={profiles}
+                userRole={userRole}
+                currentProfile={currentProfile}
+                currentOrgId={currentOrgId}
+                onAction={handleJobTableAction}
+              />
+            ) : (
+              <JobsTable
+                jobs={filteredJobs}
+                profiles={profiles}
+                userRole={userRole}
+                currentProfile={currentProfile}
+                currentOrgId={currentOrgId}
+                onAction={handleJobTableAction}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -470,7 +488,7 @@ const Index = () => {
           userRole={userRole}
           onUpdateProgress={handleUpdateProgress}
           isUpdatingProgress={isActionBusy}
-          driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
+          driverActiveJobs={driverActiveJobs}
         />
       )}
 
@@ -491,6 +509,18 @@ const Index = () => {
           onOpenChange={() => setDialogState({ type: null, job: null })}
           job={dialogState.job}
           currentOrgId={currentOrgId}
+        />
+      )}
+
+      {dialogState.type === 'uploadImage' && dialogState.job && currentProfile && userRole && (
+        <ImageUploadDialog
+          open={true}
+          onOpenChange={() => setDialogState({ type: null, job: null })}
+          job={dialogState.job}
+          currentProfile={currentProfile}
+          onUploadSuccess={handleImageUploadSuccess}
+          isLoading={isActionBusy}
+          setIsLoading={setIsActionBusy}
         />
       )}
     </div>

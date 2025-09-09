@@ -6,9 +6,9 @@ import { Job, JobStop, Profile } from '@/utils/mockData';
 import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
-import { getDisplayStatus } from '@/lib/utils/statusUtils'; // Import getDisplayStatus
-import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import formatPostcode
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar and related components
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface JobOverviewCardProps {
   job: Job;

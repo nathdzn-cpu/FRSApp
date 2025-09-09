@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown } from 'lucide-react'; 
-import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react"; // Changed Car to User
+import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown, PlusCircle } from 'lucide-react';
+import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ interface NavLinkItem {
 
 const navLinks: NavLinkItem[] = [
   { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
-  { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] }, // Updated icon to User
+  { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] },
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
   { to: '/map', icon: Map, label: 'Map', roles: ['admin', 'office', 'driver'] },
   { to: '/quotes', icon: FileText, label: 'Quotes', roles: ['admin', 'office'] },
@@ -42,8 +42,15 @@ const Sidebar: React.FC = () => {
     !link.roles || (userRole && link.roles.includes(userRole))
   );
 
+  const canCreateJob = userRole === 'admin' || userRole === 'office';
+
   const renderNavLinks = () => (
     <nav className="flex flex-col gap-1 p-2">
+      {canCreateJob && isMobile && ( // Show "New Job" button only on mobile
+        <Button onClick={() => { navigate('/jobs/new'); setIsOpen(false); }} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md mb-2">
+          <PlusCircle className="h-4 w-4 mr-2" /> New Job
+        </Button>
+      )}
       {filteredNavLinks.map((link) => (
         <NavLink
           key={link.to}
@@ -90,11 +97,11 @@ const Sidebar: React.FC = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-10 w-10"> {/* Adjusted size */}
+                        <Avatar className="h-10 w-10">
                           {profile.avatar_url ? (
                             <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
                           ) : (
-                            <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                            <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
                           )}
                         </Avatar>
                         <div className="flex flex-col items-start">
@@ -137,11 +144,11 @@ const Sidebar: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-10 w-10"> {/* Adjusted size */}
+                    <Avatar className="h-10 w-10">
                       {profile.avatar_url ? (
                         <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
                       ) : (
-                        <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
+                        <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
                       )}
                     </Avatar>
                     <div className="flex flex-col items-start">

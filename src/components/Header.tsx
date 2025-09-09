@@ -62,7 +62,7 @@ const Header: React.FC = () => {
         </Breadcrumb>
       </div>
       <div className="flex items-center space-x-4">
-        {canCreateJob && (
+        {canCreateJob && !isMobile && ( // Only show "New Job" button on non-mobile
           <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
             <PlusCircle className="h-4 w-4 mr-2" /> New Job
           </Button>
@@ -71,8 +71,8 @@ const Header: React.FC = () => {
         {user && profile && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full"> {/* Adjusted size */}
-                <Avatar className="h-10 w-10"> {/* Adjusted size */}
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
                   {profile.avatar_url ? (
                     <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
                   ) : (

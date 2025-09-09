@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCheck, User as UserIcon } from 'lucide-react'; // Import UserIcon
+import { Bell, CheckCheck, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/api/notifications';
@@ -12,11 +12,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
 import { Notification } from '@/utils/mockData';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
-import { getProfiles } from '@/lib/api/profiles'; // Import getProfiles
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfiles } from '@/lib/api/profiles';
 
 const NotificationBell: React.FC = () => {
-  const { user, userRole, profile: currentUserProfile } = useAuth(); // Get current user's profile
+  const { user, userRole, profile: currentUserProfile } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -25,7 +25,7 @@ const NotificationBell: React.FC = () => {
     queryFn: getNotifications,
     enabled: !!user && (userRole === 'admin' || userRole === 'office'),
     refetchOnWindowFocus: true,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 60 * 1000,
   });
 
   // Fetch all profiles to get avatar_urls for notification actors
@@ -33,7 +33,7 @@ const NotificationBell: React.FC = () => {
     queryKey: ['allProfilesForNotifications', currentUserProfile?.org_id],
     queryFn: () => getProfiles(currentUserProfile!.org_id!, userRole),
     enabled: !!currentUserProfile?.org_id && !!userRole,
-    staleTime: 5 * 60 * 1000, // Cache profiles for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -107,7 +107,7 @@ const NotificationBell: React.FC = () => {
           <DropdownMenuItem disabled>No notifications yet.</DropdownMenuItem>
         ) : (
           notifications.map(notification => {
-            const actor = allProfiles.find(p => p.id === notification.user_id); // Assuming notification.user_id is the actor
+            const actor = allProfiles.find(p => p.id === notification.user_id);
             const actorInitials = actor?.full_name ? actor.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
 
             return (

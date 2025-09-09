@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { JobProgressLog, Profile } from '@/utils/mockData';
+import { JobProgressLog, Profile, Job } from '@/utils/mockData'; // Import Job
 import { format, parseISO } from 'date-fns';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff, Eye } from 'lucide-react';
 import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils';
@@ -12,13 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface JobTimelineProps {
   progressLogs: JobProgressLog[];
   profiles: Profile[];
   currentOrgId: string;
   onLogVisibilityChange: () => void;
+  job: Job; // Added job prop
 }
 
 const actionTypeIconMap: Record<string, React.ElementType> = {
@@ -45,9 +46,21 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   stop_updated: Edit,
   stop_deleted: Trash2,
   stop_details_updated: Edit,
+  daily_check_submitted: CalendarCheck,
+  daily_check_item_created: PlusCircle,
+  daily_check_item_updated: Edit,
+  daily_check_item_deleted: Trash2,
+  user_created: UserPlus,
+  user_updated: UserCog,
+  user_deleted: Trash2,
+  password_reset_sent: Mail,
+  purge_demo_users: Eraser,
+  purge_all_non_admin_users: Eraser,
+  timeline_event_removed_from_timeline: EyeOff,
+  timeline_event_restored_to_timeline: Eye,
 };
 
-const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, currentOrgId, onLogVisibilityChange }) => {
+const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, currentOrgId, onLogVisibilityChange, job }) => {
   const { userRole, profile: currentProfile } = useAuth();
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState<string | null>(null);

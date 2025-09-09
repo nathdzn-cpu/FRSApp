@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs } from '@/lib/supabase';
+import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, getJobs } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -12,8 +12,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
 import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
-import DriverJobDetailView from '@/components/driver/DriverJobDetailView'; // Import the new driver view
-import CloneJobDialog from '@/components/CloneJobDialog'; // Import the new CloneJobDialog
+import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
+import CloneJobDialog from '@/components/CloneJobDialog';
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
 interface JobFormValues {
@@ -58,7 +58,7 @@ interface ProgressUpdateEntry {
 }
 
 const JobDetail: React.FC = () => {
-  const { orderNumber } = useParams<{ orderNumber: string }>(); // Changed from id to orderNumber
+  const { orderNumber } = useParams<{ orderNumber: string }>();
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
@@ -66,17 +66,25 @@ const JobDetail: React.FC = () => {
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
-  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false); // New state for clone dialog
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', currentOrgId, userRole], // Add userRole to query key
-    queryFn: () => getProfiles(currentOrgId, userRole), // Pass userRole
+    queryKey: ['profiles', currentOrgId, userRole],
+    queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
     enabled: !!user && !!currentProfile && !isLoadingAuth && !!userRole,
+  });
+
+  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
+  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
+    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
+    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
+    staleTime: 30 * 1000,
+    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
 
   // Use useQuery for job details, stops, and documents
@@ -86,18 +94,17 @@ const JobDetail: React.FC = () => {
     documents: Document[];
     progressLogs: JobProgressLog[];
   }, Error>({
-    queryKey: ['jobDetail', orderNumber, userRole], // Updated query key to use orderNumber
+    queryKey: ['jobDetail', orderNumber, userRole],
     queryFn: async () => {
       if (!orderNumber || !currentOrgId || !currentProfile || !userRole) {
         throw new Error("Missing job order number, organization ID, current profile, or user role.");
       }
 
-      const fetchedJob = await getJobById(currentOrgId, orderNumber, userRole); // Fetch by orderNumber
+      const fetchedJob = await getJobById(currentOrgId, orderNumber, userRole);
       if (!fetchedJob) {
         throw new Error("Job not found or you don't have permission to view it.");
       }
 
-      // Use the actual job.id (UUID) for fetching related data
       const fetchedStops = await getJobStops(currentOrgId, fetchedJob.id);
       const fetchedDocuments = await getJobDocuments(currentOrgId, fetchedJob.id);
       const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, fetchedJob.id);
@@ -118,8 +125,8 @@ const JobDetail: React.FC = () => {
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
-  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
-  const error = allProfilesError || jobError;
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob || isLoadingDriverActiveJobs;
+  const error = allProfilesError || jobError || driverActiveJobsError;
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile || !userRole) return;
@@ -158,7 +165,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCloneSuccess = (newJobOrderNumber: string) => {
-    navigate(`/jobs/${newJobOrderNumber}`); // Navigate to the new job's detail page
+    navigate(`/jobs/${newJobOrderNumber}`);
   };
 
   const handleCancelJob = async () => {
@@ -181,7 +188,7 @@ const JobDetail: React.FC = () => {
 
     setIsSubmittingEdit(true);
     try {
-      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : [])); // Ensure s.id exists
+      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : []));
 
       const allNewStops = [...values.collections, ...values.deliveries];
 
@@ -270,7 +277,6 @@ const JobDetail: React.FC = () => {
 
     setIsUpdatingProgress(true);
     try {
-      // Sort entries by dateTime to ensure chronological order
       const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
 
       for (const entry of sortedEntries) {
@@ -293,7 +299,7 @@ const JobDetail: React.FC = () => {
     } catch (err: any) {
       console.error("Error updating job progress:", err);
       toast.error("An unexpected error occurred while updating job progress.");
-      throw err; // Re-throw to allow dialog to handle its own error state if needed
+      throw err;
     } finally {
       setIsUpdatingProgress(false);
     }
@@ -337,11 +343,12 @@ const JobDetail: React.FC = () => {
         job={job}
         stops={stops}
         progressLogs={progressLogs}
-        documents={documents} // Pass documents to driver view
+        documents={documents}
         currentProfile={currentProfile!}
         currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
+        driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
       />
     );
   }
@@ -367,11 +374,12 @@ const JobDetail: React.FC = () => {
             onUpdateProgress={handleUpdateProgress}
             onRequestPod={handleRequestPod}
             onExportPdf={handleExportPdf}
-            onCloneJob={handleCloneJob} // Now opens the dialog
+            onCloneJob={handleCloneJob}
             onCancelJob={handleCancelJob}
             isSubmittingEdit={isSubmittingEdit}
             isAssigningDriver={isAssigningDriver}
             isUpdatingProgress={isUpdatingProgress}
+            driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
           />
           <JobOverviewCard
             job={job}

@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from "@/components/ui/badge"; // Added Badge import
+import { Badge } from "@/components/ui/badge";
 import {
   User as UserIcon,
   Phone,
@@ -31,7 +31,7 @@ import { format, parseISO } from 'date-fns';
 import { formatGBPDisplay, formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { getJobs } from '@/lib/supabase'; // Assuming getJobs can fetch all jobs for a driver
+import { getJobs } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
 dayjs.extend(weekOfYear);
@@ -40,7 +40,7 @@ interface DriverDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   driver: Profile;
-  allJobs: Job[]; // Pass all jobs to filter here
+  allJobs: Job[];
   currentOrgId: string;
   onJobView: (orderNumber: string) => void;
 }
@@ -69,7 +69,6 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
       setLoadingJobs(true);
       setJobsError(null);
       try {
-        // Filter allJobs by the current driver's ID
         const assignedJobs = allJobs.filter(job => job.assigned_driver_id === driver.id);
         setDriverJobs(assignedJobs);
       } catch (err: any) {
@@ -84,7 +83,7 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
   }, [open, driver.id, allJobs, currentOrgId, userRole]);
 
   const driverInitials = driver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const driverEmail = "N/A"; // Email is not directly available in the Profile mock data
+  const driverEmail = "N/A";
 
   const completedJobs = useMemo(() => {
     return driverJobs.filter(job => ['delivered', 'pod_received'].includes(job.status));
@@ -93,7 +92,7 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
   const calculateRevenue = (filter: 'today' | 'week' | 'month') => {
     const now = dayjs();
     return completedJobs.reduce((sum, job) => {
-      const jobDate = dayjs(job.date_created); // Assuming date_created is when the job was 'completed' for revenue purposes
+      const jobDate = dayjs(job.date_created);
       let include = false;
 
       if (filter === 'today' && jobDate.isSame(now, 'day')) {

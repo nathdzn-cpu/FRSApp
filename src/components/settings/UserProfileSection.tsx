@@ -34,7 +34,7 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
       refreshProfile();
     },
     onError: (error: any) => {
-      toast.error(`Update failed: ${error.message}`);
+      toast.error(`Upload failed: ${error.message}`);
     },
     onSettled: () => {
       setIsUploading(false);
@@ -64,7 +64,7 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
       <CardContent className="p-0 pt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="flex flex-col items-center md:items-start space-y-4">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name} />
+            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name} className="object-cover" />
             <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
           </Avatar>
           <Input

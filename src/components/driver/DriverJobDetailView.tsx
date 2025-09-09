@@ -4,29 +4,29 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react'; // Import Camera icon
+import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react';
 import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
 import ProgressActionDialog from './ProgressActionDialog';
 import PodUploadDialog from './PodUploadDialog';
-import ImageUploadDialog from './ImageUploadDialog'; // Import new ImageUploadDialog
-import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction'; // Import the new utility
+import ImageUploadDialog from './ImageUploadDialog';
+import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import DriverCompletedJobView from './DriverCompletedJobView'; // Import the new component
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import DriverCompletedJobView from './DriverCompletedJobView';
+import { useQuery } from '@tanstack/react-query';
 
 interface DriverJobDetailViewProps {
   job: Job;
-  stops: JobStop[];
-  progressLogs: JobProgressLog[];
-  documents: Document[]; // Pass documents to driver view
+  stops: JobStop[] | undefined; // Allow undefined
+  progressLogs: JobProgressLog[] | undefined; // Allow undefined
+  documents: Document[];
   currentProfile: Profile;
   currentOrgId: string;
   userRole: 'driver';
   refetchJobData: () => void;
-  driverActiveJobs: Job[]; // New prop: list of all active jobs for the driver
+  driverActiveJobs: Job[];
 }
 
 // Helper function to get current location
@@ -56,23 +56,23 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   job,
   stops,
   progressLogs,
-  documents, // Receive documents
+  documents,
   currentProfile,
   currentOrgId,
   userRole,
   refetchJobData,
-  driverActiveJobs, // Use the new prop
+  driverActiveJobs,
 }) => {
   const navigate = useNavigate();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [nextAction, setNextAction] = useState<NextDriverAction | null>(null);
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
   const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
-  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false); // New state for image upload dialog
-  const [isUploadingImage, setIsUploadingImage] = useState(false); // New state for image upload loading
+  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
-    if (job && stops && progressLogs && currentProfile) {
+    if (job && currentProfile) {
       const action = computeNextDriverAction(job, stops, progressLogs, currentProfile.id);
       setNextAction(action);
     }
@@ -95,13 +95,13 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
 
       if (otherActiveJobs.length > 0) {
         toast.error("You already have an active job in progress. Please complete or cancel it before starting another.");
-        return; // Block the update
+        return;
       }
     }
 
     setIsUpdatingProgress(true);
     try {
-      const location = await getCurrentLocation(); // Get location
+      const location = await getCurrentLocation();
 
       const payload = {
         job_id: job.id,
@@ -112,28 +112,28 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
         timestamp: timestamp.toISOString(),
         notes: notes.trim() || undefined,
         stop_id: stopId,
-        lat: location?.lat, // Pass lat
-        lon: location?.lon, // Pass lon
+        lat: location?.lat,
+        lon: location?.lon,
       };
       await updateJobProgress(payload);
-      refetchJobData(); // Refetch all job data to update logs and status
+      refetchJobData();
       toast.success(`${nextAction?.label || 'Action'} logged successfully!`);
     } catch (err: any) {
       console.error("Error updating job progress:", err);
       toast.error(`Failed to log ${nextAction?.label || 'action'}: ${err.message || String(err)}`);
-      throw err; // Re-throw to allow dialog to handle its own error state
+      throw err;
     } finally {
       setIsUpdatingProgress(false);
     }
   };
 
   const handlePodUploadSuccess = () => {
-    refetchJobData(); // Refetch after POD upload to update job status
+    refetchJobData();
     toast.success("POD uploaded successfully!");
   };
 
   const handleImageUploadSuccess = () => {
-    refetchJobData(); // Refetch after image upload to update document list
+    refetchJobData();
     toast.success("Image uploaded successfully!");
   };
 
@@ -167,13 +167,13 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
     </div>
   );
 
-  const currentStopForAction = nextAction ? stops.find(s => s.id === nextAction.stopId) : undefined;
+  const currentStopForAction = nextAction ? (stops ?? []).find(s => s.id === nextAction.stopId) : undefined;
 
   // Check if the job is completed (delivered or POD received)
   const isJobCompleted = job.status === 'delivered' || job.status === 'pod_received';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8"> {/* Removed min-h-screen */}
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
@@ -182,7 +182,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
         {isJobCompleted ? (
           <DriverCompletedJobView
             job={job}
-            progressLogs={progressLogs}
+            progressLogs={progressLogs ?? []}
             documents={documents}
             currentProfile={currentProfile}
             currentOrgId={currentOrgId}
@@ -219,7 +219,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
                       {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                       {nextAction.label}
                     </Button>
-                    {nextAction.nextStatus !== 'pod_received' && ( // Only show Upload Image if not the POD step
+                    {nextAction.nextStatus !== 'pod_received' && (
                       <Button
                         onClick={() => setIsImageUploadDialogOpen(true)}
                         disabled={isUpdatingProgress || isUploadingImage}
@@ -265,7 +265,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           currentProfile={currentProfile}
           onUploadSuccess={handlePodUploadSuccess}
           isLoading={isUpdatingProgress}
-          setIsLoading={setIsUpdatingProgress} // Pass setter for internal loading state
+          setIsLoading={setIsUpdatingProgress}
         />
       )}
 
@@ -273,7 +273,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
         open={isImageUploadDialogOpen}
         onOpenChange={setIsImageUploadDialogOpen}
         job={job}
-        stopId={currentStopForAction?.id} // Pass the current stop ID if applicable
+        stopId={currentStopForAction?.id}
         currentProfile={currentProfile}
         onUploadSuccess={handleImageUploadSuccess}
         isLoading={isUploadingImage}

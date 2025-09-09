@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Import Avatar
 
 // Generate years for DOB dropdown (e.g., 1900 to current year)
 const currentYear = new Date().getFullYear();

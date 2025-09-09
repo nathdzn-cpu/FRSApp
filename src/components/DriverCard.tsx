@@ -3,9 +3,22 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
-import { Badge } from '@/components/ui/badge';
-import { Phone, Truck, Briefcase, MapPin, ArrowRight } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from "@/components/ui/badge";
+import {
+  User as UserIcon, // Renamed to avoid conflict with Profile type
+  Phone,
+  Mail,
+  Truck,
+  Calendar,
+  MapPin,
+  Briefcase,
+  DollarSign,
+  CalendarDays,
+  Clock,
+  ArrowRight,
+  Loader2
+} from 'lucide-react';
 import { Profile } from '@/utils/mockData';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +37,7 @@ const DriverCard: React.FC<DriverCardProps> = ({ driver, jobsAssignedCount, onVi
       className={cn(
         "relative overflow-hidden rounded-xl shadow-lg p-4 bg-gradient-to-br from-blue-50 to-indigo-100",
         "hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out",
-        "flex flex-col justify-between max-w-sm w-full" // Default max-width, full width on smaller screens
+        "flex flex-col justify-between max-w-sm w-full"
       )}
     >
       {/* Animated Orbs */}
