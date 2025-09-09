@@ -19,8 +19,11 @@ const Map: React.FC = () => {
             <CardTitle className="text-2xl font-bold text-gray-900">Map</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <p className="text-gray-700">Map page coming soon!</p>
-            <p className="text-gray-500 mt-2">This is where you'll be able to view driver locations and job routes.</p>
+            <div className="relative w-full h-[60vh] bg-gray-200 rounded-lg flex items-center justify-center">
+              <p className="text-gray-500 text-lg font-medium p-4 bg-white/80 rounded-md shadow">
+                Live tracking coming soon – placeholder map
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
