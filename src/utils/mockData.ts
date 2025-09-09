@@ -174,6 +174,20 @@ export interface SavedAddress {
   created_at: string;
 }
 
+// New interface for Quotes
+export interface Quote {
+  id: string;
+  org_id: string;
+  created_at: string;
+  from_location: string;
+  to_location: string;
+  customer: string;
+  price: number | null;
+  mileage: number | null;
+  drops: number;
+  job_id?: string | null;
+}
+
 // Seed Data
 const demoTenantId = uuidv4();
 const aliceAdminId = uuidv4();

@@ -9,3 +9,4 @@ export * from './api/tenantCounters';
 export * from './api/dailyCheckItems';
 export * from './api/dailyCheckResponses';
 export * from './api/savedAddresses'; // New: Export saved addresses API
+export * from './api/quotes'; // New: Export quotes API
