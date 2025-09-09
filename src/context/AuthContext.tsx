@@ -17,6 +17,7 @@ interface AuthContextType {
   isLoadingAuth: boolean;
   login: (userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +32,45 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const location = useLocation();
 
   const currentUserIdRef = useRef<string | null>(initialUser?.id || null);
+
+  const fetchProfile = useCallback(async (currentUser: User | null) => {
+    console.log("AuthContextProvider: fetchProfile called for user:", currentUser?.id);
+    setProfile(null);
+    setUserRole(undefined);
+    if (!currentUser) {
+      console.log("AuthContextProvider: No current user, skipping profile fetch.");
+      return;
+    }
+
+    try {
+      const { data: fetchedProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error("AuthContextProvider: Error fetching profile from DB:", profileError);
+        toast.error("Failed to load user profile.");
+      } else if (fetchedProfile) {
+        console.log("AuthContextProvider: Profile fetched successfully:", fetchedProfile);
+        setProfile(fetchedProfile as Profile);
+        setUserRole((fetchedProfile as Profile).role || undefined);
+      } else {
+        console.log("AuthContextProvider: No profile row found for this user.");
+        toast.error("No user profile found. Please contact an administrator.");
+      }
+    } catch (error) {
+      console.error("AuthContextProvider: Unexpected error fetching profile:", error);
+      toast.error("An unexpected error occurred while fetching profile.");
+    }
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user);
+    }
+  }, [user, fetchProfile]);
 
   // Effect for initial session load and auth state changes
   useEffect(() => {
@@ -88,39 +128,6 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       listener.subscription.unsubscribe();
       console.log("AuthContextProvider: useEffect for auth state changes unmounted.");
     };
-  }, []);
-
-  const fetchProfile = useCallback(async (currentUser: User | null) => {
-    console.log("AuthContextProvider: fetchProfile called for user:", currentUser?.id);
-    setProfile(null);
-    setUserRole(undefined);
-    if (!currentUser) {
-      console.log("AuthContextProvider: No current user, skipping profile fetch.");
-      return;
-    }
-
-    try {
-      const { data: fetchedProfile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error("AuthContextProvider: Error fetching profile from DB:", profileError);
-        toast.error("Failed to load user profile.");
-      } else if (fetchedProfile) {
-        console.log("AuthContextProvider: Profile fetched successfully:", fetchedProfile);
-        setProfile(fetchedProfile as Profile);
-        setUserRole((fetchedProfile as Profile).role || undefined);
-      } else {
-        console.log("AuthContextProvider: No profile row found for this user.");
-        toast.error("No user profile found. Please contact an administrator.");
-      }
-    } catch (error) {
-      console.error("AuthContextProvider: Unexpected error fetching profile:", error);
-      toast.error("An unexpected error occurred while fetching profile.");
-    }
   }, []);
 
   useEffect(() => {
@@ -188,7 +195,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, login, logout }}>
+    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

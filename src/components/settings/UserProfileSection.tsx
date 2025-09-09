@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Profile } from '@/utils/mockData';
 import { useAuth } from '@/context/AuthContext';
 import { uploadAvatar, updateProfile } from '@/lib/api/profiles';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
@@ -18,20 +18,23 @@ interface UserProfileSectionProps {
 }
 
 const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { user, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const updateProfileMutation = useMutation({
-    mutationFn: (updates: { avatar_url: string }) => updateProfile(profile.id, updates),
+    mutationFn: async (file: File) => {
+      const avatarUrl = await uploadAvatar(profile.id, file);
+      // Add a timestamp to the URL to bypass browser cache
+      const urlWithCacheBuster = `${avatarUrl}?t=${new Date().getTime()}`;
+      return updateProfile(profile.id, { avatar_url: urlWithCacheBuster });
+    },
     onSuccess: () => {
       toast.success('Profile picture updated!');
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      queryClient.invalidateQueries({ queryKey: ['profile', profile.user_id] });
+      refreshProfile();
     },
     onError: (error: any) => {
-      toast.error(`Failed to update profile: ${error.message}`);
+      toast.error(`Update failed: ${error.message}`);
     },
     onSettled: () => {
       setIsUploading(false);
@@ -42,14 +45,13 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const avatarUrl = await uploadAvatar(profile.id, file);
-      updateProfileMutation.mutate({ avatar_url: avatarUrl });
-    } catch (error: any) {
-      toast.error(`Upload failed: ${error.message}`);
-      setIsUploading(false);
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB.');
+      return;
     }
+
+    setIsUploading(true);
+    updateProfileMutation.mutate(file);
   };
 
   const userInitials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();

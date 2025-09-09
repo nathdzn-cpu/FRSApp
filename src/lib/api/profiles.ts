@@ -11,7 +11,7 @@ export const getProfiles = async (orgId: string, userRole: 'admin' | 'office' | 
     // RLS on 'profiles' table should ensure a driver only sees their own profile.
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo")
+      .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo, avatar_url")
       .eq("org_id", orgId); // RLS will filter this further to just the driver's own profile
 
     if (error) {
@@ -130,19 +130,23 @@ export const purgeAllNonAdminUsers = async (orgId: string, actorId: string, acto
 };
 
 export const uploadAvatar = async (profileId: string, file: File): Promise<string> => {
+    if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB.');
+    }
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${profileId}.${fileExt}`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('profile-pictures')
         .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
         throw uploadError;
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const { data } = supabase.storage.from('profile-pictures').getPublicUrl(filePath);
     return data.publicUrl;
 };
 
