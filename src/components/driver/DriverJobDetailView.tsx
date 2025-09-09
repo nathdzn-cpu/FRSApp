@@ -29,6 +29,29 @@ interface DriverJobDetailViewProps {
   driverActiveJobs: Job[]; // New prop: list of all active jobs for the driver
 }
 
+// Helper function to get current location
+const getCurrentLocation = (): Promise<{ lat: number; lon: number } | null> => {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      resolve(null);
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        () => {
+          toast.error("Unable to retrieve your location. Please ensure location services are enabled.");
+          resolve(null);
+        }
+      );
+    }
+  });
+};
+
 const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   job,
   stops,
@@ -78,6 +101,8 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
 
     setIsUpdatingProgress(true);
     try {
+      const location = await getCurrentLocation(); // Get location
+
       const payload = {
         job_id: job.id,
         org_id: currentOrgId,
@@ -87,6 +112,8 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
         timestamp: timestamp.toISOString(),
         notes: notes.trim() || undefined,
         stop_id: stopId,
+        lat: location?.lat, // Pass lat
+        lon: location?.lon, // Pass lon
       };
       await updateJobProgress(payload);
       refetchJobData(); // Refetch all job data to update logs and status

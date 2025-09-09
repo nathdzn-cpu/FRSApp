@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export REPOPATH=	/home/haulage/FRSApp
+    - export DEPLOYPATH=/home/haulage/FRSApp
+    - /bin/rm -rf $DEPLOYPATH/*
+    - cd $REPOPATH
+    - /usr/local/bin/npm install
+    - /usr/local/bin/npm run build
+    - /bin/cp -R dist/* $DEPLOYPATH

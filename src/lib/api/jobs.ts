@@ -188,6 +188,8 @@ interface UpdateJobProgressPayload {
   timestamp: string;
   notes?: string;
   stop_id?: string; // Added stop_id
+  lat?: number;
+  lon?: number;
 }
 
 export const updateJobProgress = async (payload: UpdateJobProgressPayload): Promise<{ job: Job; log: JobProgressLog }> => {

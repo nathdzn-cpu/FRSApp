@@ -105,6 +105,11 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                   <p className="text-sm font-semibold text-gray-700">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
+              {(log.lat && log.lon) && (
+                <p className="text-xs text-gray-600 flex items-center mt-1">
+                  <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
+                </p>
+              )}
             </div>
           </div>
         );

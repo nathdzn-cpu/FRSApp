@@ -70,7 +70,7 @@ serve(async (req) => {
     });
     console.log("Received body for update-job-progress:", JSON.stringify(body, null, 2));
 
-    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes, stop_id } = body; // Destructure actor_role
+    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes, stop_id, lat, lon } = body; // Destructure actor_role and location
 
     if (!job_id || !org_id || !actor_id || !actor_role || !new_status || !timestamp) {
       throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role, new_status, timestamp.");
@@ -173,6 +173,8 @@ serve(async (req) => {
         timestamp: timestamp,
         notes: notes || null,
         stop_id: stop_id || null, // Include stop_id
+        lat: lat || null, // Add lat
+        lon: lon || null, // Add lon
         created_at: new Date().toISOString(),
       })
       .select()
