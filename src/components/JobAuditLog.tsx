@@ -101,8 +101,8 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                   )}
                 </div>
                 <div className="text-right flex-shrink-0 ml-4">
-                  <p className="text-base font-semibold text-gray-700">{format(logDate, 'HH:mm:ss')}</p>
-                  <p className="text-sm font-medium text-gray-600">{format(logDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-base font-semibold text-gray-800">{format(logDate, 'HH:mm:ss')}</p>
+                  <p className="text-sm font-semibold text-gray-700">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
             </div>

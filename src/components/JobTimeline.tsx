@@ -143,8 +143,8 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
                   </CardDescription>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-base font-semibold text-gray-700">{format(logDate, 'HH:mm')}</p>
-                  <p className="text-sm font-medium text-gray-600">{format(logDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-base font-semibold text-gray-800">{format(logDate, 'HH:mm')}</p>
+                  <p className="text-sm font-semibold text-gray-700">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
