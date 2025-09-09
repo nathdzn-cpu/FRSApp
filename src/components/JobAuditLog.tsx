@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react'; // Added EyeOff, Eye
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { cn } from '@/lib/utils';
 
 interface JobAuditLogProps {
   progressLogs: JobProgressLog[];
@@ -70,44 +71,40 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
 
   return (
     <div className="relative pl-8">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--saas-border)]" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200" />
       {sortedLogs.map((log, index) => {
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
-        const isRemovedFromTimeline = log.visible_in_timeline === false; // Check for visibility status
-        const isCancelledJob = log.action_type === 'cancelled'; // Check if the action itself is 'cancelled'
+        const isRemovedFromTimeline = log.visible_in_timeline === false;
+        const isCancelledJob = log.action_type === 'cancelled';
 
-        // The notes field now contains the full, human-readable message
         const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred.`;
 
         return (
-          <div key={log.id} className="mb-6 relative">
-            <div className={`absolute -left-3.5 top-0 flex items-center justify-center w-7 h-7 rounded-full ${isRemovedFromTimeline || isCancelledJob ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
+          <div key={log.id} className="mb-4 relative">
+            <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", isRemovedFromTimeline || isCancelledJob ? 'bg-red-500' : 'bg-gray-500')}>
               <Icon size={16} />
             </div>
-            <div className="ml-4 p-3 bg-gray-50 rounded-lg shadow-sm"> {/* Removed border */}
-              <div className="flex items-center justify-between mb-1">
-                <Badge variant={isRemovedFromTimeline || isCancelledJob ? 'destructive' : 'secondary'} className="capitalize">
-                  {getDisplayStatus(log.action_type)}
-                </Badge>
-                <div className="text-right">
+            <div className={cn("ml-8 p-3 rounded-lg", index % 2 === 0 ? 'bg-white' : 'bg-gray-50')}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-800 mb-1">
+                    {message}
+                  </p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <User className="h-3 w-3" /> by {getActorName(log.actor_id)}
+                  </p>
+                  {isRemovedFromTimeline && (
+                    <p className="text-xs text-red-600 flex items-center mt-1">
+                      <EyeOff className="h-3 w-3 mr-1" /> Hidden from main timeline.
+                    </p>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0 ml-4">
+                  <p className="text-base font-semibold text-gray-800">{format(logDate, 'HH:mm:ss')}</p>
                   <p className="text-xs text-gray-500">{format(logDate, 'MMM dd, yyyy')}</p>
-                  <p className="text-sm font-bold text-gray-700">{format(logDate, 'HH:mm')}</p>
                 </div>
               </div>
-              <p className="text-gray-800 mb-1">
-                {message}
-              </p>
-              {(log.lat && log.lon) && (
-                <p className="text-xs text-gray-600 flex items-center">
-                  <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
-                </p>
-              )}
-              {isRemovedFromTimeline && (
-                <p className="text-xs text-red-600 flex items-center mt-1">
-                  <EyeOff className="h-3 w-3 mr-1" /> This event is hidden from the main timeline.
-                </p>
-              )}
             </div>
           </div>
         );
