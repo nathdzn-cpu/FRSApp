@@ -85,7 +85,7 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", isRemovedFromTimeline || isCancelledJob ? 'bg-red-500' : 'bg-gray-500')}>
               <Icon size={16} />
             </div>
-            <div className={cn("ml-8 p-3 rounded-lg", "bg-white", "shadow-md")}>
+            <div className={cn("ml-8 p-3 rounded-lg", "bg-white", "shadow-md", "transition-transform duration-200 ease-in-out hover:scale-105 hover:bg-blue-50")}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-800 mb-1">
@@ -101,8 +101,8 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                   )}
                 </div>
                 <div className="text-right flex-shrink-0 ml-4">
-                  <p className="text-base font-semibold text-gray-800">{format(logDate, 'HH:mm:ss')}</p>
-                  <p className="text-xs text-gray-500">{format(logDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-base font-semibold text-gray-700">{format(logDate, 'HH:mm:ss')}</p>
+                  <p className="text-sm font-medium text-gray-600">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
             </div>

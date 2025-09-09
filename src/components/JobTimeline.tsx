@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff } from 'lucide-react';
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff, Eye } from 'lucide-react';
 import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils';
 import { useAuth } from '@/context/AuthContext';
 import { updateJobProgressLogVisibility } from '@/lib/api/jobs';
@@ -40,10 +40,10 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   image_uploaded: FileText,
   driver_reassigned: UserCog,
   status_changed: Clock,
-  stop_added: MapPin,
-  stop_updated: MapPin,
-  stop_deleted: MapPin,
-  stop_details_updated: MapPin,
+  stop_added: PlusCircle,
+  stop_updated: Edit,
+  stop_deleted: Trash2,
+  stop_details_updated: Edit,
 };
 
 const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, currentOrgId, onLogVisibilityChange }) => {
@@ -134,7 +134,7 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", getIconColor(log.action_type))}>
               <Icon size={16} />
             </div>
-            <Card className={cn("ml-8", "bg-white", "shadow-md")}>
+            <Card className={cn("ml-8", "bg-white", "shadow-md", "transition-transform duration-200 ease-in-out hover:scale-105 hover:bg-blue-50")}>
               <CardHeader className="flex flex-row items-start justify-between p-4 pb-2">
                 <div>
                   <CardTitle className="text-base font-semibold">{getDisplayStatus(log.action_type)}</CardTitle>
@@ -143,8 +143,8 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
                   </CardDescription>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-gray-800">{format(logDate, 'HH:mm')}</p>
-                  <p className="text-sm text-gray-500">{format(logDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-base font-semibold text-gray-700">{format(logDate, 'HH:mm')}</p>
+                  <p className="text-sm font-medium text-gray-600">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
