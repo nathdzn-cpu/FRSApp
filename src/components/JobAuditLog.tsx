@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { JobProgressLog, Profile } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react'; // Added EyeOff, Eye
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { reverseGeocode } from '@/lib/api/geo';
 
 interface JobAuditLogProps {
   progressLogs: JobProgressLog[];
@@ -13,7 +14,6 @@ interface JobAuditLogProps {
 }
 
 const actionTypeIconMap: Record<string, React.ElementType> = {
-  // Core Job Statuses (Progress-related)
   planned: Clock,
   assigned: Truck,
   accepted: CheckCircle,
@@ -25,8 +25,6 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   delivered: CheckCircle,
   pod_received: FileText,
   cancelled: XCircle,
-
-  // Other significant events
   job_created: CheckCircle,
   job_cloned: Copy,
   job_confirmed: CheckCircle,
@@ -34,7 +32,7 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   pod_requested: FileText,
   pod_uploaded: FileText,
   document_uploaded: FileText,
-  image_uploaded: FileText, // Added for generic image uploads
+  image_uploaded: FileText,
   location_ping: MapPin,
   note_added: MessageSquare,
   status_changed: Clock,
@@ -53,11 +51,33 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
   password_reset_sent: Mail,
   purge_demo_users: Eraser,
   purge_all_non_admin_users: Eraser,
-  timeline_event_removed_from_timeline: EyeOff, // New icon for removed from timeline
-  timeline_event_restored_to_timeline: Eye, // New icon for restored to timeline
+  timeline_event_removed_from_timeline: EyeOff,
+  timeline_event_restored_to_timeline: Eye,
 };
 
 const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => {
+  const [locations, setLocations] = useState<Record<string, string>>({});
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+
+  useEffect(() => {
+    const logsWithCoords = progressLogs.filter(log => log.lat && log.lon && !locations[log.id]);
+    if (logsWithCoords.length > 0) {
+      setIsLoadingLocations(true);
+      const fetchLocations = async () => {
+        const newLocations: Record<string, string> = {};
+        await Promise.all(
+          logsWithCoords.map(async (log) => {
+            const location = await reverseGeocode(log.lat!, log.lon!);
+            newLocations[log.id] = location;
+          })
+        );
+        setLocations(prev => ({ ...prev, ...newLocations }));
+        setIsLoadingLocations(false);
+      };
+      fetchLocations();
+    }
+  }, [progressLogs, locations]);
+
   const getActorInfo = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
     const fullName = actor ? actor.full_name : 'Unknown User';
@@ -69,7 +89,6 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
     return <p className="text-gray-600">No audit log entries for this job yet.</p>;
   }
 
-  // Sort logs by timestamp descending (newest first)
   const sortedLogs = [...progressLogs].sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
 
   return (
@@ -81,8 +100,9 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
         const isRemovedFromTimeline = log.visible_in_timeline === false;
         const isCancelledJob = log.action_type === 'cancelled';
         const actorInfo = getActorInfo(log.actor_id);
-
-        const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred.`;
+        const locationName = locations[log.id];
+        const locationText = locationName ? ` in ${locationName}` : (log.lat && log.lon && isLoadingLocations) ? ' at location...' : '';
+        const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred${locationText}.`;
 
         return (
           <div key={log.id} className="mb-4 relative">
@@ -118,11 +138,6 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
                   <p className="text-sm font-semibold text-gray-700">{format(logDate, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
-              {(log.lat && log.lon) && (
-                <p className="text-xs text-gray-600 flex items-center mt-1">
-                  <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
-                </p>
-              )}
             </div>
           </div>
         );

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { JobProgressLog, Profile, Job } from '@/utils/mockData'; // Import Job
+import React, { useState, useEffect } from 'react';
+import { JobProgressLog, Profile, Job } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
-import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, X, EyeOff, Eye } from 'lucide-react';
+import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye } from 'lucide-react';
 import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils';
 import { useAuth } from '@/context/AuthContext';
 import { updateJobProgressLogVisibility } from '@/lib/api/jobs';
@@ -13,13 +13,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { reverseGeocode } from '@/lib/api/geo';
 
 interface JobTimelineProps {
   progressLogs: JobProgressLog[];
   profiles: Profile[];
   currentOrgId: string;
   onLogVisibilityChange: () => void;
-  job: Job; // Added job prop
+  job: Job;
 }
 
 const actionTypeIconMap: Record<string, React.ElementType> = {
@@ -65,10 +66,31 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState<string | null>(null);
   const [localProgressLogs, setLocalProgressLogs] = useState<JobProgressLog[]>(progressLogs);
+  const [locations, setLocations] = useState<Record<string, string>>({});
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLocalProgressLogs(progressLogs);
   }, [progressLogs]);
+
+  useEffect(() => {
+    const logsWithCoords = progressLogs.filter(log => log.lat && log.lon && !locations[log.id]);
+    if (logsWithCoords.length > 0) {
+      setIsLoadingLocations(true);
+      const fetchLocations = async () => {
+        const newLocations: Record<string, string> = {};
+        await Promise.all(
+          logsWithCoords.map(async (log) => {
+            const location = await reverseGeocode(log.lat!, log.lon!);
+            newLocations[log.id] = location;
+          })
+        );
+        setLocations(prev => ({ ...prev, ...newLocations }));
+        setIsLoadingLocations(false);
+      };
+      fetchLocations();
+    }
+  }, [progressLogs, locations]);
 
   const getActorInfo = (actorId: string) => {
     const actor = profiles.find(p => p.id === actorId);
@@ -146,6 +168,10 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
         const Icon = actionTypeIconMap[log.action_type] || MessageSquare;
         const logDate = parseISO(log.timestamp);
         const actorInfo = getActorInfo(log.actor_id);
+        const locationName = locations[log.id];
+        const locationText = locationName ? ` in ${locationName}` : (log.lat && log.lon && isLoadingLocations) ? ' at location...' : '';
+        const message = log.notes || `${actorInfo.fullName} marked as "${getDisplayStatus(log.action_type)}"${locationText}.`;
+
         return (
           <div key={log.id} className="mb-6 relative">
             <div className={cn("absolute -left-3.5 top-1 flex items-center justify-center w-7 h-7 rounded-full text-white", getIconColor(log.action_type))}>
@@ -175,13 +201,8 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <p className="text-sm text-gray-700">
-                  {log.notes || `Marked as '${getDisplayStatus(log.action_type)}'.`}
+                  {message}
                 </p>
-                {(log.lat && log.lon) && (
-                  <p className="text-xs text-gray-500 mt-2 flex items-center">
-                    <MapPin className="h-3 w-3 mr-1" /> Lat: {log.lat.toFixed(4)}, Lon: {log.lon.toFixed(4)}
-                  </p>
-                )}
                 {isOfficeOrAdmin && (
                   <div className="mt-2 text-right -mr-2 -mb-2">
                     <Button

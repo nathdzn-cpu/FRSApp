@@ -4,11 +4,10 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react';
-import { Job, Profile } from '@/utils/mockData';
+import { MoreHorizontal, FileText, Edit, Camera } from 'lucide-react';
+import { Job } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { cn } from '@/lib/utils';
@@ -16,37 +15,14 @@ import { format, parseISO } from 'date-fns';
 
 interface DriverJobsTableProps {
   jobs: Job[];
-  profiles: Profile[];
-  userRole: 'driver';
-  currentProfile: Profile | null;
-  currentOrgId: string;
   onAction: (type: 'statusUpdate' | 'viewAttachments' | 'uploadImage', job: Job) => void;
 }
 
 const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
   jobs,
-  profiles,
-  userRole,
-  currentProfile,
-  currentOrgId,
   onAction,
 }) => {
   const navigate = useNavigate();
-
-  const getDriverInfo = (assignedDriverId: string | null | undefined) => {
-    if (!assignedDriverId) {
-      return { name: 'Unassigned', reg: '', initials: 'UA', avatar_url: null };
-    }
-    const driver = profiles.find(p => p.id === assignedDriverId && p.role === 'driver');
-    const fullName = driver?.full_name || 'Unknown Driver';
-    const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    return {
-      name: fullName,
-      reg: driver?.truck_reg || 'N/A',
-      initials: initials,
-      avatar_url: driver?.avatar_url || null,
-    };
-  };
 
   if (jobs.length === 0) {
     return <p className="text-gray-600">No jobs found for you with the selected filter.</p>;
@@ -59,14 +35,14 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
           <TableRow>
             <TableHead className="text-gray-700 font-medium">Order Number</TableHead>
             <TableHead className="text-gray-700 font-medium">Status</TableHead>
+            <TableHead className="text-gray-700 font-medium">Date</TableHead>
             <TableHead className="text-gray-700 font-medium">Collection</TableHead>
             <TableHead className="text-gray-700 font-medium">Delivery</TableHead>
             <TableHead className="text-center text-gray-700 font-medium">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y divide-gray-200">
-          {jobs.map((job, index) => {
-            const driverInfo = getDriverInfo(job.assigned_driver_id);
+          {jobs.map((job) => {
             const isCancelled = job.status === 'cancelled';
             const isDelivered = job.status === 'delivered' || job.status === 'pod_received';
             const isPlanned = job.status === 'planned';
@@ -92,6 +68,7 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>
+                <TableCell>{format(parseISO(job.date_created), 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>
@@ -100,11 +77,6 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
                         ? `${formatAddressPart(job.collection_city)}, ${formatPostcode(job.collection_postcode)}`
                         : '-'}
                     </span>
-                    {job.pickup_eta && (
-                      <span className="text-sm text-gray-600">
-                        {format(parseISO(job.pickup_eta), 'dd MMM yyyy, HH:mm')}
-                      </span>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -115,11 +87,6 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
                         ? `${formatAddressPart(job.delivery_city)}, ${formatPostcode(job.delivery_postcode)}`
                         : '-'}
                     </span>
-                    {job.delivery_eta && (
-                      <span className="text-sm text-gray-600">
-                        {format(parseISO(job.delivery_eta), 'dd MMM yyyy, HH:mm')}
-                      </span>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
