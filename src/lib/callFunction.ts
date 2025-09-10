@@ -13,9 +13,16 @@ export async function callFn<T = any>(name: string, payload?: any): Promise<T> {
   });
 
   let json: any = {};
-  try { json = await res.json(); } catch {}
+  try { 
+    const text = await res.text();
+    if (text) {
+      json = JSON.parse(text); 
+    }
+  } catch (e) {
+    console.error(`Failed to parse JSON response from function ${name}:`, e);
+  }
 
-  if (!res.ok || json?.ok === false) {
+  if (!res.ok || json?.error) {
     const msg = json?.error || `Function ${name} failed (${res.status})`;
     throw new Error(msg);
   }
