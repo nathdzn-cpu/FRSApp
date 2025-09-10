@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
 import {
-  User as UserIcon,
+  User as UserIcon, // Renamed to avoid conflict with Profile type
   Phone,
   Mail,
   Truck,
@@ -113,7 +113,7 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] h-[80vh] max-w-5xl bg-white rounded-xl shadow-lg flex flex-col p-6">
+      <DialogContent className="w-[90vw] h-[80vh] max-w-5xl bg-white rounded-xl shadow-xl flex flex-col p-6">
         <DialogHeader className="pb-4 border-b border-gray-200">
           <DialogTitle className="text-2xl font-bold text-gray-900">Driver Details: {driver.full_name}</DialogTitle>
           <DialogDescription>Comprehensive overview of {driver.full_name}'s profile and activity.</DialogDescription>

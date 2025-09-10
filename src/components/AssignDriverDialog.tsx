@@ -79,7 +79,7 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-4xl h-auto rounded-xl shadow-lg bg-white flex flex-col max-h-[90vh]">
+      <DialogContent className="w-[90vw] max-w-4xl h-auto rounded-xl shadow-xl bg-white flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">Assign Driver</DialogTitle>
           <DialogDescription>
