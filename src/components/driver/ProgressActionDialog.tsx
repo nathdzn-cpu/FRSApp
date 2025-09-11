@@ -68,31 +68,24 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
 
     let newDateTime = date;
     if (selectedDate) {
-      // Preserve time if a date was already selected
       newDateTime = setHours(newDateTime, selectedDate.getHours());
       newDateTime = setMinutes(newDateTime, selectedDate.getMinutes());
       newDateTime = setSeconds(newDateTime, 0);
     } else {
-      // Default to current time if no date was selected before
       const now = new Date();
       newDateTime = setHours(newDateTime, now.getHours());
       newDateTime = setMinutes(newDateTime, now.getMinutes());
       newDateTime = setSeconds(newDateTime, 0);
     }
     setSelectedDate(newDateTime);
-    // The onChange prop is not used here, as the state is managed internally
-    // and the final dateTime is passed to onSubmit.
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     setTimeInput(rawInput);
-    if (onTimeInputChange) {
-      onTimeInputChange(rawInput); // Pass raw input to parent for external validation
-    }
 
     const { formattedTime, error } = formatAndValidateTimeInput(rawInput);
-    setTimeError(error); // Use local state for timeError
+    setTimeError(error);
 
     if (formattedTime && selectedDate) {
       const [hoursStr, minutesStr] = formattedTime.split(':');
@@ -102,16 +95,14 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
       let newDateTime = setHours(selectedDate, hours);
       newDateTime = setMinutes(newDateTime, minutes);
       newDateTime = setSeconds(newDateTime, 0);
-      setSelectedDate(newDateTime); // Update selectedDate with new time
+      setSelectedDate(newDateTime);
     } else if (formattedTime && !selectedDate) {
-      // If no date is selected, default to today's date with the chosen time
       let newDateTime = new Date();
       newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
       newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
       newDateTime = setSeconds(newDateTime, 0);
       setSelectedDate(newDateTime);
     } else {
-      // If time is invalid or empty, clear the time part of the date
       if (selectedDate) {
         const newDateTime = setHours(setMinutes(setSeconds(selectedDate, 0), 0), 0);
         setSelectedDate(newDateTime);
@@ -142,7 +133,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="max-w-md bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-lg flex flex-col max-h-[90vh]">
+      <AlertDialogContent className="max-w-md bg-white p-6 rounded-xl shadow-xl flex flex-col max-h-[90vh]">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">{title}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -151,7 +142,6 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
         </AlertDialogHeader>
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {/* Date Picker */}
             <div className="space-y-2">
               <Label className="text-gray-700">Date</Label>
               <Popover>
@@ -168,7 +158,7 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
                     {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
+                <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -179,20 +169,19 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
               </Popover>
             </div>
 
-            {/* Time Input */}
             <div className="space-y-2">
               <Label htmlFor="time-input" className="text-gray-700">Time (HH:MM)</Label>
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <Input
                   id="time-input"
-                  type="text" // Changed to text to allow custom formatting
+                  type="text"
                   value={timeInput}
                   onChange={handleTimeChange}
                   onBlur={(e) => {
                     const { formattedTime } = formatAndValidateTimeInput(e.target.value);
                     if (formattedTime) {
-                      setTimeInput(formattedTime); // Auto-format on blur if valid
+                      setTimeInput(formattedTime);
                     }
                   }}
                   placeholder="HH:MM (e.g., 09:00)"
@@ -206,7 +195,6 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
               )}
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="notes" className="text-gray-700">Notes (Optional)</Label>
               <Textarea

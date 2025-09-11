@@ -29,7 +29,7 @@ const CreateUserChoice: React.FC = () => {
   }
 
   if (!user || userRole !== 'admin') {
-    return null; // Render nothing if access is denied, as a redirect will happen
+    return null;
   }
 
   return (
@@ -39,7 +39,7 @@ const CreateUserChoice: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
         </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
+        <Card className="bg-white shadow-xl rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Create New User</CardTitle>
           </CardHeader>

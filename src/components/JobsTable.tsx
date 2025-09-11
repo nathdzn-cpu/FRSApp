@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Truck, MapPin, MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
@@ -21,6 +21,7 @@ interface JobsTableProps {
   currentProfile: Profile | null;
   currentOrgId: string;
   onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void;
+  onCancelJob: (job: Job) => void; // New prop
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({
@@ -30,6 +31,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
   currentProfile,
   currentOrgId,
   onAction,
+  onCancelJob, // Use new prop
 }) => {
   const navigate = useNavigate();
 
@@ -75,7 +77,13 @@ const JobsTable: React.FC<JobsTableProps> = ({
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
 
             return (
-              <TableRow key={job.id} className="hover:bg-gray-50 transition-colors py-4">
+              <TableRow
+                key={job.id}
+                className={cn(
+                  "hover:bg-gray-50 transition-colors py-4",
+                  isCancelled && 'opacity-70' // Apply opacity for cancelled jobs
+                )}
+              >
                 <TableCell className="font-medium">
                   <Link to={`/jobs/${job.order_number}`} className="text-blue-700 hover:underline">
                     {job.order_number}
@@ -85,7 +93,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
                   <Badge
                     className={cn(
                       "rounded-full px-3 py-1 text-xs font-medium",
-                      isCancelled && 'bg-red-500 text-white',
+                      isCancelled && 'bg-red-500 text-white', // Red badge for cancelled
                       isDelivered && 'bg-green-500 text-white',
                       isPlanned && 'bg-yellow-500 text-white',
                       isInProgress && 'bg-blue-500 text-white',
@@ -138,22 +146,38 @@ const JobsTable: React.FC<JobsTableProps> = ({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => onAction('statusUpdate', job)}>
-                        <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                        <Edit className="mr-2 h-4 w-4" />
+                        Update Status
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/jobs/${job.order_number}`)}>
                         <FileText className="mr-2 h-4 w-4" /> View Job
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onAction('assignDriver', job)}>
-                        <Truck className="mr-2 h-4 w-4" /> Change Driver
+                        <Truck className="mr-2 h-4 w-4" />
+                        Change Driver
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onAction('viewAttachments', job)}>
                         <Edit className="mr-2 h-4 w-4" /> View Attachments
                       </DropdownMenuItem>
+                      {userRole === 'admin' || userRole === 'office' ? (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() => onCancelJob(job)} // Call onCancelJob
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Cancel Job
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

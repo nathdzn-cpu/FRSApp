@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
 import {
-  User as UserIcon, // Renamed to avoid conflict with Profile type
+  User as UserIcon,
   Phone,
   Mail,
   Truck,
@@ -120,7 +120,6 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Section 1: Driver Profile */}
           <Card className="lg:col-span-1 bg-gray-50 shadow-sm rounded-xl p-4">
             <CardHeader className="p-0 pb-3 flex flex-row items-center gap-3">
               <Avatar className="h-12 w-12">
@@ -143,7 +142,6 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
             </CardContent>
           </Card>
 
-          {/* Section 2: Current Jobs */}
           <Card className="lg:col-span-2 bg-gray-50 shadow-sm rounded-xl p-4">
             <CardHeader className="p-0 pb-3">
               <CardTitle className="text-xl font-semibold text-gray-900">Current Jobs ({driverJobs.filter(j => !['delivered', 'pod_received', 'cancelled'].includes(j.status)).length})</CardTitle>
@@ -185,7 +183,6 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
             </CardContent>
           </Card>
 
-          {/* Section 3: Current Location (Placeholder) */}
           <Card className="lg:col-span-1 bg-gray-50 shadow-sm rounded-xl p-4">
             <CardHeader className="p-0 pb-3">
               <CardTitle className="text-xl font-semibold text-gray-900">Current Location</CardTitle>
@@ -205,7 +202,6 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
             </CardContent>
           </Card>
 
-          {/* Section 4: Performance/Revenue Summary */}
           <Card className="lg:col-span-2 bg-gray-50 shadow-sm rounded-xl p-4">
             <CardHeader className="p-0 pb-3">
               <CardTitle className="text-xl font-semibold text-gray-900">Performance Summary</CardTitle>

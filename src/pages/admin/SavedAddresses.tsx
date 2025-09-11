@@ -91,7 +91,7 @@ const AdminSavedAddresses: React.FC = () => {
       return;
     }
     loadAddresses();
-  }, [user, userRole, currentOrgId, isLoadingAuth, navigate, searchTerm]); // Re-fetch on searchTerm change
+  }, [user, userRole, currentOrgId, isLoadingAuth, navigate, searchTerm]);
 
   const handleCreateAddress = async () => {
     if (!newAddressLine1.trim() || !newAddressCity.trim() || !newAddressPostcode.trim()) {
@@ -238,11 +238,11 @@ const AdminSavedAddresses: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] mb-6">
-          <CardHeader>
+        <Card className="bg-[var(--saas-card-bg)] mb-6 shadow-xl rounded-xl p-6">
+          <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold">Saved Addresses</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 pt-4">
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Add New Address</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,9 +342,9 @@ const AdminSavedAddresses: React.FC = () => {
               {addresses.length === 0 ? (
                 <p className="text-gray-600 dark:text-gray-400">No saved addresses found.</p>
               ) : (
-                <div className="rounded-md overflow-hidden shadow-sm"> {/* Removed border */}
+                <div className="rounded-md overflow-hidden shadow-sm">
                   <Table>
-                    <TableHeader className="bg-gray-50"> {/* Kept header background */}
+                    <TableHeader className="bg-gray-50">
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Address</TableHead>
@@ -353,7 +353,7 @@ const AdminSavedAddresses: React.FC = () => {
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}
+                    <TableBody className="divide-y divide-gray-100">
                       {addresses.map(address => (
                         <TableRow key={address.id}>
                           <TableCell className="font-medium">{address.name || '-'}</TableCell>
@@ -380,7 +380,7 @@ const AdminSavedAddresses: React.FC = () => {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
@@ -408,7 +408,7 @@ const AdminSavedAddresses: React.FC = () => {
         {/* Edit Address Dialog */}
         {editingAddress && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="flex flex-col">
+            <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Edit Saved Address</DialogTitle>
                 <DialogDescription>

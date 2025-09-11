@@ -16,20 +16,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, CalendarIcon, Clock } from 'lucide-react'; // Added CalendarIcon and Clock
-import { Input } from '@/components/ui/input'; // Added Input
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Added Popover components
-import { Calendar } from '@/components/ui/calendar'; // Added Calendar
+import { Loader2, CalendarIcon, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus, jobStatusOrder, getSkippedStatuses } from '@/lib/utils/statusUtils';
-import { format, setHours, setMinutes, setSeconds, parseISO } from 'date-fns'; // Added parseISO
+import { format, setHours, setMinutes, setSeconds, parseISO } from 'date-fns';
 import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils'; // Added cn utility
+import { cn } from '@/lib/utils';
 
 interface ProgressUpdateEntry {
   status: Job['status'];
-  dateTime: Date; // Combined date and time
+  dateTime: Date;
   timeInput: string;
   timeError: string | null;
   notes: string;
@@ -43,7 +43,7 @@ interface JobProgressUpdateDialogProps {
   userRole: 'admin' | 'office' | 'driver';
   onUpdateProgress: (entries: ProgressUpdateEntry[]) => Promise<void>;
   isUpdatingProgress: boolean;
-  driverActiveJobs?: Job[]; // New prop: list of all active jobs for the driver
+  driverActiveJobs?: Job[];
 }
 
 const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
@@ -54,17 +54,15 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
   userRole,
   onUpdateProgress,
   isUpdatingProgress,
-  driverActiveJobs = [], // Default to empty array
+  driverActiveJobs = [],
 }) => {
   const [selectedNewStatus, setSelectedNewStatus] = useState<Job['status'] | ''>('');
   const [progressUpdateEntries, setProgressUpdateEntries] = useState<ProgressUpdateEntry[]>([]);
 
-  // Filter statuses for the progress update dropdown (exclude 'planned', 'assigned', 'cancelled' as direct updates)
   const progressUpdateSelectableStatuses = jobStatusOrder.filter(status =>
     !['planned', 'assigned', 'cancelled'].includes(status)
   );
 
-  // Effect to generate progress update entries when selectedNewStatus changes
   useEffect(() => {
     if (job && selectedNewStatus && jobStatusOrder.includes(job.status) && jobStatusOrder.includes(selectedNewStatus)) {
       const skipped = getSkippedStatuses(job.status, selectedNewStatus);
@@ -76,7 +74,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
       setProgressUpdateEntries(
         allStatusesToLog.map(status => ({
           status,
-          dateTime: setSeconds(setMinutes(setHours(new Date(), now.getHours()), now.getMinutes()), 0), // Today's date, current time, seconds to 0
+          dateTime: setSeconds(setMinutes(setHours(new Date(), now.getHours()), now.getMinutes()), 0),
           notes: '',
           timeInput: defaultTime,
           timeError: null,
@@ -91,17 +89,14 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
     setProgressUpdateEntries(prevEntries => {
       const newEntries = [...prevEntries];
       if (date && newEntries[index].dateTime) {
-        // Preserve time, update date
         let newDateTime = setHours(date, newEntries[index].dateTime.getHours());
         newDateTime = setMinutes(newDateTime, newEntries[index].dateTime.getMinutes());
         newDateTime = setSeconds(newDateTime, 0);
         newEntries[index].dateTime = newDateTime;
       } else if (date && !newEntries[index].dateTime) {
-        // If no previous dateTime, use new date with default time (e.g., 00:00)
         newEntries[index].dateTime = setSeconds(setMinutes(setHours(date, 0), 0), 0);
       } else {
-        // Date cleared, clear dateTime
-        newEntries[index].dateTime = undefined as any; // Allow undefined for now, validation will catch
+        newEntries[index].dateTime = undefined as any;
       }
       return newEntries;
     });
@@ -119,7 +114,6 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
       };
 
       if (formattedTime && newEntries[index].dateTime) {
-        // Update time part of existing dateTime
         const [hoursStr, minutesStr] = formattedTime.split(':');
         const hours = parseInt(hoursStr, 10);
         const minutes = parseInt(minutesStr, 10);
@@ -128,19 +122,17 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
         newDateTime = setSeconds(newDateTime, 0);
         newEntries[index].dateTime = newDateTime;
       } else if (formattedTime && !newEntries[index].dateTime) {
-        // If no date is selected, default to today's date with the chosen time
         let newDateTime = new Date();
         newDateTime = setHours(newDateTime, parseInt(formattedTime.split(':')[0], 10));
         newDateTime = setMinutes(newDateTime, parseInt(formattedTime.split(':')[1], 10));
         newDateTime = setSeconds(newDateTime, 0);
         newEntries[index].dateTime = newDateTime;
       } else {
-        // If time is invalid or empty, clear the time part of the date
         if (newEntries[index].dateTime) {
           const newDateTime = setHours(setMinutes(setSeconds(newEntries[index].dateTime, 0), 0), 0);
           newEntries[index].dateTime = newDateTime;
         } else {
-          newEntries[index].dateTime = undefined as any; // Set to undefined if no date
+          newEntries[index].dateTime = undefined as any;
         }
       }
       return newEntries;
@@ -167,7 +159,6 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
       return;
     }
 
-    // Driver progression restriction: Only one job past 'accepted' at a time
     if (userRole === 'driver') {
       const statusesBeyondAccepted = ['on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery', 'delivered', 'pod_received'];
       const isProgressingBeyondAccepted = progressUpdateEntries.some(entry => statusesBeyondAccepted.includes(entry.status));
@@ -179,13 +170,12 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
         if (otherActiveJobs.length > 0) {
           toast.error("You already have an active job in progress. Please complete or cancel it before starting another.");
-          return; // Block the update
+          return;
         }
       }
     }
 
     await onUpdateProgress(progressUpdateEntries);
-    // Reset dialog state after successful update
     setSelectedNewStatus('');
     setProgressUpdateEntries([]);
     onOpenChange(false);
@@ -201,7 +191,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="flex flex-col">
+      <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col max-w-3xl h-[90vh]">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Update Job Progress</AlertDialogTitle>
           <AlertDialogDescription>
@@ -234,15 +224,13 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
               <div className="space-y-4 border-t pt-4 mt-4">
                 <h3 className="text-lg font-semibold">Log Entries:</h3>
                 {progressUpdateEntries.map((entry, index) => (
-                  <Card key={index} className="p-3 bg-gray-50 shadow-sm rounded-md"> {/* Removed border */}
+                  <Card key={index} className="p-3 bg-gray-50 shadow-sm rounded-md">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                      {/* Status Display */}
                       <div className="flex flex-col sm:col-span-1">
                         <Label className="text-gray-700">Status:</Label>
                         <p className="font-semibold text-lg text-gray-900">{getDisplayStatus(entry.status)}</p>
                       </div>
 
-                      {/* Date Picker */}
                       <div className="flex flex-col sm:col-span-1">
                         <Label className="text-gray-700">Date</Label>
                         <Popover>
@@ -270,7 +258,6 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                         </Popover>
                       </div>
 
-                      {/* Time Input */}
                       <div className="flex flex-col sm:col-span-1">
                         <Label htmlFor={`time-input-${index}`} className="text-gray-700">Time (HH:MM)</Label>
                         <div className="flex items-center space-x-2">
@@ -283,7 +270,7 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                             onBlur={(e) => {
                               const { formattedTime } = formatAndValidateTimeInput(e.target.value);
                               if (formattedTime) {
-                                handleTimeInputChange(index, formattedTime); // Auto-format on blur if valid
+                                handleTimeInputChange(index, formattedTime);
                               }
                             }}
                             placeholder="HH:MM (e.g., 09:00)"
@@ -297,7 +284,6 @@ const JobProgressUpdateDialog: React.FC<JobProgressUpdateDialogProps> = ({
                       </div>
                     </div>
 
-                    {/* Notes */}
                     <div className="space-y-2 mt-4">
                       <Label htmlFor={`notes-${index}`} className="text-gray-700">Notes (Optional)</Label>
                       <Textarea

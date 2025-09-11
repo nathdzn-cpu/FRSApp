@@ -16,13 +16,12 @@ const CreateOffice: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined);
 
-  const currentOrgId = profile?.org_id; // Get org_id from the logged-in admin's profile
+  const currentOrgId = profile?.org_id;
 
   useEffect(() => {
-    if (isLoadingAuth) return; // Wait for auth to load
+    if (isLoadingAuth) return;
 
     if (!user || userRole !== 'admin' || !currentOrgId) {
-      // If not admin, no user, or no org_id, redirect and show error
       toast.error("You do not have permission to access this page or your organization ID is missing.");
       navigate('/');
       return;
@@ -32,8 +31,7 @@ const CreateOffice: React.FC = () => {
       setLoadingData(true);
       setError(null);
       try {
-        // Fetch all profiles to find the current admin's profile for actor_id
-        const profiles = await getProfiles(currentOrgId, userRole); // Pass userRole
+        const profiles = await getProfiles(currentOrgId, userRole);
         const adminProfile = profiles.find(p => p.user_id === user.id);
         if (!adminProfile) {
           throw new Error("Admin profile not found in the database.");
@@ -50,23 +48,22 @@ const CreateOffice: React.FC = () => {
   }, [user, userRole, isLoadingAuth, navigate, currentOrgId]);
 
   const handleSubmit = async (values: any) => {
-    if (!currentAdminProfile || !currentOrgId || !userRole) { // Ensure userRole is available
+    if (!currentAdminProfile || !currentOrgId || !userRole) {
       toast.error("Admin profile, organization ID, or role not found. Cannot create user.");
       return;
     }
 
     try {
-      const dobString = `${values.dob_year}-${values.dob_month}-${values.dob_day}`;
       const newOfficeData = {
         full_name: values.full_name,
-        dob: dobString,
         phone: values.phone,
         role: 'office' as const,
         email: values.email,
-        is_demo: false, // Default to non-demo for manual creation
+        password: values.password,
+        is_demo: false,
       };
 
-      const promise = createUser(currentOrgId, newOfficeData, currentAdminProfile.id, userRole); // Pass userRole
+      const promise = createUser(currentOrgId, newOfficeData, currentAdminProfile.id, userRole);
       toast.promise(promise, {
         loading: 'Creating office user...',
         success: 'Office user created successfully!',
@@ -76,7 +73,6 @@ const CreateOffice: React.FC = () => {
       navigate('/admin/users');
     } catch (err: any) {
       console.error("Error creating office user:", err);
-      // Toast is already handled by toast.promise
     }
   };
 
@@ -100,8 +96,6 @@ const CreateOffice: React.FC = () => {
     );
   }
 
-  // This check should ideally be handled by the useEffect redirect,
-  // but as a fallback, if somehow rendering here without admin role.
   if (!user || userRole !== 'admin' || !currentOrgId) {
     return (
       <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
@@ -121,7 +115,7 @@ const CreateOffice: React.FC = () => {
         </Button>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Office User</h1>
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
+        <Card className="bg-white shadow-xl rounded-xl p-6">
           <CardContent className="p-0">
             <CreateOfficeForm onSubmit={handleSubmit} />
           </CardContent>

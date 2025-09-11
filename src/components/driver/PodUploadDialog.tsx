@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadDocument, updateJobProgress } from '@/lib/api/jobs'; // Using jobs API for consistency
+import { uploadDocument, updateJobProgress } from '@/lib/api/jobs';
 import { Job, Profile } from '@/utils/mockData';
 
 interface PodUploadDialogProps {
@@ -27,7 +27,7 @@ interface PodUploadDialogProps {
   currentProfile: Profile;
   onUploadSuccess: () => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void; // New prop to control external loading state
+  setIsLoading: (loading: boolean) => void;
 }
 
 const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
@@ -38,7 +38,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   currentProfile,
   onUploadSuccess,
   isLoading,
-  setIsLoading, // Use the new prop
+  setIsLoading,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +46,6 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   useEffect(() => {
     if (open) {
       setSelectedFile(null);
-      // Reset internal loading state if dialog is opened
       setIsLoading(false);
     }
   }, [open, setIsLoading]);
@@ -72,16 +71,15 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       return;
     }
 
-    setIsLoading(true); // Use external loading state
+    setIsLoading(true);
     try {
       const fileExtension = selectedFile.name.split('.').pop();
       const storagePathPrefix = `${currentProfile.org_id}/${job.id}/`;
 
-      // List existing files to determine the next sequential index
       const { data: existingFiles, error: listError } = await supabase.storage
         .from("pods")
         .list(storagePathPrefix, {
-          search: `${job.order_number}_`, // Search for files starting with job number
+          search: `${job.order_number}_`,
         });
 
       if (listError) {
@@ -105,11 +103,8 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
         throw new Error("Failed to get public URL for uploaded file.");
       }
 
-      // Log document upload
       await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, 'pod_uploaded', stopId);
 
-      // Only update job status to 'pod_received' if it's part of the progression flow (i.e., stopId is provided)
-      // For additional PODs on completed jobs, we don't change the job's overall status.
       if (stopId) {
         await updateJobProgress({
           job_id: job.id,
@@ -119,7 +114,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
           new_status: 'pod_received',
           timestamp: new Date().toISOString(),
           notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
-          stop_id: stopId, // Ensure stop_id is passed for progress log
+          stop_id: stopId,
         });
       }
 
@@ -130,21 +125,21 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       console.error("Error uploading POD:", e);
       toast.error(`Failed to upload POD: ${e.message || String(e)}`);
     } finally {
-      setIsLoading(false); // Use external loading state
+      setIsLoading(false);
     }
   };
 
   const handleClose = (openState: boolean) => {
     if (!openState) {
       setSelectedFile(null);
-      setIsLoading(false); // Ensure loading state is reset on close
+      setIsLoading(false);
     }
     onOpenChange(openState);
   };
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-xl flex flex-col"> {/* Removed max-w-md and max-h-[90vh] */}
+      <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Upload Proof of Delivery</AlertDialogTitle>
           <AlertDialogDescription>

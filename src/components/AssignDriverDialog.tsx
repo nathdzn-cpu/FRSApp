@@ -7,14 +7,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter, // Import DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import AvatarImage
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Profile } from '@/utils/mockData';
-import { Loader2, User, Truck, CheckCircle2, XCircle } from 'lucide-react'; // Added CheckCircle2, XCircle
+import { Loader2, User, Truck, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AssignDriverDialogProps {
@@ -37,11 +37,10 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(currentAssignedDriverId || null);
 
-  // Reset selectedDriverId when dialog opens or currentAssignedDriverId changes externally
   useEffect(() => {
     if (open) {
       setSelectedDriverId(currentAssignedDriverId || null);
-      setSearchTerm(''); // Clear search on open
+      setSearchTerm('');
     }
   }, [open, currentAssignedDriverId]);
 
@@ -68,7 +67,6 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
 
   const handleSaveAssignment = async () => {
     await onAssign(selectedDriverId);
-    // onAssign will handle closing the dialog and resetting state if successful
   };
 
   const handleCancel = () => {
@@ -88,7 +86,6 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {/* Current Assigned Driver */}
             <div className="p-3 border border-gray-200 rounded-md bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {currentAssignedDriver ? (

@@ -9,18 +9,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import SignUpDialog from '@/components/auth/SignUpDialog'; // Import the new dialog
+import SignUpDialog from '@/components/auth/SignUpDialog';
 
 const LoginPage: React.FC = () => {
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null); // State for local error message
-  const { login, isLoadingAuth } = useAuth(); // useAuth's isLoadingAuth indicates if profile is loading after session
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false); // State for sign-up dialog
+  const [localError, setLocalError] = useState<string | null>(null);
+  const { login, isLoadingAuth } = useAuth();
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null); // Clear previous errors
+    setLocalError(null);
 
     if (!userIdOrEmail || !password) {
       setLocalError("Please enter both User ID/Email and password.");
@@ -29,13 +29,10 @@ const LoginPage: React.FC = () => {
 
     const { success, error } = await login(userIdOrEmail, password);
     if (!success && error) {
-      setLocalError(error); // Set local error if login fails
+      setLocalError(error);
     }
   };
 
-  // isLoadingAuth from AuthContext primarily indicates if the user profile is being fetched after a session is established.
-  // For the login form itself, we can use this to disable the form while an auth operation is in progress.
-  // If the AuthContext's initial profile fetch is still ongoing, we show a loading state.
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)]">
@@ -48,7 +45,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <div className="min-h-screen flex items-center justify-center bg-[var(--saas-background)] p-4">
-        <Card className="w-full max-w-md shadow-sm rounded-xl p-8 bg-[var(--saas-card-bg)]">
+        <Card className="w-full max-w-md shadow-xl rounded-xl p-8 bg-white">
           <CardHeader className="text-center">
             <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="mx-auto mb-4 h-24 w-auto" />
             <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">FRS Haulage Login</CardTitle>

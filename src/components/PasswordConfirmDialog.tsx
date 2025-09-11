@@ -25,8 +25,8 @@ interface PasswordConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel: string;
-  onConfirm: () => Promise<void>; // This function will be called after password validation
-  isConfirming: boolean; // External busy state for the action itself
+  onConfirm: () => Promise<void>;
+  isConfirming: boolean;
   variant?: "default" | "destructive";
 }
 
@@ -69,9 +69,8 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
         console.error("Password re-authentication failed:", error.message);
         toast.error("Password confirmation failed: Incorrect password.");
       } else {
-        // Password confirmed, proceed with the actual action
         await onConfirm();
-        onOpenChange(false); // Close dialog on success
+        onOpenChange(false);
       }
     } catch (err: any) {
       setPasswordError("An unexpected error occurred during password confirmation.");
@@ -79,7 +78,7 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
       toast.error("An unexpected error occurred during password confirmation.");
     } finally {
       setIsAuthenticating(false);
-      setPassword(''); // Clear password input
+      setPassword('');
     }
   };
 
@@ -94,7 +93,7 @@ const PasswordConfirmDialog: React.FC<PasswordConfirmDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="flex flex-col bg-[var(--saas-card-bg)]"> {/* Removed max-h-[90vh] */}
+      <AlertDialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>

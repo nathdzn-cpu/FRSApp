@@ -59,7 +59,6 @@ const SignUpDialog: React.FC<SignUpDialogProps> = ({ open, onOpenChange }) => {
         }
         toast.success('Sign-up successful! Welcome.');
         onOpenChange(false);
-        // The AuthContext will handle redirection via onAuthStateChange.
       } else {
         throw new Error('Sign-up successful, but failed to create a session.');
       }
@@ -73,7 +72,7 @@ const SignUpDialog: React.FC<SignUpDialogProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-white shadow-xl rounded-xl p-6">
         <DialogHeader>
           <DialogTitle>Create a New Organisation</DialogTitle>
           <DialogDescription>

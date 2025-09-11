@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getJobs, getProfiles, getTenants } from '@/lib/supabase';
+import { getJobs, getProfiles, cancelJob } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
-import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle, Camera } from 'lucide-react'; // Added Camera for ImageUploadDialog
+import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -27,13 +27,23 @@ import JobAttachmentsDialog from '@/components/JobAttachmentsDialog';
 import { updateJob, updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
 import ActiveJobBanner from '@/components/driver/ActiveJobBanner';
-import DriverJobsTable from '@/components/driver/DriverJobsTable'; // Import new DriverJobsTable
-import ImageUploadDialog from '@/components/driver/ImageUploadDialog'; // Import new ImageUploadDialog
+import DriverJobsTable from '@/components/driver/DriverJobsTable';
+import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 
-type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage'; // Added uploadImage
+type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage';
 
 interface DialogState {
   type: DialogType | null;
@@ -51,6 +61,8 @@ const Index = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
   const [isActionBusy, setIsActionBusy] = useState(false);
+  const [jobToCancel, setJobToCancel] = useState<Job | null>(null); // State for job to cancel
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false); // State for cancel confirmation dialog
   const navigate = useNavigate();
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
@@ -234,6 +246,38 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ['jobs'] });
     queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job?.order_number, userRole] });
     setDialogState({ type: null, job: null });
+  };
+
+  const handleCancelJob = (job: Job) => {
+    setJobToCancel(job);
+    setIsCancelConfirmOpen(true);
+  };
+
+  const confirmCancelJob = async () => {
+    if (!jobToCancel || !currentProfile || !userRole) {
+      toast.error("Job to cancel or user profile/role not found. Cannot cancel job.");
+      return;
+    }
+
+    setIsActionBusy(true);
+    try {
+      const promise = cancelJob(jobToCancel.id, currentOrgId, currentProfile.id, userRole);
+      toast.promise(promise, {
+        loading: `Cancelling job ${jobToCancel.order_number}...`,
+        success: `Job ${jobToCancel.order_number} cancelled successfully!`,
+        error: (err) => `Failed to cancel job: ${err.message}`,
+      });
+      await promise;
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobDetail', jobToCancel.order_number, userRole] });
+      setJobToCancel(null);
+      setIsCancelConfirmOpen(false);
+    } catch (err: any) {
+      console.error("Error cancelling job:", err);
+      toast.error("An unexpected error occurred while cancelling the job.");
+    } finally {
+      setIsActionBusy(false);
+    }
   };
 
 
@@ -518,6 +562,30 @@ const Index = () => {
           isLoading={isActionBusy}
           setIsLoading={setIsActionBusy}
         />
+      )}
+
+      {jobToCancel && (
+        <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
+          <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to cancel this job?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will cancel job <span className="font-bold">{jobToCancel.order_number}</span>. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isActionBusy}>Back</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmCancelJob}
+                disabled={isActionBusy}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isActionBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Yes, Cancel Job
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

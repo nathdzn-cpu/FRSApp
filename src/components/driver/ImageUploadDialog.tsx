@@ -76,11 +76,10 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
       const fileExtension = selectedFile.name.split('.').pop();
       const storagePathPrefix = `${currentProfile.org_id}/${job.id}/`;
 
-      // List existing files to determine the next sequential index
       const { data: existingFiles, error: listError } = await supabase.storage
-        .from("pods") // Using 'pods' bucket for all job-related images
+        .from("pods")
         .list(storagePathPrefix, {
-          search: `${job.order_number}_image_`, // Search for files starting with job number and 'image_'
+          search: `${job.order_number}_image_`,
         });
 
       if (listError) {
@@ -104,7 +103,6 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
         throw new Error("Failed to get public URL for uploaded file.");
       }
 
-      // Log document upload with action_type 'image_uploaded'
       await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'document_uploaded', publicUrl, 'image_uploaded', stopId);
 
       toast.success("Image uploaded successfully!");
@@ -128,7 +126,7 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-xl flex flex-col"> {/* Removed max-w-md and max-h-[90vh] */}
+      <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Upload Optional Image</AlertDialogTitle>
           <AlertDialogDescription>

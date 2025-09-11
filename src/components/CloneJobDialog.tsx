@@ -108,7 +108,7 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
         loading: 'Cloning job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          onCloneSuccess(newJob.order_number); // Pass the new job's order_number
+          onCloneSuccess(newJob.order_number);
           onOpenChange(false);
           return `Job ${newJob.order_number} cloned successfully!`;
         },
@@ -125,7 +125,7 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
   if (isLoadingAuth || isLoadingAllProfiles) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex flex-col">
+        <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">Clone Job</DialogTitle>
           </DialogHeader>
@@ -139,12 +139,12 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
   }
 
   if (!user || !canAccess) {
-    return null; // Should be handled by parent redirect
+    return null;
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col">
+      <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">Clone Job: {originalJob.order_number}</DialogTitle>
           <DialogDescription>

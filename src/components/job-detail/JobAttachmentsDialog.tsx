@@ -36,7 +36,7 @@ const JobAttachmentsDialog: React.FC<JobAttachmentsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-w-3xl h-[90vh] bg-[var(--saas-card-bg)] p-6 rounded-xl shadow-xl">
+      <DialogContent className="flex flex-col max-w-3xl h-[90vh] bg-white p-6 shadow-xl rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
             Attachments for Job: {job?.order_number}

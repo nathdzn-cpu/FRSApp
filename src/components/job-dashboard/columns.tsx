@@ -85,7 +85,7 @@ export const getColumns = ({
         const job = row.original;
         return (
           <div className="text-xs">
-            <p className="font-semibold">{job.collection_contact_name || 'N/A'}</p>
+            <p className="font-semibold">{job.collection_name || 'N/A'}</p>
             <p>{formatAddressPart(job.collection_city)}, {formatPostcode(job.collection_postcode)}</p>
           </div>
         );
@@ -98,7 +98,7 @@ export const getColumns = ({
         const job = row.original;
         return (
           <div className="text-xs">
-            <p className="font-semibold">{job.delivery_contact_name || 'N/A'}</p>
+            <p className="font-semibold">{job.delivery_name || 'N/A'}</p>
             <p>{formatAddressPart(job.delivery_city)}, {formatPostcode(job.delivery_postcode)}</p>
           </div>
         );
@@ -146,7 +146,7 @@ export const getColumns = ({
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-white shadow-lg rounded-md">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => onJobView(job.order_number)}>
                 <Eye className="mr-2 h-4 w-4" />
