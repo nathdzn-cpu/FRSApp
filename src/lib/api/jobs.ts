@@ -238,7 +238,6 @@ export const cloneJob = async (
     date_created: string;
     price: number | null;
     assigned_driver_id: string | null;
-    notes: string | null;
   },
   stopsData: Array<any>,
   actorId: string,
@@ -296,6 +295,26 @@ export const uploadDocument = async (
 
   if (error) {
     console.error('Error in uploadDocument Edge Function:', error);
+    throw new Error(data?.error || error.message);
+  }
+  return data;
+};
+
+// Update job progress log visibility
+export const updateJobProgressLogVisibility = async (payload: {
+  log_id: string;
+  org_id: string;
+  actor_id: string;
+  actor_role: 'admin' | 'office' | 'driver';
+  visible_in_timeline: boolean;
+}): Promise<any> => {
+  const { data, error } = await supabase.functions.invoke('update-timeline-visibility', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  if (error) {
+    console.error('Error updating job progress log visibility:', error);
     throw new Error(data?.error || error.message);
   }
   return data;
