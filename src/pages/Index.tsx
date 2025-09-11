@@ -5,7 +5,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getJobs, getProfiles, cancelJob } from '@/lib/supabase';
+import { getJobs, getProfiles, cancelJob, getTenants } from '@/lib/supabase';
 import { Job, Profile, Tenant } from '@/utils/mockData';
 import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -122,6 +122,14 @@ const Index = () => {
     onError: (err) => console.error("Profiles query failed", err),
   });
 
+  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
+  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
+    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
+    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
+    staleTime: 30 * 1000,
+    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
+  });
+
   // Fetch jobs
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
     queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter],
@@ -129,14 +137,6 @@ const Index = () => {
     staleTime: 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
     onError: (err) => console.error("Jobs query failed", err),
-  });
-
-  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
-  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
-    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
-    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
-    staleTime: 30 * 1000,
-    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
 
   const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs || isLoadingDriverActiveJobs;
@@ -511,6 +511,7 @@ const Index = () => {
                 currentProfile={currentProfile}
                 currentOrgId={currentOrgId}
                 onAction={handleJobTableAction}
+                onCancelJob={handleCancelJob}
               />
             )}
           </CardContent>
