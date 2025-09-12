@@ -31,8 +31,9 @@ export const uploadDocument = async (
   jobId: string,
   orgId: string,
   driverId: string,
-  type: 'pod' | 'cmr' | 'damage' | 'check_signature',
+  type: string, // Changed to string to allow more types
   storagePath: string,
+  eventAction: string, // New parameter for the action to log in job progress
   stopId?: string,
 ): Promise<Document> => {
   const newDocument = {
@@ -65,7 +66,7 @@ export const uploadDocument = async (
     stop_id: stopId,
     actor_id: driverId,
     actor_role: 'driver',
-    action: type === 'pod' ? 'pod_uploaded' : 'document_uploaded',
+    action: eventAction, // Use the new eventAction parameter
     notes: `${type.replace(/_/g, ' ')} uploaded.`,
     timestamp: new Date().toISOString(),
   });

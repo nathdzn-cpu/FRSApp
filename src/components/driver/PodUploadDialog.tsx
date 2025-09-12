@@ -16,7 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadDocument, updateJobProgress } from '@/lib/api/jobs';
+import { updateJobProgress } from '@/lib/api/jobs';
+import { uploadDocument } from '@/lib/api/driverApp'; // Corrected import path
 import { Job, Profile } from '@/utils/mockData';
 
 interface PodUploadDialogProps {
@@ -103,7 +104,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
         throw new Error("Failed to get public URL for uploaded file.");
       }
 
-      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, 'pod_uploaded', stopId);
+      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, 'pod_uploaded', stopId); // Corrected parameters
 
       if (stopId) {
         await updateJobProgress({
@@ -111,7 +112,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
           org_id: currentProfile.org_id,
           actor_id: currentProfile.id,
           actor_role: currentProfile.role,
-          new_status: 'pod_received',
+          new_status: 'pod_received', // This is now handled by the edge function
           timestamp: new Date().toISOString(),
           notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
           stop_id: stopId,
