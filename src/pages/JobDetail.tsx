@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
 import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
-import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
+import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
 import CloneJobDialog from '@/components/CloneJobDialog';
 import { Job, JobStop, Document, Profile, JobProgressLog } from '@/types';
 
