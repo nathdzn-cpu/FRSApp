@@ -74,7 +74,9 @@ export const getColumns = ({
         <DataTableColumnHeader column={column} title="Created" />
       ),
       cell: ({ row }) => {
-        const date = parseISO(row.getValue("date_created"));
+        const dateCreated = row.getValue("date_created") as string | null | undefined;
+        if (!dateCreated) return <span>N/A</span>;
+        const date = parseISO(dateCreated);
         return <span>{format(date, "dd/MM/yyyy")}</span>;
       },
     },
