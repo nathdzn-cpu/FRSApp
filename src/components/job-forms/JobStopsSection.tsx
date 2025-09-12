@@ -8,7 +8,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { SavedAddress } from '@/utils/mockData';
+import { SavedAddress } from '@/types';
 import { formatPostcode, toTitleCase } from '@/lib/utils/formatUtils';
 import AddressSearchInput from '@/components/AddressSearchInput';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for new stop IDs

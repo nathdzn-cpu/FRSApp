@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobStop } from '@/utils/mockData';
+import { JobStop } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities

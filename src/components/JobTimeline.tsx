@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { JobProgressLog, Profile, Job } from '@/utils/mockData';
+import { JobProgressLog, Profile, Job } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { MapPin, Truck, Package, CheckCircle, XCircle, Clock, MessageSquare, FileText, User, UserCog, Copy, PlusCircle, Edit, Trash2, CalendarCheck, Mail, Eraser, UserPlus, EyeOff, Eye, X } from 'lucide-react';
 import { getDisplayStatus, coreProgressActionTypes } from '@/lib/utils/statusUtils';

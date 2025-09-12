@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { getJobs, getProfiles, getTenants, cancelJob, updateJob, updateJobProgress } from '@/lib/supabase';
-import { Job, Profile, Tenant } from '@/utils/mockData';
+import { getJobs, cancelJob, updateJob, updateJobProgress } from '@/lib/api/jobs';
+import { getProfiles } from '@/lib/api/profiles';
+import { getTenants } from '@/lib/api/tenants';
+import { Job, Profile, Tenant } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -131,7 +133,7 @@ const Index = () => {
       for (const entry of sortedEntries) {
         await updateJobProgress({
           job_id: dialogState.job.id, org_id: currentOrgId!, actor_id: currentProfile.id,
-          actor_role: userRole, new_status: entry.status, timestamp: entry.dateTime.toISOString(), notes: entry.notes.trim() || undefined,
+          actor_role: userRole, action: entry.status, timestamp: entry.dateTime.toISOString(), notes: entry.notes.trim() || undefined,
         });
       }
       toast.success('Job progress updated successfully!');

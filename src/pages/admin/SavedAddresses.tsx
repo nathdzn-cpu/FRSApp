@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getSavedAddresses, createSavedAddress, updateSavedAddress, deleteSavedAddress } from '@/lib/supabase';
-import { SavedAddress } from '@/utils/mockData';
+import { getSavedAddresses, createSavedAddress, updateSavedAddress, deleteSavedAddress } from '@/lib/api/savedAddresses';
+import { SavedAddress } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, PlusCircle, Edit, Trash2, Star, Search, RefreshCw } from 'lucide-react';

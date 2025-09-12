@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobStop } from '@/utils/mockData';
+import { JobStop } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils'; // Import new utilities

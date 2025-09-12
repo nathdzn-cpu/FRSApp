@@ -26,12 +26,12 @@ import {
   ArrowRight,
   Loader2
 } from 'lucide-react';
-import { Profile, Job } from '@/utils/mockData';
+import { Profile, Job } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { formatGBPDisplay, formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { getJobs } from '@/lib/supabase';
+import { getJobs } from '@/lib/api/jobs';
 import { useAuth } from '@/context/AuthContext';
 
 dayjs.extend(weekOfYear);

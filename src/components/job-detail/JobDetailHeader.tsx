@@ -21,7 +21,7 @@ import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle
 import JobEditForm from '@/components/JobEditForm';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
 import JobProgressUpdateDialog from './JobProgressUpdateDialog';
-import { Job, JobStop, Profile } from '@/utils/mockData';
+import { Job, JobStop, Profile } from '@/types';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
 interface JobDetailHeaderProps {

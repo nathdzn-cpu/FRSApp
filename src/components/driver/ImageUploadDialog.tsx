@@ -17,7 +17,7 @@ import { Loader2, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react'
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { uploadDocument } from '@/lib/api/driverApp';
-import { Job, Profile } from '@/utils/mockData';
+import { Job, Profile } from '@/types';
 
 interface ImageUploadDialogProps {
   open: boolean;

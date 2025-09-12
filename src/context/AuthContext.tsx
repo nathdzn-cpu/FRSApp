@@ -3,7 +3,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
-import { Profile } from '@/utils/mockData';
+import { Profile } from '@/types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getOrganisationDetails } from '@/lib/api/organisation';

@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Job, Profile } from "@/utils/mockData"
+import { Job, Profile } from "@/types"
 import { DataTableColumnHeader } from "../data-table/DataTableColumnHeader"
 import { Badge } from "@/components/ui/badge"
 import { getDisplayStatus, getStatusColorClass } from "@/lib/utils/statusUtils"

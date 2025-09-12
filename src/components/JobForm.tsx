@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react'; // Added Loader2
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Profile, SavedAddress } from '@/utils/mockData';
+import { Profile, SavedAddress } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatGBPDisplay, parseCurrencyInput, formatAddressPart, formatPostcode, toTitleCase } from '@/lib/utils/formatUtils';
 import AddressSearchInput from './AddressSearchInput'; // Import new component

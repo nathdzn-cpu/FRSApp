@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import { Job, Profile } from '@/utils/mockData';
+import { Job, Profile } from '@/types';
 import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
-import JobAttachmentsDialog from '@/components/JobAttachmentsDialog';
+import JobAttachmentsDialog from '@/components/job-detail/JobAttachmentsDialog';
 import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
 import DriverDetailDialog from '@/components/DriverDetailDialog';
 import {

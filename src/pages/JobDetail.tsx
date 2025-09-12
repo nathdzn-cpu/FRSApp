@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, getJobs } from '@/lib/supabase';
+import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, getJobs, updateJobProgress } from '@/lib/api/jobs';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -14,7 +14,7 @@ import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
 import CloneJobDialog from '@/components/CloneJobDialog';
-import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
+import { Job, JobStop, Document, Profile, JobProgressLog } from '@/types';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -285,7 +285,7 @@ const JobDetail: React.FC = () => {
           org_id: currentOrgId,
           actor_id: currentProfile.id,
           actor_role: userRole,
-          new_status: entry.status,
+          action: entry.status,
           timestamp: entry.dateTime.toISOString(),
           notes: entry.notes.trim() || undefined,
         };

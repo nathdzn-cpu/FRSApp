@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { CardContent } from '@/components/ui/card';
-import { Job, JobStop, Profile } from '@/utils/mockData';
+import { Job, JobStop, Profile } from '@/types';
 import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, UploadCloud, FileText, Image as ImageIcon, Clock, User } from 'lucide-react';
-import { Job, JobProgressLog, Profile, Document } from '@/utils/mockData';
+import { Job, JobProgressLog, Profile, Document } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import PodUploadDialog from './PodUploadDialog';

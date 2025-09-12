@@ -20,7 +20,7 @@ import { Loader2, CalendarIcon, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Job, Profile } from '@/utils/mockData';
+import { Job, Profile } from '@/types';
 import { getDisplayStatus, jobStatusOrder, getSkippedStatuses } from '@/lib/utils/statusUtils';
 import { format, setHours, setMinutes, setSeconds, parseISO } from 'date-fns';
 import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils';

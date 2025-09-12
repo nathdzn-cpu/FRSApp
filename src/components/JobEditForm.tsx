@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Job, JobStop, Profile } from '@/utils/mockData';
+import { Job, JobStop, Profile } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { parseISO } from 'date-fns';
 import JobDetailsSection from './job-forms/JobDetailsSection';

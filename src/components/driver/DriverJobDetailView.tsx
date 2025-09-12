@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react';
-import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
+import { Job, JobStop, Profile, JobProgressLog, Document } from '@/types';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
 import ProgressActionDialog from './ProgressActionDialog';

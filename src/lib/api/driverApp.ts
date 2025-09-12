@@ -1,11 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../supabaseClient';
 import { callFn } from '../callFunction';
-import { Document, ProfileDevice, DailyCheck, JobProgressLog } from '@/utils/mockData';
-
-const updateJobProgress = async (payload: any) => {
-  return await callFn('update-job-progress', payload);
-};
+import { Document, ProfileDevice, DailyCheck, JobProgressLog } from '@/types';
+import { updateJobProgress } from './jobs'; // Import from jobs.ts
 
 export const confirmJob = async (jobId: string, orgId: string, driverId: string, eta: string): Promise<JobProgressLog[]> => {
   const timestamp = new Date().toISOString();
@@ -17,8 +14,6 @@ export const confirmJob = async (jobId: string, orgId: string, driverId: string,
     timestamp,
   };
 
-  // These are now individual, non-atomic calls as a temporary step.
-  // A future refactor will combine these into a single atomic Edge Function.
   const confirmPromise = updateJobProgress({ ...commonPayload, action: 'job_confirmed', notes: 'Driver confirmed job.' });
   const etaPromise = updateJobProgress({ ...commonPayload, action: 'eta_set', notes: `ETA to first collection: ${eta}` });
   const acceptPromise = updateJobProgress({ ...commonPayload, action: 'accepted', notes: 'Job status changed to accepted by driver.' });
@@ -31,47 +26,25 @@ export const uploadDocument = async (
   jobId: string,
   orgId: string,
   driverId: string,
-  type: string, // Changed to string to allow more types
+  type: string,
   storagePath: string,
-  eventAction: string, // New parameter for the action to log in job progress
+  eventAction: string,
   stopId?: string,
-): Promise<Document> => {
-  const newDocument = {
-    id: uuidv4(),
-    org_id: orgId,
-    job_id: jobId,
-    stop_id: stopId,
-    type: type,
-    storage_path: storagePath,
-    uploaded_by: driverId,
-    created_at: new Date().toISOString(),
-  };
-
-  // 1. Insert the document record into the database
-  const { data: insertedDocument, error: insertError } = await supabase
-    .from('documents')
-    .insert(newDocument)
-    .select()
-    .single();
-
-  if (insertError) {
-    console.error("Error inserting document record:", insertError);
-    throw new Error(insertError.message);
-  }
-
-  // 2. Log the event using the edge function
-  await updateJobProgress({
+): Promise<any> => {
+  // The Edge Function now handles document creation.
+  // We just need to call it with the right parameters.
+  return await updateJobProgress({
     job_id: jobId,
     org_id: orgId,
     stop_id: stopId,
     actor_id: driverId,
     actor_role: 'driver',
-    action: eventAction, // Use the new eventAction parameter
+    action: eventAction,
     notes: `${type.replace(/_/g, ' ')} uploaded.`,
     timestamp: new Date().toISOString(),
+    storage_path: storagePath,
+    document_type: type,
   });
-
-  return insertedDocument as Document;
 };
 
 export const addJobNote = async (jobId: string, orgId: string, driverId: string, note: string): Promise<JobProgressLog> => {
@@ -122,7 +95,6 @@ export const registerPushToken = async (profileId: string, orgId: string, platfo
   };
 
   if (existingDevice) {
-    // Update existing device
     const { data: updatedDevice, error: updateError } = await supabase
       .from('profile_devices')
       .update(deviceData)
@@ -130,17 +102,14 @@ export const registerPushToken = async (profileId: string, orgId: string, platfo
       .select()
       .single();
     if (updateError) throw updateError;
-    console.log(`Updated push token for profile ${profileId} on ${platform}`);
     return updatedDevice as ProfileDevice;
   } else {
-    // Add new device
     const { data: newDevice, error: insertError } = await supabase
       .from('profile_devices')
       .insert(deviceData)
       .select()
       .single();
     if (insertError) throw insertError;
-    console.log(`Registered new push token for profile ${profileId} on ${platform}`);
     return newDevice as ProfileDevice;
   }
 };
@@ -149,7 +118,7 @@ export const submitDailyCheck = async (
   orgId: string,
   driverId: string,
   truckReg: string,
-  items: any[], // Assuming items is an array of check answers
+  items: any[],
   signature: string,
   startedAt: string,
   finishedAt: string,
@@ -168,7 +137,6 @@ export const submitDailyCheck = async (
     actor_role: actorRole,
   };
 
-  // Call the dedicated edge function for submitting daily checks
   const result = await callFn('driver-daily-check-submit', payload);
   return result as DailyCheck;
 };

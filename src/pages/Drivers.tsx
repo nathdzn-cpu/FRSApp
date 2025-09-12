@@ -3,8 +3,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles, getJobs } from '@/lib/supabase';
-import { Job, Profile, JobProgressLog } from '@/utils/mockData';
+import { getProfiles } from '@/lib/api/profiles';
+import { getJobs } from '@/lib/api/jobs';
+import { Job, Profile, JobProgressLog } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, UserPlus, Search, Truck, MapPin } from 'lucide-react';

@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import JobTimeline from '@/components/JobTimeline';
 import JobAuditLog from '@/components/JobAuditLog';
 import JobStopsTable from '@/components/JobStopsTable';
-import JobPodsGrid from '@/components/JobPodsGrid';
-import { JobProgressLog, JobStop, Document, Profile, Job } from '@/utils/mockData';
+import JobPodsGrid from '../JobPodsGrid';
+import { JobProgressLog, JobStop, Document, Profile, Job } from '@/types';
 import { coreProgressActionTypes } from '@/lib/utils/statusUtils';
 
 interface JobDetailTabsProps {
