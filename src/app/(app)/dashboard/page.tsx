@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobs, cancelJob as apiCancelJob } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { useAuth } from '@/context/AuthContext';
-import { Job, Profile } from '@/utils/mockData';
+import { Job, Profile } from '@/types';
 import { DataTable } from '@/components/data-table/DataTable';
 import { getColumns } from '@/components/job-dashboard/columns';
 import { getStatusOptions, getDriverOptions } from '@/components/job-dashboard/filters';

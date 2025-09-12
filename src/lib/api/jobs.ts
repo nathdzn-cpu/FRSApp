@@ -148,18 +148,13 @@ export const updateJobProgressLogVisibility = async (payload: any) => {
 };
 
 export const requestPod = async (jobId: string, orgId: string, actorId: string, userRole: string) => {
-  // This function would typically trigger a notification to the driver.
-  // Assuming an edge function 'request-pod' handles this logic.
   return await callFn('request-pod', { jobId, orgId, actorId, userRole });
 };
 
 export const generateJobPdf = async (jobId: string, orgId: string, actorId: string) => {
-  // Assuming an edge function 'generate-job-pdf' handles this.
   return await callFn('generate-job-pdf', { jobId, orgId, actorId });
 };
 
 export const cloneJob = async (originalJobId: string, orgId: string, actorId: string, actorRole: string) => {
-  // This can be handled client-side by fetching job/stops and calling createJob,
-  // or by a dedicated edge function.
   return await callFn('clone-job', { originalJobId, orgId, actorId, actorRole });
 };

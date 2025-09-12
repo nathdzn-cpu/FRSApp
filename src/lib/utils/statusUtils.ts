@@ -1,4 +1,4 @@
-import { Job } from '@/utils/mockData';
+import { Job, JobStop, JobProgressLog } from '@/types';
 
 export const jobStatusOrder: Array<Job['status']> = [
   'planned',
@@ -221,16 +221,6 @@ export const getNextActionForDriver = (
   stops: JobStop[],
   progressLogs: JobProgressLog[]
 ): { description: string; stop?: JobStop; action?: 'arrive' | 'depart' | 'complete' } | null => {
-  // Simplified placeholder for now. This function would contain complex logic
-  // to determine the exact next step for a driver based on job status,
-  // stop sequence, and progress logs.
-  // For example:
-  // 1. If job is 'assigned' or 'planned', next action is 'Accept Job'.
-  // 2. If job is 'accepted' and no collection started, next action is 'Arrive at first collection'.
-  // 3. If at collection, next action is 'Depart from collection'.
-  // 4. If loaded, next action is 'Arrive at first delivery'.
-  // 5. If at delivery, next action is 'Capture POD'.
-
   if (job.status === 'cancelled' || job.status === 'delivered' || job.status === 'pod_received') {
     return null; // Job is complete or cancelled
   }
@@ -252,16 +242,10 @@ export const getNextActionForDriver = (
     if (hasDeparted && !hasCompleted) {
       if (stop.type === 'delivery') {
         return { description: `Capture POD for ${stop.name}`, stop, action: 'complete' };
-      } else if (stop.type === 'collection') {
-        // For collection, 'departed' usually means 'completed collection'
-        // If there's a specific 'complete collection' action, it would go here.
-        // For now, we assume departing collection means it's done.
       }
     }
   }
 
-  // If all stops are processed, and job is not yet 'delivered' or 'pod_received',
-  // it means the job is effectively complete from a driver's perspective.
   if (job.status !== 'delivered' && job.status !== 'pod_received') {
     return { description: 'Job is complete, awaiting final status update.' };
   }
