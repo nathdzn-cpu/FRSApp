@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
-import { Job, JobStop, JobProgressLog, Profile } from '@/utils/mockData';
-import { getJobById, getJobStops, getJobProgressLogs, updateJobStatus } from '@/lib/api/jobs';
+import { Job, JobStop, JobProgressLog, Profile } from '@/types';
+import { getJobById, getJobStops, getJobProgressLogs, updateJobProgress } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,25 +46,26 @@ const DriverJobDetailView: React.FC = () => {
 
   const { data: job, isLoading: isLoadingJob, error: jobError } = useQuery<Job, Error>({
     queryKey: ['job', jobId],
-    queryFn: () => getJobById(jobId!),
-    enabled: !!jobId,
+    queryFn: () => getJobById(userProfile?.org_id!, jobId!, userProfile?.role!),
+    enabled: !!jobId && !!userProfile?.org_id && !!userProfile?.role,
   });
 
   const { data: stops, isLoading: isLoadingStops, error: stopsError } = useQuery<JobStop[], Error>({
     queryKey: ['jobStops', jobId],
-    queryFn: () => getJobStops(jobId!),
-    enabled: !!jobId,
+    queryFn: () => getJobStops(userProfile?.org_id!, jobId!),
+    enabled: !!jobId && !!userProfile?.org_id,
   });
 
   const { data: progressLogs, isLoading: isLoadingLogs, error: logsError } = useQuery<JobProgressLog[], Error>({
     queryKey: ['jobProgressLogs', jobId],
-    queryFn: () => getJobProgressLogs(jobId!),
-    enabled: !!jobId,
+    queryFn: () => getJobProgressLogs(userProfile?.org_id!, jobId!),
+    enabled: !!jobId && !!userProfile?.org_id,
   });
 
   const { data: profiles, isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles'],
-    queryFn: getProfiles,
+    queryFn: () => getProfiles(userProfile?.org_id!),
+    enabled: !!userProfile?.org_id,
   });
 
   const isLoading = isLoadingJob || isLoadingStops || isLoadingLogs || isLoadingProfiles || !userProfile;
@@ -108,13 +109,16 @@ const DriverJobDetailView: React.FC = () => {
 
     let signatureUrl: string | null = null;
     let signatureName: string | null = null;
+    let storagePath: string | null = null;
+    let documentType: string | null = null;
 
     if (signatureDataUrl && recipientName) {
       try {
         const blob = await (await fetch(signatureDataUrl)).blob();
-        const filePath = `${userProfile.org_id}/${job.id}/signatures/${currentStopForAction.id}-${Date.now()}.png`;
-        signatureUrl = await uploadFile('documents', filePath, blob, { contentType: 'image/png' });
+        storagePath = `${userProfile.org_id}/${job.id}/signatures/${currentStopForAction.id}-${Date.now()}.png`;
+        signatureUrl = await uploadFile('documents', storagePath, blob, { contentType: 'image/png' });
         signatureName = recipientName;
+        documentType = 'signature';
         toast.success('Signature uploaded successfully!');
       } catch (uploadError: any) {
         console.error('Error uploading signature:', uploadError);
@@ -124,16 +128,19 @@ const DriverJobDetailView: React.FC = () => {
     }
 
     try {
-      await updateJobStatus({
-        jobId: job.id,
-        stopId: currentStopForAction.id,
-        orgId: userProfile.org_id!,
-        actorId: userProfile.id,
-        actorRole: userProfile.role,
-        action: actionType,
+      await updateJobProgress({
+        job_id: job.id,
+        stop_id: currentStopForAction.id,
+        org_id: userProfile.org_id!,
+        actor_id: userProfile.id,
+        actor_role: userProfile.role,
+        action: actionType === 'complete' && currentStopForAction.type === 'delivery' ? 'pod_received' : actionType,
+        timestamp: new Date().toISOString(),
         notes,
-        signatureUrl,
-        signatureName,
+        signature_url: signatureUrl,
+        signature_name: signatureName,
+        storage_path: storagePath,
+        document_type: documentType,
       });
       toast.success(`Job status updated to ${actionType}!`);
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
