@@ -39,4 +39,18 @@ export const updateJobStatus = async (params: {
   return data;
 };
 
+export const getJobDocuments = async (jobId: string, orgId: string) => {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('job_id', jobId)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
 // ... other functions ...
