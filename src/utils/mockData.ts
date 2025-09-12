@@ -31,7 +31,7 @@ export interface Profile {
   truck_reg: string | null;
   trailer_no: string | null;
   created_at?: string;
-  last_location?: string;
+  last_location?: any; // Can be string or object
   last_job_status?: string;
   is_demo?: boolean;
   avatar_url?: string | null;
@@ -141,3 +141,51 @@ export const mockTenants: Tenant[] = [
     website: 'https://mocktenant2.com'
   },
 ];
+
+export interface AuditLog {
+  id: string;
+  org_id: string;
+  actor_id: string;
+  entity: string;
+  entity_id: string;
+  action: string;
+  before: any;
+  after: any;
+  created_at: string;
+}
+
+export const mockAuditLogs: AuditLog[] = [];
+
+export interface ProfileDevice {
+  id: string;
+  org_id: string;
+  profile_id: string;
+  platform: 'ios' | 'android';
+  expo_push_token: string;
+  created_at: string;
+}
+
+export const mockProfileDevices: ProfileDevice[] = [];
+
+export interface DailyCheck {
+  id: string;
+  org_id: string;
+  driver_id: string;
+  checklist_id: string;
+  vehicle_reg: string;
+  trailer_no?: string;
+  started_at: string;
+  ended_at: string;
+  duration_seconds?: number;
+  status: 'pass' | 'fail' | 'partial';
+  answers: Record<string, string | boolean>;
+  notes?: string;
+  signature_path?: string;
+  created_at: string;
+}
+
+export const mockDailyChecks: DailyCheck[] = [];
+
+export const mockJobs: Job[] = [];
+export const mockDocuments: Document[] = [];
+export const mockProfiles: Profile[] = [];
