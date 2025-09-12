@@ -92,14 +92,16 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
   const calculateRevenue = (filter: 'today' | 'week' | 'month') => {
     const now = dayjs();
     return completedJobs.reduce((sum, job) => {
-      const jobDate = dayjs(job.date_created);
+      if (!job.last_status_update_at) return sum;
+
+      const completionDate = dayjs(job.last_status_update_at);
       let include = false;
 
-      if (filter === 'today' && jobDate.isSame(now, 'day')) {
+      if (filter === 'today' && completionDate.isSame(now, 'day')) {
         include = true;
-      } else if (filter === 'week' && jobDate.isSame(now, 'week')) {
+      } else if (filter === 'week' && completionDate.isSame(now, 'week')) {
         include = true;
-      } else if (filter === 'month' && jobDate.isSame(now, 'month')) {
+      } else if (filter === 'month' && completionDate.isSame(now, 'month')) {
         include = true;
       }
 

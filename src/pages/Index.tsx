@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from '@/lib/supabaseClient';
+import DriverDetailDialog from '@/components/DriverDetailDialog';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -64,6 +65,8 @@ const Index = () => {
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [jobToCancel, setJobToCancel] = useState<Job | null>(null); // State for job to cancel
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false); // State for cancel confirmation dialog
+  const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
+  const [isDriverDetailOpen, setIsDriverDetailOpen] = useState(false);
   const navigate = useNavigate();
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
@@ -198,6 +201,11 @@ const Index = () => {
 
   const handleJobTableAction = (type: DialogType, job: Job) => {
     setDialogState({ type, job });
+  };
+
+  const handleDriverSelect = (driver: Profile) => {
+    setSelectedDriver(driver);
+    setIsDriverDetailOpen(true);
   };
 
   const handleUpdateProgress = async (entries: any[]) => { // entries will be ProgressUpdateEntry[]
@@ -544,6 +552,7 @@ const Index = () => {
                 currentOrgId={currentOrgId}
                 onAction={handleJobTableAction}
                 onCancelJob={handleCancelJob}
+                onDriverSelect={handleDriverSelect}
               />
             )}
           </CardContent>
@@ -619,6 +628,17 @@ const Index = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      )}
+
+      {selectedDriver && (
+        <DriverDetailDialog
+          open={isDriverDetailOpen}
+          onOpenChange={setIsDriverDetailOpen}
+          driver={selectedDriver}
+          allJobs={jobs}
+          currentOrgId={currentOrgId}
+          onJobView={(orderNumber) => navigate(`/jobs/${orderNumber}`)}
+        />
       )}
     </div>
   );
