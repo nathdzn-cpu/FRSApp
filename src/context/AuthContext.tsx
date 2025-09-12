@@ -6,6 +6,7 @@ import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { Profile } from '@/utils/mockData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getOrganisationDetails } from '@/lib/api/organisation';
 
 type UserRole = 'admin' | 'office' | 'driver' | undefined;
 
@@ -15,7 +16,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole;
   isLoadingAuth: boolean;
-  login: (userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (userIdOrEmail: string, password: string, orgKey: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -170,23 +171,56 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     }
   }, [isLoadingAuth, user, userRole, navigate, location.pathname]);
 
-  const login = async (userIdOrEmail: string, password: string) => {
+  const login = async (userIdOrEmail: string, password: string, orgKey: string) => {
     console.log("AuthContextProvider: login called for:", userIdOrEmail);
     let emailToLogin = userIdOrEmail;
     if (!userIdOrEmail.includes('@')) {
       emailToLogin = userIdOrEmail.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
     if (error) {
       console.error("AuthContextProvider: Login failed:", error.message);
       toast.error(error.message);
       return { success: false, error: error.message };
-    } else {
-      console.log("AuthContextProvider: Login successful.");
-      toast.success("Logged in successfully!");
-      return { success: true };
     }
+
+    // After successful sign-in, validate the organisation key
+    if (signInData.user) {
+      try {
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('org_id')
+          .eq('id', signInData.user.id)
+          .single();
+
+        if (profileError || !userProfile) {
+          await supabase.auth.signOut();
+          const message = "Could not verify user profile.";
+          toast.error(message);
+          return { success: false, error: message };
+        }
+
+        const organisation = await getOrganisationDetails(userProfile.org_id);
+
+        if (!organisation || organisation.display_id !== orgKey) {
+          await supabase.auth.signOut();
+          const message = "Invalid Organisation Key.";
+          toast.error(message);
+          return { success: false, error: message };
+        }
+
+      } catch (validationError: any) {
+        await supabase.auth.signOut();
+        const message = validationError.message || "An error occurred during organisation validation.";
+        toast.error(message);
+        return { success: false, error: message };
+      }
+    }
+
+    console.log("AuthContextProvider: Login and validation successful.");
+    toast.success("Logged in successfully!");
+    return { success: true };
   };
 
   const logout = async () => {

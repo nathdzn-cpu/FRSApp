@@ -14,6 +14,7 @@ import SignUpDialog from '@/components/auth/SignUpDialog';
 const LoginPage: React.FC = () => {
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [orgKey, setOrgKey] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const { login, isLoadingAuth } = useAuth();
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
@@ -22,12 +23,12 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLocalError(null);
 
-    if (!userIdOrEmail || !password) {
-      setLocalError("Please enter both User ID/Email and password.");
+    if (!userIdOrEmail || !password || !orgKey) {
+      setLocalError("Please fill in all fields, including the Organisation Key.");
       return;
     }
 
-    const { success, error } = await login(userIdOrEmail, password);
+    const { success, error } = await login(userIdOrEmail, password, orgKey);
     if (!success && error) {
       setLocalError(error);
     }
@@ -54,11 +55,23 @@ const LoginPage: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="orgKey">Organisation Key</Label>
+                <Input
+                  id="orgKey"
+                  type="text"
+                  placeholder="e.g., 12345"
+                  value={orgKey}
+                  onChange={(e) => setOrgKey(e.target.value)}
+                  required
+                  disabled={isLoadingAuth}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="userIdOrEmail">User ID / Email</Label>
                 <Input
                   id="userIdOrEmail"
                   type="text"
-                  placeholder="e.g., admin@example.com or 1234"
+                  placeholder="e.g., admin@example.com or your username"
                   value={userIdOrEmail}
                   onChange={(e) => setUserIdOrEmail(e.target.value)}
                   required
