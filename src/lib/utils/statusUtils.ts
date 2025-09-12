@@ -171,3 +171,100 @@ export const getDisplayStatus = (status: string): string => {
       return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }
 };
+
+export const getJobStatusColor = (status: Job['status']): string => {
+  switch (status) {
+    case 'planned':
+      return 'bg-yellow-500 text-white';
+    case 'assigned':
+    case 'accepted':
+    case 'on_route_collection':
+    case 'at_collection':
+    case 'loaded':
+    case 'on_route_delivery':
+    case 'at_delivery':
+      return 'bg-blue-500 text-white';
+    case 'delivered':
+    case 'pod_received':
+      return 'bg-green-500 text-white';
+    case 'cancelled':
+      return 'bg-red-500 text-white';
+    default:
+      return 'bg-gray-500 text-white';
+  }
+};
+
+export const getStatusColorClass = (status: Job['status']): string => {
+  switch (status) {
+    case 'planned':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'assigned':
+    case 'accepted':
+    case 'on_route_collection':
+    case 'at_collection':
+    case 'loaded':
+    case 'on_route_delivery':
+    case 'at_delivery':
+      return 'bg-blue-100 text-blue-800';
+    case 'delivered':
+    case 'pod_received':
+      return 'bg-green-100 text-green-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+export const getNextActionForDriver = (
+  job: Job,
+  stops: JobStop[],
+  progressLogs: JobProgressLog[]
+): { description: string; stop?: JobStop; action?: 'arrive' | 'depart' | 'complete' } | null => {
+  // Simplified placeholder for now. This function would contain complex logic
+  // to determine the exact next step for a driver based on job status,
+  // stop sequence, and progress logs.
+  // For example:
+  // 1. If job is 'assigned' or 'planned', next action is 'Accept Job'.
+  // 2. If job is 'accepted' and no collection started, next action is 'Arrive at first collection'.
+  // 3. If at collection, next action is 'Depart from collection'.
+  // 4. If loaded, next action is 'Arrive at first delivery'.
+  // 5. If at delivery, next action is 'Capture POD'.
+
+  if (job.status === 'cancelled' || job.status === 'delivered' || job.status === 'pod_received') {
+    return null; // Job is complete or cancelled
+  }
+
+  const sortedStops = [...stops].sort((a, b) => a.seq - b.seq);
+
+  for (const stop of sortedStops) {
+    const stopLogs = progressLogs.filter(log => log.stop_id === stop.id);
+    const hasArrived = stopLogs.some(log => log.action_type === 'arrived_at_stop');
+    const hasDeparted = stopLogs.some(log => log.action_type === 'departed_from_stop');
+    const hasCompleted = stopLogs.some(log => log.action_type === 'pod_received' || (stop.type === 'collection' && log.action_type === 'departed_from_stop'));
+
+    if (!hasArrived) {
+      return { description: `Arrive at ${stop.name} (${stop.type})`, stop, action: 'arrive' };
+    }
+    if (hasArrived && !hasDeparted) {
+      return { description: `Depart from ${stop.name} (${stop.type})`, stop, action: 'depart' };
+    }
+    if (hasDeparted && !hasCompleted) {
+      if (stop.type === 'delivery') {
+        return { description: `Capture POD for ${stop.name}`, stop, action: 'complete' };
+      } else if (stop.type === 'collection') {
+        // For collection, 'departed' usually means 'completed collection'
+        // If there's a specific 'complete collection' action, it would go here.
+        // For now, we assume departing collection means it's done.
+      }
+    }
+  }
+
+  // If all stops are processed, and job is not yet 'delivered' or 'pod_received',
+  // it means the job is effectively complete from a driver's perspective.
+  if (job.status !== 'delivered' && job.status !== 'pod_received') {
+    return { description: 'Job is complete, awaiting final status update.' };
+  }
+
+  return null;
+};
