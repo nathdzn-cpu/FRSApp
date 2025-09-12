@@ -51,3 +51,50 @@ export interface Organisation {
   website?: string | null;
   display_id: string;
 }
+
+export interface Document {
+  id: string;
+  org_id: string;
+  job_id: string;
+  stop_id?: string;
+  type: 'pod' | 'check_signature' | 'document_uploaded' | 'signature'; // Added 'signature' type
+  storage_path: string;
+  uploaded_by: string;
+  created_at: string;
+  signature_name?: string; // Added for captured signatures
+}
+
+export interface JobStop {
+  id: string;
+  org_id: string;
+  job_id: string;
+  seq: number;
+  type: 'collection' | 'delivery';
+  name: string;
+  address_line1: string;
+  address_line2?: string | null;
+  city: string;
+  postcode: string;
+  window_from?: string | null;
+  window_to?: string | null;
+  notes?: string | null;
+  created_at: string;
+  is_last_delivery?: boolean; // Added for driver app logic
+}
+
+export interface JobProgressLog {
+  id: string;
+  org_id: string;
+  job_id: string;
+  actor_id: string;
+  action_type: string;
+  timestamp: string;
+  notes?: string;
+  created_at?: string;
+  actor_role?: string;
+  stop_id?: string;
+  lat?: number;
+  lon?: number;
+  visible_in_timeline?: boolean;
+  file_path?: string;
+}

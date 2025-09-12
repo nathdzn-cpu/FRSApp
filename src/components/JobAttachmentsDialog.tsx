@@ -55,12 +55,12 @@ const JobAttachmentsDialog: React.FC<JobAttachmentsDialogProps> = ({
             <div className="text-red-500 text-center py-4">
               Error loading attachments: {documentsError.message}
             </div>
-          ) : documents.length === 0 ? (
+          ) : documents.length === 0 && !job?.pod_signature_path ? ( // Check for signature path too
             <div className="text-gray-600 text-center py-4">
               No attachments found for this job.
             </div>
           ) : (
-            <JobPodsGrid documents={documents} />
+            <JobPodsGrid documents={documents} job={job!} /> {/* Pass job prop */}
           )}
         </div>
       </DialogContent>
