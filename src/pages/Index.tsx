@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { supabase } from '@/lib/supabaseClient';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -85,6 +86,37 @@ const Index = () => {
       setSelectedOrgId(currentProfile.org_id || tenants[0]?.id);
     }
   }, [tenants, currentProfile, selectedOrgId]);
+
+  // Real-time subscription for all job updates within the organization
+  useEffect(() => {
+    if (!currentOrgId || userRole === 'driver') return;
+
+    const channel = supabase
+      .channel(`jobs-org-${currentOrgId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'jobs',
+          filter: `org_id=eq.${currentOrgId}`,
+        },
+        (payload) => {
+          console.log('Job change detected, invalidating queries:', payload);
+          queryClient.invalidateQueries({ queryKey: ['jobs'] });
+          queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] });
+          // Also invalidate specific job detail if it's being viewed
+          if (payload.new && (payload.new as Job).order_number) {
+            queryClient.invalidateQueries({ queryKey: ['jobDetail', (payload.new as Job).order_number] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentOrgId, userRole, queryClient]);
 
   // Determine date filters for jobs query (using created_at)
   const getJobDateFilters = () => {

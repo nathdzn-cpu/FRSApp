@@ -16,6 +16,7 @@ import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import DriverCompletedJobView from './DriverCompletedJobView';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabaseClient';
 
 interface DriverJobDetailViewProps {
   job: Job;
@@ -77,6 +78,33 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
       setNextAction(action);
     }
   }, [job, stops, progressLogs, currentProfile]);
+
+  // Real-time subscription for job updates from the office
+  useEffect(() => {
+    if (!job?.id) return;
+
+    const channel = supabase
+      .channel(`job-update-${job.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'jobs',
+          filter: `id=eq.${job.id}`,
+        },
+        (payload) => {
+          console.log('Job updated by office, refetching data:', payload.new);
+          toast.info("Job details have been updated.");
+          refetchJobData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [job?.id, refetchJobData]);
 
   const handleUpdateProgress = async (
     newStatus: Job['status'],
