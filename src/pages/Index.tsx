@@ -29,7 +29,7 @@ const Index = () => {
 
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active');
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);

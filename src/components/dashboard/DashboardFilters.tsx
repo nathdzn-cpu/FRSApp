@@ -46,6 +46,17 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         {/* Status Filter Buttons */}
         <div className="flex space-x-1 rounded-full bg-gray-100 p-1">
           <Button
+            variant={jobStatusFilter === 'all' ? 'default' : 'ghost'}
+            size="sm"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium",
+              jobStatusFilter === 'all' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+            )}
+            onClick={() => setJobStatusFilter('all')}
+          >
+            All
+          </Button>
+          <Button
             variant={jobStatusFilter === 'active' ? 'default' : 'ghost'}
             size="sm"
             className={cn(
