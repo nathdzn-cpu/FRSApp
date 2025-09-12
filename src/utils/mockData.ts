@@ -98,3 +98,46 @@ export interface JobProgressLog {
   visible_in_timeline?: boolean;
   file_path?: string;
 }
+
+export interface Tenant {
+  id: string;
+  name: string;
+  created_at: string;
+  logo_url?: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  postcode?: string | null;
+  contact_number?: string | null;
+  website?: string | null;
+  display_id: string;
+}
+
+export const mockTenants: Tenant[] = [
+  {
+    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+    name: 'Mock Tenant 1',
+    created_at: '2023-01-01T12:00:00Z',
+    display_id: 'MT-001',
+    logo_url: null,
+    address_line1: '123 Mock Street',
+    address_line2: '',
+    city: 'Mockville',
+    postcode: 'M1 1CK',
+    contact_number: '01234567890',
+    website: 'https://mocktenant1.com'
+  },
+  {
+    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef0',
+    name: 'Mock Tenant 2',
+    created_at: '2023-01-02T12:00:00Z',
+    display_id: 'MT-002',
+    logo_url: null,
+    address_line1: '456 Mock Avenue',
+    address_line2: '',
+    city: 'Mocktown',
+    postcode: 'M2 2CK',
+    contact_number: '09876543210',
+    website: 'https://mocktenant2.com'
+  },
+];
