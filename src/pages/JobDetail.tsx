@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getJobById, getJobStops, getJobDocuments, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/api/jobs';
-import { getProfiles } from '@/lib/api/profiles'; // Corrected import path
+import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
