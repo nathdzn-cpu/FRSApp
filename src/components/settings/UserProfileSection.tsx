@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Profile } from '@/utils/mockData';
+import { Profile, Organisation } from '@/utils/mockData';
 import { useAuth } from '@/context/AuthContext';
 import { uploadAvatar, updateProfile } from '@/lib/api/profiles';
-import { useMutation } from '@tanstack/react-query';
+import { getOrganisationDetails } from '@/lib/api/organisation';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserProfileSectionProps {
@@ -22,10 +23,15 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const { data: organisation } = useQuery<Organisation | null>({
+    queryKey: ['organisation', profile.org_id],
+    queryFn: () => getOrganisationDetails(profile.org_id!),
+    enabled: !!profile.org_id,
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (file: File) => {
       const avatarUrl = await uploadAvatar(profile.id, file);
-      // Add a timestamp to the URL to bypass browser cache
       const urlWithCacheBuster = `${avatarUrl}?t=${new Date().getTime()}`;
       return updateProfile(profile.id, { avatar_url: urlWithCacheBuster });
     },
@@ -55,6 +61,13 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
   };
 
   const userInitials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+  const copyToClipboard = () => {
+    if (organisation?.display_id) {
+      navigator.clipboard.writeText(organisation.display_id);
+      toast.success('Organisation Key copied to clipboard!');
+    }
+  };
 
   return (
     <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
@@ -101,6 +114,17 @@ const UserProfileSection: React.FC<UserProfileSectionProps> = ({ profile }) => {
             <p className="font-medium text-gray-500">Date of Birth</p>
             <p className="text-gray-800">{profile.dob ? format(new Date(profile.dob), 'PPP') : 'N/A'}</p>
           </div>
+          {organisation?.display_id && (
+            <div>
+              <p className="font-medium text-gray-500">Organisation Key</p>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-800 font-mono bg-gray-100 px-2 py-1 rounded">{organisation.display_id}</p>
+                <Button type="button" variant="ghost" size="icon" onClick={copyToClipboard} className="h-8 w-8">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

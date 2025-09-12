@@ -12,7 +12,7 @@ import { Organisation } from '@/utils/mockData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateOrganisationDetails, uploadLogo } from '@/lib/api/organisation';
 import { toast } from 'sonner';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Copy } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const orgDetailsSchema = z.object({
@@ -79,6 +79,11 @@ const OrganisationDetailsSection: React.FC<OrganisationDetailsSectionProps> = ({
     updateOrgMutation.mutate(values);
   };
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(organisation.display_id || '');
+    toast.success('Organisation Key copied to clipboard!');
+  };
+
   return (
     <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
       <CardHeader className="p-0 pb-4">
@@ -108,6 +113,19 @@ const OrganisationDetailsSection: React.FC<OrganisationDetailsSectionProps> = ({
                 <p className="text-xs text-gray-500 mt-2">PNG or JPG, max 2MB.</p>
               </div>
             </div>
+
+            {organisation.display_id && (
+              <FormItem>
+                <FormLabel>Organisation Key</FormLabel>
+                <div className="flex items-center gap-2">
+                  <Input readOnly value={organisation.display_id} className="bg-gray-100" />
+                  <Button type="button" variant="outline" size="icon" onClick={copyToClipboard}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Share this key with new users to let them join your organisation.</p>
+              </FormItem>
+            )}
 
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
