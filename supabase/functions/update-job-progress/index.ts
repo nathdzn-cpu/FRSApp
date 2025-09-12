@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.1";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*', // Replace with your frontend origin in production
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // Helper to invoke another Edge Function
@@ -95,21 +95,7 @@ serve(async (req) => {
     if (actor_id !== me.id) throw new Error("Actor ID mismatch.");
     if (actor_role !== me.role) throw new Error("Actor role mismatch.");
 
-    // 3) Determine new status from action
-    const { data: stopData, error: stopError } = await admin.from('job_stops').select('type').eq('id', stop_id).single();
-    if (stopError) throw new Error(`Failed to fetch stop details: ${stopError.message}`);
-    if (!stopData) throw new Error(`Stop with id ${stop_id} not found.`);
-
-    let new_status = '';
-    if (action === 'arrive') new_status = 'arrived_at_stop';
-    else if (action === 'depart') new_status = 'departed_from_stop';
-    else if (action === 'complete') {
-      if (stopData.type === 'collection') new_status = 'collected';
-      else if (stopData.type === 'delivery') new_status = 'pod_received';
-    }
-    if (!new_status) throw new Error(`Invalid action '${action}' for stop type '${stopData.type}'.`);
-
-    // 4) Fetch current job and perform security checks
+    // 3) Fetch current job and perform security checks
     const { data: oldJob, error: fetchJobError } = await admin
       .from("jobs")
       .select("status, assigned_driver_id, order_number")
@@ -123,60 +109,95 @@ serve(async (req) => {
       throw new Error("Access denied. Driver can only update jobs assigned to them.");
     }
 
-    // 5) Prepare job update payload
-    const jobUpdates: Record<string, any> = {
-      status: new_status,
-      last_status_update_at: timestamp,
-    };
+    const jobUpdates: Record<string, any> = { last_status_update_at: timestamp };
+    let new_status = action;
+    let logNotes = notes;
+    let finalStatus = oldJob.status;
 
-    if (signature_url) jobUpdates.pod_signature_path = signature_url;
-    if (signature_name) jobUpdates.pod_signature_name = signature_name;
+    const nonStopActions = ['job_confirmed', 'eta_set', 'accepted', 'pod_uploaded', 'document_uploaded', 'note_added', 'location_ping'];
+    const stopActions = ['arrive', 'depart', 'complete'];
 
-    // 6) Check if job should be marked as 'delivered'
-    if (new_status === 'pod_received') {
-      const { data: jobStops, error: stopsError } = await admin.from('job_stops').select('id, type').eq('job_id', job_id).eq('org_id', org_id);
-      if (stopsError) console.error("Error fetching job stops for final status check:", stopsError.message);
+    if (nonStopActions.includes(action)) {
+      if (action === 'accepted') {
+        jobUpdates.status = 'accepted';
+        finalStatus = 'accepted';
+        logNotes = notes || 'Job status changed to accepted by driver.';
+      } else if (action === 'location_ping') {
+        await admin.from('profiles').update({ last_location: { lat, lon, timestamp } }).eq('id', actor_id);
+        logNotes = `Location ping received.`;
+      } else {
+        logNotes = notes;
+      }
+    } else if (stopActions.includes(action)) {
+      if (!stop_id) throw new Error(`Action '${action}' requires a stop_id.`);
+      const { data: stopData, error: stopError } = await admin.from('job_stops').select('type').eq('id', stop_id).single();
+      if (stopError) throw new Error(`Failed to fetch stop details: ${stopError.message}`);
+      if (!stopData) throw new Error(`Stop with id ${stop_id} not found.`);
 
-      const deliveryStops = jobStops?.filter(s => s.type === 'delivery') || [];
-      if (deliveryStops.length > 0) {
-        const { data: deliveryLogs, error: logsError } = await admin.from('job_progress_log').select('stop_id, action_type').eq('job_id', job_id).eq('org_id', org_id).eq('action_type', 'pod_received');
-        if (logsError) console.error("Error fetching delivery logs for final status check:", logsError.message);
+      if (action === 'arrive') new_status = 'arrived_at_stop';
+      else if (action === 'depart') new_status = 'departed_from_stop';
+      else if (action === 'complete') {
+        if (stopData.type === 'collection') new_status = 'collected';
+        else if (stopData.type === 'delivery') new_status = 'pod_received';
+      }
+      if (!new_status) throw new Error(`Invalid action '${action}' for stop type '${stopData.type}'.`);
+      
+      jobUpdates.status = new_status;
+      finalStatus = new_status;
 
-        const poddedStopIds = new Set(deliveryLogs?.map(log => log.stop_id) || []);
-        poddedStopIds.add(stop_id); // Add the current stop being processed
+      if (signature_url) jobUpdates.pod_signature_path = signature_url;
+      if (signature_name) jobUpdates.pod_signature_name = signature_name;
 
-        const allDeliveryStopsHavePod = deliveryStops.every(dStop => poddedStopIds.has(dStop.id));
-        if (allDeliveryStopsHavePod) {
-          jobUpdates.status = 'delivered';
+      // Check if job should be marked as 'delivered'
+      if (new_status === 'pod_received') {
+        const { data: jobStops, error: stopsError } = await admin.from('job_stops').select('id, type').eq('job_id', job_id).eq('org_id', org_id);
+        if (stopsError) console.error("Error fetching job stops for final status check:", stopsError.message);
+
+        const deliveryStops = jobStops?.filter(s => s.type === 'delivery') || [];
+        if (deliveryStops.length > 0) {
+          const { data: deliveryLogs, error: logsError } = await admin.from('job_progress_log').select('stop_id, action_type').eq('job_id', job_id).eq('org_id', org_id).eq('action_type', 'pod_received');
+          if (logsError) console.error("Error fetching delivery logs for final status check:", logsError.message);
+
+          const poddedStopIds = new Set(deliveryLogs?.map(log => log.stop_id) || []);
+          poddedStopIds.add(stop_id); // Add the current stop being processed
+
+          const allDeliveryStopsHavePod = deliveryStops.every(dStop => poddedStopIds.has(dStop.id));
+          if (allDeliveryStopsHavePod) {
+            jobUpdates.status = 'delivered';
+            finalStatus = 'delivered';
+          }
         }
       }
+    } else {
+      throw new Error(`Invalid action provided: ${action}`);
     }
 
-    // 7) Execute updates
+    // Execute job update
     const { data: updatedJob, error: updateJobError } = await admin.from("jobs").update(jobUpdates).eq("id", job_id).select().single();
     if (updateJobError) throw new Error("Failed to update job status: " + updateJobError.message);
 
+    // Insert progress log
     const { data: insertedLog, error: insertLogError } = await admin.from("job_progress_log").insert({
       id: uuidv4(), org_id, job_id, actor_id, stop_id: stop_id || null,
-      actor_role, action_type: new_status, timestamp, notes: notes || null,
+      actor_role, action_type: new_status, timestamp, notes: logNotes || null,
       lat: lat || null, lon: lon || null, created_at: new Date().toISOString(),
     }).select().single();
     if (insertLogError) throw new Error("Failed to log job progress: " + insertLogError.message);
 
-    // 8) Audit log
+    // Audit log
     await admin.from("audit_logs").insert({
       org_id, actor_id, entity: "jobs", entity_id: job_id, action: "update_progress",
       before: { status: oldJob.status },
-      after: { status: updatedJob.status, last_status_update_at: timestamp },
+      after: { status: finalStatus, last_status_update_at: timestamp },
     });
 
-    // 9) Create and send notifications
+    // Create and send notifications
     if (actor_role === 'driver') {
       const { data: officeAdminProfiles } = await admin.from("profiles").select("id").eq("org_id", org_id).in("role", ["admin", "office"]);
       if (officeAdminProfiles && officeAdminProfiles.length > 0) {
-        const notificationTitle = `Job Update: ${updatedJob.order_number}`;
+        const notificationTitle = `Job Update: ${oldJob.order_number}`;
         const notificationMessage = `${me.full_name} updated status to "${new_status.replace(/_/g, ' ')}".`;
-        const link_to = `/jobs/${updatedJob.order_number}`;
+        const link_to = `/jobs/${job_id}`;
 
         const notificationsToInsert = officeAdminProfiles.filter(p => p.id !== actor_id).map(p => ({
           user_id: p.id, org_id, title: notificationTitle, message: notificationMessage, link_to,
