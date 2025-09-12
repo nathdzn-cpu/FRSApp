@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -78,14 +76,14 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
   const isSaveDisabled = isAssigning || selectedDriverId === (currentAssignedDriverId || null);
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="w-[90vw] max-w-4xl h-auto rounded-xl shadow-xl bg-white flex flex-col max-h-[90vh]">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-xl font-semibold text-gray-900">Assign Driver</AlertDialogTitle>
-          <AlertDialogDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[90vw] max-w-4xl h-auto rounded-xl shadow-xl bg-white flex flex-col max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold text-gray-900">Assign Driver</DialogTitle>
+          <DialogDescription>
             Select a driver to assign to this job, then click "Save" to confirm.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </DialogDescription>
+        </DialogHeader>
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             <div className="p-3 border border-gray-200 rounded-md bg-gray-50 flex items-center justify-between">
@@ -176,7 +174,7 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
             </ScrollArea>
           </div>
         </div>
-        <AlertDialogFooter className="flex justify-end gap-2 p-4 border-t border-gray-200">
+        <DialogFooter className="flex justify-end gap-2 p-4 border-t border-gray-200">
           <Button variant="outline" onClick={handleCancel} disabled={isAssigning}>
             Cancel
           </Button>
@@ -184,9 +182,9 @@ const AssignDriverDialog: React.FC<AssignDriverDialogProps> = ({
             {isAssigning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save Assignment
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
