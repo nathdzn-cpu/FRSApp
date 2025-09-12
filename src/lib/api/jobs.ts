@@ -19,15 +19,16 @@ export const updateJobStatus = async (params: {
   // creating log entries, and determining the next job status.
   const { data, error } = await supabase.functions.invoke('update-job-progress', {
     body: {
-      jobId,
-      stopId,
-      orgId,
-      actorId,
-      actorRole,
-      action,
+      job_id: jobId,
+      stop_id: stopId,
+      org_id: orgId,
+      actor_id: actorId,
+      actor_role: actorRole,
+      action: action,
       notes,
-      signatureUrl,
-      signatureName,
+      signature_url: signatureUrl,
+      signature_name: signatureName,
+      timestamp: new Date().toISOString(),
     },
   });
 

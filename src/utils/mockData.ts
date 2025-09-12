@@ -16,6 +16,8 @@ export interface Job {
   delivery_name: string;
   delivery_city: string;
   delivery_postcode: string;
+  pod_signature_path?: string | null;
+  pod_signature_name?: string | null;
 }
 
 export interface Profile {

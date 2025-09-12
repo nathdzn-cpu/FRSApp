@@ -70,13 +70,8 @@ serve(async (req) => {
 
     // 1) Authenticate and authorize caller
     const { data: authUser, error: authUserError } = await user.auth.getUser();
-    if (authUserError) {
-      console.error("Auth user fetch error:", authUserError);
-      throw new Error("Authentication failed: " + authUserError.message);
-    }
-    if (!authUser?.user?.id) {
-      throw new Error("Not signed in or no auth user ID.");
-    }
+    if (authUserError) throw new Error("Authentication failed: " + authUserError.message);
+    if (!authUser?.user?.id) throw new Error("Not signed in or no auth user ID.");
 
     const { data: me, error: meErr } = await user
       .from("profiles")
@@ -84,201 +79,117 @@ serve(async (req) => {
       .eq("id", authUser.user.id)
       .single();
 
-    if (meErr) {
-      console.error("Profile lookup error:", meErr);
-      throw new Error("Profile lookup failed: " + meErr.message);
-    }
-    // MODIFIED: Allow 'driver' role for job progress updates
+    if (meErr) throw new Error("Profile lookup failed: " + meErr.message);
     if (!me || !me.org_id || !['admin', 'office', 'driver'].includes(me.role)) {
       throw new Error("Access denied (admin, office, or driver role required and org_id must be set).");
     }
 
     // 2) Parse body
-    const body = await req.json().catch((e) => {
-      console.error("Error parsing request body:", e);
-      return {};
-    });
-    console.log("Received body for update-job-progress:", JSON.stringify(body, null, 2));
+    const body = await req.json().catch(() => ({}));
+    const { job_id, org_id, actor_id, actor_role, action, timestamp, notes, stop_id, lat, lon, signature_url, signature_name } = body;
 
-    const { job_id, org_id, actor_id, actor_role, new_status, timestamp, notes, stop_id, lat, lon } = body; // Destructure actor_role and location
-
-    if (!job_id || !org_id || !actor_id || !actor_role || !new_status || !timestamp) {
-      throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role, new_status, timestamp.");
+    if (!job_id || !org_id || !actor_id || !actor_role || !action || !timestamp) {
+      throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role, action, timestamp.");
     }
+    if (org_id !== me.org_id) throw new Error("Organization ID mismatch.");
+    if (actor_id !== me.id) throw new Error("Actor ID mismatch.");
+    if (actor_role !== me.role) throw new Error("Actor role mismatch.");
 
-    if (org_id !== me.org_id) {
-      throw new Error("Organization ID mismatch. User can only update jobs in their own organization.");
-    }
-    if (actor_id !== me.id) {
-      throw new Error("Actor ID mismatch. User can only perform actions as themselves.");
-    }
-    if (actor_role !== me.role) {
-      throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
-    }
+    // 3) Determine new status from action
+    const { data: stopData, error: stopError } = await admin.from('job_stops').select('type').eq('id', stop_id).single();
+    if (stopError) throw new Error(`Failed to fetch stop details: ${stopError.message}`);
+    if (!stopData) throw new Error(`Stop with id ${stop_id} not found.`);
 
-    // 3) Start a database transaction
-    // In Deno Edge Functions, direct transactions are not exposed via the client.
-    // We perform operations sequentially and handle errors.
+    let new_status = '';
+    if (action === 'arrive') new_status = 'arrived_at_stop';
+    else if (action === 'depart') new_status = 'departed_from_stop';
+    else if (action === 'complete') {
+      if (stopData.type === 'collection') new_status = 'collected';
+      else if (stopData.type === 'delivery') new_status = 'pod_received';
+    }
+    if (!new_status) throw new Error(`Invalid action '${action}' for stop type '${stopData.type}'.`);
 
-    // Fetch current job status for audit log and driver-specific check
+    // 4) Fetch current job and perform security checks
     const { data: oldJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status, assigned_driver_id, order_number") // Fetch order_number for notifications
+      .select("status, assigned_driver_id, order_number")
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
 
     if (fetchJobError) throw new Error("Failed to fetch existing job: " + fetchJobError.message);
     if (!oldJob) throw new Error("Job not found.");
-
-    // MODIFIED: Driver-specific security check
     if (me.role === 'driver' && oldJob.assigned_driver_id !== me.id) {
-      throw new Error("Access denied. Driver can only update progress for jobs assigned to them.");
+      throw new Error("Access denied. Driver can only update jobs assigned to them.");
     }
 
-    // 4) Update jobs table
+    // 5) Prepare job update payload
     const jobUpdates: Record<string, any> = {
       status: new_status,
       last_status_update_at: timestamp,
     };
 
-    // Check if this is the final POD upload for the last delivery stop
-    if (new_status === 'pod_received') {
-      const { data: jobStops, error: stopsError } = await admin
-        .from('job_stops')
-        .select('id, type, seq')
-        .eq('job_id', job_id)
-        .eq('org_id', org_id)
-        .order('seq', { ascending: true });
+    if (signature_url) jobUpdates.pod_signature_path = signature_url;
+    if (signature_name) jobUpdates.pod_signature_name = signature_name;
 
+    // 6) Check if job should be marked as 'delivered'
+    if (new_status === 'pod_received') {
+      const { data: jobStops, error: stopsError } = await admin.from('job_stops').select('id, type').eq('job_id', job_id).eq('org_id', org_id);
       if (stopsError) console.error("Error fetching job stops for final status check:", stopsError.message);
 
       const deliveryStops = jobStops?.filter(s => s.type === 'delivery') || [];
-      const currentStopIsLastDelivery = deliveryStops.length > 0 && deliveryStops[deliveryStops.length - 1].id === stop_id;
-
-      if (currentStopIsLastDelivery) {
-        // Check if all delivery stops have 'pod_received' logs
-        const { data: deliveryLogs, error: logsError } = await admin
-          .from('job_progress_log')
-          .select('stop_id, action_type')
-          .eq('job_id', job_id)
-          .eq('org_id', org_id)
-          .in('stop_id', deliveryStops.map(s => s.id));
-
+      if (deliveryStops.length > 0) {
+        const { data: deliveryLogs, error: logsError } = await admin.from('job_progress_log').select('stop_id, action_type').eq('job_id', job_id).eq('org_id', org_id).eq('action_type', 'pod_received');
         if (logsError) console.error("Error fetching delivery logs for final status check:", logsError.message);
 
-        const allDeliveryStopsHavePod = deliveryStops.every(dStop =>
-          deliveryLogs?.some(log => log.stop_id === dStop.id && log.action_type === 'pod_received')
-        );
+        const poddedStopIds = new Set(deliveryLogs?.map(log => log.stop_id) || []);
+        poddedStopIds.add(stop_id); // Add the current stop being processed
 
+        const allDeliveryStopsHavePod = deliveryStops.every(dStop => poddedStopIds.has(dStop.id));
         if (allDeliveryStopsHavePod) {
-          jobUpdates.status = 'delivered'; // Set overall job status to 'delivered'
+          jobUpdates.status = 'delivered';
         }
       }
     }
 
-    const { data: updatedJob, error: updateJobError } = await admin
-      .from("jobs")
-      .update(jobUpdates)
-      .eq("id", job_id)
-      .eq("org_id", org_id)
-      .select()
-      .single();
+    // 7) Execute updates
+    const { data: updatedJob, error: updateJobError } = await admin.from("jobs").update(jobUpdates).eq("id", job_id).select().single();
+    if (updateJobError) throw new Error("Failed to update job status: " + updateJobError.message);
 
-    if (updateJobError) {
-      console.error("Error updating job status:", updateJobError);
-      throw new Error("Failed to update job status: " + updateJobError.message);
-    }
+    const { data: insertedLog, error: insertLogError } = await admin.from("job_progress_log").insert({
+      id: uuidv4(), org_id, job_id, actor_id, stop_id: stop_id || null,
+      actor_role, action_type: new_status, timestamp, notes: notes || null,
+      lat: lat || null, lon: lon || null, created_at: new Date().toISOString(),
+    }).select().single();
+    if (insertLogError) throw new Error("Failed to log job progress: " + insertLogError.message);
 
-    // 5) Insert into job_progress_log table
-    const { data: insertedLog, error: insertLogError } = await admin
-      .from("job_progress_log")
-      .insert({
-        id: uuidv4(),
-        org_id: org_id,
-        job_id: job_id,
-        actor_id: actor_id,
-        actor_role: actor_role, // Added actor_role
-        action_type: new_status, // Renamed from status
-        timestamp: timestamp,
-        notes: notes || null,
-        stop_id: stop_id || null, // Include stop_id
-        lat: lat || null, // Add lat
-        lon: lon || null, // Add lon
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (insertLogError) {
-      console.error("Error inserting job progress log:", insertLogError);
-      // Optionally, rollback job status update here if transactions were supported
-      throw new Error("Failed to log job progress: " + insertLogError.message);
-    }
-
-    // 6) Audit log
-    const { error: auditError } = await admin.from("audit_logs").insert({
-      org_id: org_id,
-      actor_id: actor_id,
-      entity: "jobs",
-      entity_id: job_id,
-      action: "update_progress",
+    // 8) Audit log
+    await admin.from("audit_logs").insert({
+      org_id, actor_id, entity: "jobs", entity_id: job_id, action: "update_progress",
       before: { status: oldJob.status },
       after: { status: updatedJob.status, last_status_update_at: timestamp },
-      notes: `Job progress updated to: ${new_status}`,
-      created_at: new Date().toISOString(),
     });
-    if (auditError) {
-      console.error("DEBUG: audit insert failed", auditError.message);
-    }
 
-    // 7) Create notifications for office/admin users if update is from a driver
+    // 9) Create and send notifications
     if (actor_role === 'driver') {
-      const { data: officeAdminProfiles, error: profileError } = await admin
-        .from("profiles")
-        .select("id, user_id")
-        .eq("org_id", org_id)
-        .in("role", ["admin", "office"]);
-
-      if (profileError) {
-        console.error("Error fetching office/admin profiles for notification:", profileError.message);
-      } else if (officeAdminProfiles && officeAdminProfiles.length > 0) {
+      const { data: officeAdminProfiles } = await admin.from("profiles").select("id").eq("org_id", org_id).in("role", ["admin", "office"]);
+      if (officeAdminProfiles && officeAdminProfiles.length > 0) {
         const notificationTitle = `Job Update: ${updatedJob.order_number}`;
         const notificationMessage = `${me.full_name} updated status to "${new_status.replace(/_/g, ' ')}".`;
+        const link_to = `/jobs/${updatedJob.order_number}`;
 
-        const notificationsToInsert = officeAdminProfiles
-          .filter(p => p.id !== actor_id) // Don't notify the actor
-          .map(p => ({
-            user_id: p.id,
-            org_id: org_id,
-            title: notificationTitle,
-            message: notificationMessage,
-            link_to: `/jobs/${updatedJob.order_number}`,
-          }));
-
+        const notificationsToInsert = officeAdminProfiles.filter(p => p.id !== actor_id).map(p => ({
+          user_id: p.id, org_id, title: notificationTitle, message: notificationMessage, link_to,
+        }));
         if (notificationsToInsert.length > 0) {
-          const { error: insertNotificationsError } = await admin
-            .from("notifications")
-            .insert(notificationsToInsert);
-
-          if (insertNotificationsError) {
-            console.error("Error inserting notifications:", insertNotificationsError.message);
-          }
+          await admin.from("notifications").insert(notificationsToInsert);
         }
 
-        // 8) Send push notifications
-        const { data: devices } = await admin
-          .from('profile_devices')
-          .select('expo_push_token')
-          .in('profile_id', officeAdminProfiles.map(p => p.id));
-
-        if (devices && devices.length > 0) {
+        const { data: devices } = await admin.from('profile_devices').select('expo_push_token').in('profile_id', officeAdminProfiles.map(p => p.id));
+        if (devices) {
           for (const device of devices) {
             await invokeEdgeFunction('send-push-notification', {
-              to: device.expo_push_token,
-              title: notificationTitle,
-              body: notificationMessage,
-              data: { url: `/jobs/${updatedJob.order_number}` }
+              to: device.expo_push_token, title: notificationTitle, body: notificationMessage, data: { url: link_to }
             });
           }
         }
@@ -293,10 +204,7 @@ serve(async (req) => {
     console.error("DEBUG: function error in update-job-progress", e);
     return new Response(
       JSON.stringify({ ok: false, error: (e as Error).message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
+      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   }
 });
