@@ -186,6 +186,22 @@ export interface DailyCheck {
 
 export const mockDailyChecks: DailyCheck[] = [];
 
+export interface DailyChecklistItem {
+  id: string;
+  title: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface DailyChecklist {
+  id: string;
+  org_id: string;
+  name: string;
+  items: DailyChecklistItem[];
+}
+
+export const mockDailyChecklists: DailyChecklist[] = [];
+
 export const mockJobs: Job[] = [];
 export const mockDocuments: Document[] = [];
 export const mockProfiles: Profile[] = [];
