@@ -106,19 +106,6 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
 
       await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, 'pod_uploaded', stopId);
 
-      if (stopId) {
-        await updateJobProgress({
-          job_id: job.id,
-          org_id: currentProfile.org_id,
-          actor_id: currentProfile.id,
-          actor_role: currentProfile.role,
-          new_status: 'pod_received',
-          timestamp: new Date().toISOString(),
-          notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
-          stop_id: stopId,
-        });
-      }
-
       toast.success("POD uploaded successfully!");
       onUploadSuccess();
       onOpenChange(false);

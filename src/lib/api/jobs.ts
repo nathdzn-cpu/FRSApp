@@ -124,6 +124,17 @@ export const updateJob = async (payload: any) => {
   return await callFn('update-job', payload);
 };
 
+export const updateJobStatus = async (jobId: string, orgId: string, status: Job['status'], actorId: string, actorRole: string) => {
+  const payload = {
+    job_id: jobId,
+    org_id: orgId,
+    actor_id: actorId,
+    actor_role: actorRole,
+    job_updates: { status },
+  };
+  return await updateJob(payload);
+};
+
 export const cancelJob = async (jobId: string, orgId: string, actorId: string, actorRole: string) => {
   return await callFn('cancel-job', { job_id: jobId, org_id: orgId, actor_id: actorId, actor_role: actorRole });
 };

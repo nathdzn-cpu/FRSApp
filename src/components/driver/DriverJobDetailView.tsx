@@ -136,7 +136,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
         org_id: currentOrgId,
         actor_id: currentProfile.id,
         actor_role: userRole,
-        new_status: newStatus,
+        action: newStatus,
         timestamp: timestamp.toISOString(),
         notes: notes.trim() || undefined,
         stop_id: stopId,
