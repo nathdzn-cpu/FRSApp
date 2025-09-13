@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera, Edit } from 'lucide-react';
 import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
@@ -70,6 +70,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
   const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [podDialogInitialTab, setPodDialogInitialTab] = useState<'upload' | 'signature'>('upload'); // New state for initial tab
 
   useEffect(() => {
     if (job && currentProfile) {
@@ -140,8 +141,10 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const handleNextActionButtonClick = () => {
     if (!nextAction) return;
 
+    // This function will now only handle non-POD actions
     if (nextAction.nextStatus === 'pod_received') {
-      setIsPodUploadDialogOpen(true);
+      // The new buttons below will handle opening the PodUploadDialog
+      return;
     } else {
       setIsProgressDialogOpen(true);
     }
@@ -210,15 +213,49 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
                   )}
                   {currentStopForAction && renderStopDetails(currentStopForAction)}
                   <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <Button
-                      onClick={handleNextActionButtonClick}
-                      disabled={isUpdatingProgress || isUploadingImage}
-                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                      data-testid="driver-next-action-btn"
-                    >
-                      {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                      {nextAction.label}
-                    </Button>
+                    {nextAction.nextStatus === 'pod_received' ? (
+                      <>
+                        <Button
+                          onClick={() => {
+                            setPodDialogInitialTab('upload');
+                            setIsPodUploadDialogOpen(true);
+                          }}
+                          disabled={isUpdatingProgress || isUploadingImage}
+                          className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                          data-testid="driver-upload-pod-btn"
+                        >
+                          {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                          Upload POD
+                        </Button>
+                        <p className="text-sm text-gray-600 text-center my-2">
+                          If no paperwork was issued by the customer, click here:
+                        </p>
+                        <Button
+                          onClick={() => {
+                            setPodDialogInitialTab('signature');
+                            setIsPodUploadDialogOpen(true);
+                          }}
+                          disabled={isUpdatingProgress || isUploadingImage}
+                          variant="outline"
+                          className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                          data-testid="driver-capture-signature-btn"
+                        >
+                          {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Edit className="h-5 w-5 mr-2" />}
+                          Capture Signature
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={handleNextActionButtonClick}
+                        disabled={isUpdatingProgress || isUploadingImage}
+                        className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                        data-testid="driver-next-action-btn"
+                      >
+                        {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                        {nextAction.label}
+                      </Button>
+                    )}
+
                     {nextAction.nextStatus !== 'pod_received' && (
                       <Button
                         onClick={() => setIsImageUploadDialogOpen(true)}
@@ -266,6 +303,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           onUploadSuccess={handlePodUploadSuccess}
           isLoading={isUpdatingProgress}
           setIsLoading={setIsUpdatingProgress}
+          initialTab={podDialogInitialTab} // Pass the selected tab here
         />
       )}
 
