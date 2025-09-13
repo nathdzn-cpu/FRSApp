@@ -21,7 +21,7 @@ import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle
 import JobEditForm from '@/components/JobEditForm';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
 import JobProgressUpdateDialog from './JobProgressUpdateDialog';
-import { Job, JobStop, Profile } from '@/utils/mockData';
+import { Job, JobStop, Profile } from '@/types';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 
 interface JobDetailHeaderProps {
@@ -71,7 +71,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
 
   return (
-    <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
+    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-0 pb-2 gap-4">
       <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
         Job: {job.order_number}
         <Badge
@@ -89,7 +89,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
           {getDisplayStatus(job.status)}
         </Badge>
       </CardTitle>
-      <div className="flex space-x-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {isOfficeOrAdmin && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogTrigger asChild>

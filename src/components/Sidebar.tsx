@@ -1,177 +1,129 @@
 "use client";
 
-import React, { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown, PlusCircle } from 'lucide-react';
-import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react";
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/context/AuthContext';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Home,
+  Users2,
+  LineChart,
+  Settings,
+  Package,
+  Package2,
+  Truck,
+  FileText,
+  Map,
+  Bell,
+  Building,
+  ClipboardCheck,
+  Wrench,
+  FilePlus,
+  UserPlus,
+  Save,
+  List,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import NotificationBell from "./NotificationBell";
 
-interface NavLinkItem {
-  to: string;
-  icon: React.ElementType;
-  label: string;
-  roles?: Array<'admin' | 'office' | 'driver'>;
-}
+const getNavLinks = (role: "admin" | "office" | "driver" | undefined) => {
+  const baseLinks = [
+    { to: "/", icon: Home, label: "Dashboard" },
+    { to: "/jobs", icon: List, label: "All Jobs" },
+  ];
 
-const navLinks: NavLinkItem[] = [
-  { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
-  { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] },
-  { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
-  { to: '/map', icon: Map, label: 'Map', roles: ['admin', 'office', 'driver'] },
-  { to: '/quotes', icon: FileText, label: 'Quotes', roles: ['admin', 'office'] },
-  { to: '/admin/checklists', icon: CheckSquare, label: 'Admin Checklists', roles: ['admin'] },
-  { to: '/admin/users', icon: Users, label: 'Admin Users', roles: ['admin'] },
-  { to: '/admin/saved-addresses', icon: MapPin, label: 'Saved Addresses', roles: ['admin', 'office'] },
-  { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'office', 'driver'] },
-];
+  const driverLinks = [
+    ...baseLinks,
+    { to: "/driver/daily-check", icon: ClipboardCheck, label: "Daily Check" },
+    { to: "/map", icon: Map, label: "Map" },
+  ];
 
-const Sidebar: React.FC = () => {
-  const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, userRole, logout } = useAuth();
-  const navigate = useNavigate();
+  const officeLinks = [
+    ...baseLinks,
+    { to: "/create-job", icon: FilePlus, label: "Create Job" },
+    { to: "/drivers", icon: Truck, label: "Drivers" },
+    { to: "/quotes", icon: FileText, label: "Quotes" },
+    { to: "/map", icon: Map, label: "Map" },
+  ];
 
-  const filteredNavLinks = navLinks.filter(link =>
-    !link.roles || (userRole && link.roles.includes(userRole))
-  );
+  const adminLinks = [
+    ...officeLinks,
+    { to: "/admin/users", icon: Users2, label: "Users" },
+    { to: "/admin/saved-addresses", icon: Save, label: "Saved Addresses" },
+    { to: "/admin/daily-checks", icon: Wrench, label: "Daily Checks" },
+  ];
 
-  const canCreateJob = userRole === 'admin' || userRole === 'office';
-
-  const renderNavLinks = () => (
-    <nav className="flex flex-col gap-1 p-2">
-      {canCreateJob && isMobile && ( // Show "New Job" button only on mobile
-        <Button onClick={() => { navigate('/jobs/new'); setIsOpen(false); }} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md mb-2">
-          <PlusCircle className="h-4 w-4 mr-2" /> New Job
-        </Button>
-      )}
-      {filteredNavLinks.map((link) => (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          className={({ isActive }) =>
-            cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all text-sm font-medium",
-              isActive ? "bg-[var(--saas-sidebar-active-bg)] text-[var(--saas-sidebar-active-text)] shadow-sm" : "text-[var(--saas-sidebar-text)] hover:bg-[var(--saas-sidebar-hover-bg)] hover:text-blue-600"
-            )
-          }
-          onClick={() => setIsOpen(false)}
-        >
-          <link.icon className="h-4 w-4" size={18} />
-          {link.label}
-        </NavLink>
-      ))}
-    </nav>
-  );
-
-  const userInitials = profile?.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'JD';
-  const userName = profile?.full_name || 'John Doe';
-  const userRoleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
-
-  if (isMobile) {
-    return (
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50 bg-white shadow-md">
-            <Menu className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px] bg-[var(--saas-sidebar-bg)] p-0">
-          <div className="flex h-14 items-center border-b border-[var(--saas-border)] px-4 lg:h-[60px] lg:px-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold" onClick={() => setIsOpen(false)}>
-              <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />
-              <span className="text-lg text-gray-900">FRS Haulage</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-            {/* User Profile Section */}
-            {user && profile && (
-              <div className="p-4 border-b border-[var(--saas-border)] mb-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-10 w-10">
-                          {profile.avatar_url ? (
-                            <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                          ) : (
-                            <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium text-gray-900">{userName}</span>
-                          <span className="text-xs text-gray-500">{userRoleDisplay}</span>
-                        </div>
-                      </div>
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-white shadow-lg rounded-md">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-            {renderNavLinks()}
-          </div>
-        </SheetContent>
-      </Sheet>
-    );
+  switch (role) {
+    case "admin":
+      return adminLinks;
+    case "office":
+      return officeLinks;
+    case "driver":
+      return driverLinks;
+    default:
+      return [];
   }
-
-  return (
-    <aside className="flex h-screen w-64 flex-col bg-[var(--saas-sidebar-bg)] shadow-sm">
-      <div className="flex h-14 items-center border-b border-[var(--saas-border)] px-4 lg:h-[60px] lg:px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />
-          <span className="text-lg text-gray-900">FRS Haulage</span>
-        </Link>
-      </div>
-      <div className="flex-1 overflow-auto py-2">
-        {/* User Profile Section */}
-        {user && profile && (
-          <div className="p-4 border-b border-[var(--saas-border)] mb-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-10 w-10">
-                      {profile.avatar_url ? (
-                        <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                      ) : (
-                        <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium text-gray-900">{userName}</span>
-                      <span className="text-xs text-gray-500">{userRoleDisplay}</span>
-                    </div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-white shadow-lg rounded-md">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-                <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-        {renderNavLinks()}
-      </div>
-    </aside>
-  );
 };
 
-export default Sidebar;
+export default function Sidebar() {
+  const location = useLocation();
+  const { userRole } = useAuth();
+  const navLinks = getNavLinks(userRole);
+
+  return (
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+        <Link
+          to="/"
+          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+        >
+          <Truck className="h-5 w-5 transition-all group-hover:scale-110" />
+          <span className="sr-only">HOSS</span>
+        </Link>
+        <TooltipProvider>
+          {navLinks.map((link) => (
+            <Tooltip key={link.to}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={link.to}
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                    location.pathname === link.to && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <link.icon className="h-5 w-5" />
+                  <span className="sr-only">{link.label}</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">{link.label}</TooltipContent>
+            </Tooltip>
+          ))}
+        </TooltipProvider>
+      </nav>
+      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+        <NotificationBell />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to="/settings"
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                  location.pathname === "/settings" && "bg-accent text-accent-foreground"
+                )}
+              >
+                <Settings className="h-5 w-5" />
+                <span className="sr-only">Settings</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">Settings</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </nav>
+    </aside>
+  );
+}
