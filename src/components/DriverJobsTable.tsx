@@ -68,9 +68,7 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {job.date_created ? format(parseISO(job.date_created), 'dd/MM/yyyy') : 'N/A'}
-                </TableCell>
+                <TableCell>{format(parseISO(job.date_created), 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>

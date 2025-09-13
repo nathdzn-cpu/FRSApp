@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, updateJobProgress } from '@/lib/api/jobs';
-import { getProfiles } from '@/lib/api/profiles';
+import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, getJobs } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -13,9 +12,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
 import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
-import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
+import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
 import CloneJobDialog from '@/components/CloneJobDialog';
-import { Job, JobStop, Document, Profile, JobProgressLog } from '@/types';
+import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -80,6 +79,14 @@ const JobDetail: React.FC = () => {
     enabled: !!user && !!currentProfile && !isLoadingAuth && !!userRole,
   });
 
+  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
+  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
+    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
+    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
+    staleTime: 30 * 1000,
+    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
+  });
+
   // Use useQuery for job details, stops, and documents
   const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
     job: Job | undefined;
@@ -118,8 +125,8 @@ const JobDetail: React.FC = () => {
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
-  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
-  const error = allProfilesError || jobError;
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob || isLoadingDriverActiveJobs;
+  const error = allProfilesError || jobError || driverActiveJobsError;
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile || !userRole) return;
@@ -278,7 +285,7 @@ const JobDetail: React.FC = () => {
           org_id: currentOrgId,
           actor_id: currentProfile.id,
           actor_role: userRole,
-          action: entry.status,
+          new_status: entry.status,
           timestamp: entry.dateTime.toISOString(),
           notes: entry.notes.trim() || undefined,
         };
@@ -341,6 +348,7 @@ const JobDetail: React.FC = () => {
         currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
+        driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
       />
     );
   }
@@ -371,6 +379,7 @@ const JobDetail: React.FC = () => {
             isSubmittingEdit={isSubmittingEdit}
             isAssigningDriver={isAssigningDriver}
             isUpdatingProgress={isUpdatingProgress}
+            driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
           />
           <JobOverviewCard
             job={job}

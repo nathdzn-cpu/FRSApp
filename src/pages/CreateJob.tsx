@@ -3,9 +3,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles } from '@/lib/api/profiles';
-import { createJob } from '@/lib/api/jobs';
-import { Profile, Job } from '@/types';
+import { getProfiles, createJob } from '@/lib/supabase';
+import { Profile, Job } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';

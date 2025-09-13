@@ -25,7 +25,6 @@ import AdminDailyChecks from './pages/admin/DailyChecks';
 import AdminSavedAddresses from './pages/admin/SavedAddresses';
 import Map from './pages/Map'; // Import new Map page
 import Quotes from './pages/Quotes'; // Import new Quotes page
-import BillingPage from './pages/admin/Billing';
 import { useNotifications } from './hooks/use-notifications';
 import { supabase } from './lib/supabaseClient';
 import { JobProgressLog } from './utils/mockData';
@@ -102,7 +101,6 @@ const AppContent = () => {
             <Route path="/admin/users/:id/edit" element={<EditUser />} />
             <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
             <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />
-            <Route path="/admin/billing" element={<BillingPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/env-debug" element={<EnvDebug />} />
             <Route path="*" element={<NotFound />} />

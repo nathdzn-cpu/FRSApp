@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Job, Profile } from "@/types"
+import { Job, Profile } from "@/utils/mockData"
 import { DataTableColumnHeader } from "../data-table/DataTableColumnHeader"
 import { Badge } from "@/components/ui/badge"
 import { getDisplayStatus, getStatusColorClass } from "@/lib/utils/statusUtils"
@@ -74,9 +74,7 @@ export const getColumns = ({
         <DataTableColumnHeader column={column} title="Created" />
       ),
       cell: ({ row }) => {
-        const dateCreated = row.getValue("date_created") as string | null | undefined;
-        if (!dateCreated) return <span>N/A</span>;
-        const date = parseISO(dateCreated);
+        const date = parseISO(row.getValue("date_created"));
         return <span>{format(date, "dd/MM/yyyy")}</span>;
       },
     },

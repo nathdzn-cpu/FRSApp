@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown, PlusCircle, CreditCard } from 'lucide-react';
+import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown, PlusCircle } from 'lucide-react';
 import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
@@ -29,7 +29,6 @@ const navLinks: NavLinkItem[] = [
   { to: '/admin/checklists', icon: CheckSquare, label: 'Admin Checklists', roles: ['admin'] },
   { to: '/admin/users', icon: Users, label: 'Admin Users', roles: ['admin'] },
   { to: '/admin/saved-addresses', icon: MapPin, label: 'Saved Addresses', roles: ['admin', 'office'] },
-  { to: '/admin/billing', icon: CreditCard, label: 'Billing', roles: ['admin'] },
   { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'office', 'driver'] },
 ];
 

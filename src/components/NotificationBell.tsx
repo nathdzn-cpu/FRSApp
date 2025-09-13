@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
-import { Notification, Profile } from '@/types';
+import { Notification } from '@/utils/mockData';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProfiles } from '@/lib/api/profiles';
 

@@ -5,9 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, CheckCircle, FileText, Edit, Camera, Truck, XCircle } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileText, Edit, Camera } from 'lucide-react';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
@@ -22,7 +22,6 @@ interface JobsTableProps {
   currentOrgId: string;
   onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void;
   onCancelJob: (job: Job) => void; // New prop
-  onDriverSelect: (driver: Profile) => void;
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({
@@ -33,7 +32,6 @@ const JobsTable: React.FC<JobsTableProps> = ({
   currentOrgId,
   onAction,
   onCancelJob, // Use new prop
-  onDriverSelect,
 }) => {
   const navigate = useNavigate();
 
@@ -106,13 +104,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
                 </TableCell>
                 <TableCell>{format(parseISO(job.date_created), 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
-                  <div
-                    className="flex items-center text-sm text-gray-700 cursor-pointer"
-                    onClick={() => {
-                      const driver = profiles.find(p => p.id === job.assigned_driver_id);
-                      if (driver) onDriverSelect(driver);
-                    }}
-                  >
+                  <div className="flex items-center text-sm text-gray-700">
                     <Avatar className="h-7 w-7 mr-2">
                       {driverInfo.avatar_url ? (
                         <AvatarImage src={driverInfo.avatar_url} alt={driverInfo.name} className="object-cover" />
@@ -123,7 +115,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
                       )}
                     </Avatar>
                     <div>
-                      <div className="font-medium text-gray-900 hover:underline">{driverInfo.name}</div>
+                      <div className="font-medium text-gray-900">{driverInfo.name}</div>
                       {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
                         <div className="text-xs text-gray-500">{driverInfo.reg}</div>
                       )}

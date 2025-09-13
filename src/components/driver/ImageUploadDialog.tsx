@@ -16,8 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadDocument } from '@/lib/api/driverApp';
-import { Job, Profile } from '@/types';
+import { uploadDocument } from '@/lib/api/jobs';
+import { Job, Profile } from '@/utils/mockData';
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -103,7 +103,7 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
         throw new Error("Failed to get public URL for uploaded file.");
       }
 
-      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'image', publicUrl, 'document_uploaded', stopId);
+      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'document_uploaded', publicUrl, 'image_uploaded', stopId);
 
       toast.success("Image uploaded successfully!");
       onUploadSuccess();

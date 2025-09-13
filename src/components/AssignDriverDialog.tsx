@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Profile } from '@/types';
+import { Profile } from '@/utils/mockData';
 import { Loader2, User, Truck, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

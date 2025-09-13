@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getJobDocuments } from '@/lib/api/jobs';
 import { Job, Document } from '@/utils/mockData';
@@ -30,8 +30,8 @@ const JobAttachmentsDialog: React.FC<JobAttachmentsDialogProps> = ({
   const { data: documents = [], isLoading: isLoadingDocuments, error: documentsError } = useQuery<Document[], Error>({
     queryKey: ['jobDocuments', job?.id],
     queryFn: () => getJobDocuments(currentOrgId, job!.id),
-    enabled: open && !!job?.id && !!currentOrgId,
-    staleTime: 60 * 1000,
+    enabled: open && !!job?.id && !!currentOrgId, // Only fetch when dialog is open and job is available
+    staleTime: 60 * 1000, // Cache documents for 1 minute
   });
 
   return (
@@ -55,12 +55,12 @@ const JobAttachmentsDialog: React.FC<JobAttachmentsDialogProps> = ({
             <div className="text-red-500 text-center py-4">
               Error loading attachments: {documentsError.message}
             </div>
-          ) : documents.length === 0 && !job?.pod_signature_path ? (
+          ) : documents.length === 0 ? (
             <div className="text-gray-600 text-center py-4">
               No attachments found for this job.
             </div>
           ) : (
-            job && <JobPodsGrid documents={documents} job={job} />
+            <JobPodsGrid documents={documents} />
           )}
         </div>
       </DialogContent>

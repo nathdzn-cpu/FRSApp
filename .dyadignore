@@ -1,42 +1,13 @@
-# Build and output
+node_modules
 dist
 build
 .next
-out
-.vercel
-
-# Dependencies
-node_modules
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
-
-# Logs and coverage
+.out
 logs
-*.log
 coverage
-*.cache
-
-# IDE and system files
-.idea
-.vscode
-.DS_Store
-Thumbs.db
-
-# Git-related
+*.lock
+*.log
 .git
 .github
-
-# Platform-specific (mobile builds)
-ios
-android
-
-# Documentation and design artifacts
-docs
-
-# Supabase auto-generated config (can be large, include only if needed)
-supabase/.temp
-supabase/migrations
-
-# Misc
-*.env*
+.idea
+.vscode

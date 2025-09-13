@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Profile } from '@/types';
+import { Profile } from '@/utils/mockData';
 
 const editUserFormSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),

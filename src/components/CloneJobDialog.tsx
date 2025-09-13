@@ -7,9 +7,8 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProfiles } from '@/lib/api/profiles';
-import { createJob } from '@/lib/api/jobs';
-import { Job, JobStop, Profile } from '@/types';
+import { getProfiles, createJob } from '@/lib/supabase';
+import { Job, JobStop, Profile } from '@/utils/mockData';
 import JobForm from './JobForm';
 import { parseISO } from 'date-fns';
 

@@ -3,10 +3,9 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
-import { Profile } from '@/types';
+import { Profile } from '@/utils/mockData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getOrganisationDetails } from '@/lib/api/organisation';
 
 type UserRole = 'admin' | 'office' | 'driver' | undefined;
 
@@ -16,13 +15,12 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole;
   isLoadingAuth: boolean;
-  login: (userIdOrEmail: string, password: string, orgKey: string) => Promise<{ success: boolean; error?: string }>;
+  login: (userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const SESSION_TOKEN_KEY = 'app_session_token';
 
 export const AuthContextProvider = ({ children, initialSession, initialUser }: { children: ReactNode; initialSession: Session | null; initialUser: User | null }) => {
   const [session, setSession] = useState<Session | null>(initialSession);
@@ -30,16 +28,20 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(undefined);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [activeSessionToken, setActiveSessionToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
+  const currentUserIdRef = useRef<string | null>(initialUser?.id || null);
+
   const fetchProfile = useCallback(async (currentUser: User | null) => {
+    console.log("AuthContextProvider: fetchProfile called for user:", currentUser?.id);
+    setProfile(null);
+    setUserRole(undefined);
     if (!currentUser) {
-      setProfile(null);
-      setUserRole(undefined);
+      console.log("AuthContextProvider: No current user, skipping profile fetch.");
       return;
     }
+
     try {
       const { data: fetchedProfile, error: profileError } = await supabase
         .from("profiles")
@@ -48,58 +50,82 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
+        console.error("AuthContextProvider: Error fetching profile from DB:", profileError);
         toast.error("Failed to load user profile.");
       } else if (fetchedProfile) {
-        const { data: publicUrlData } = supabase.storage.from('profile-pictures').getPublicUrl(`${currentUser.id}.png`);
-        setProfile({ ...fetchedProfile as Profile, avatar_url: publicUrlData?.publicUrl || null });
+        console.log("AuthContextProvider: Profile fetched successfully:", fetchedProfile);
+        // Fetch avatar URL
+        const { data: publicUrlData } = supabase.storage
+          .from('profile-pictures')
+          .getPublicUrl(`${currentUser.id}.png`); // Assuming .png extension
+
+        const avatarUrl = publicUrlData?.publicUrl || null;
+
+        setProfile({ ...fetchedProfile as Profile, avatar_url: avatarUrl });
         setUserRole((fetchedProfile as Profile).role || undefined);
       } else {
+        console.log("AuthContextProvider: No profile row found for this user.");
         toast.error("No user profile found. Please contact an administrator.");
       }
     } catch (error) {
+      console.error("AuthContextProvider: Unexpected error fetching profile:", error);
       toast.error("An unexpected error occurred while fetching profile.");
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await fetchProfile(user);
+    if (user) {
+      await fetchProfile(user);
+    }
   }, [user, fetchProfile]);
 
-  const silentLogout = useCallback(() => {
-    supabase.auth.signOut();
-    sessionStorage.removeItem(SESSION_TOKEN_KEY);
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setUserRole(undefined);
-    setActiveSessionToken(null);
-  }, []);
-
+  // Effect for initial session load and auth state changes
   useEffect(() => {
     let mounted = true;
+    console.log("AuthContextProvider: useEffect for auth state changes mounted.");
+
+    // Hydrate session once on mount
     supabase.auth.getSession().then(({ data }) => {
       if (mounted) {
+        console.log("AuthContextProvider: Initial getSession data:", data);
         setSession(data.session || null);
         setUser(data.session?.user || null);
-        if (data.session) {
-          setActiveSessionToken(sessionStorage.getItem(SESSION_TOKEN_KEY));
-        }
+        currentUserIdRef.current = data.session?.user?.id || null;
         setIsLoadingAuth(false);
       }
+    }).catch(err => {
+      console.error("AuthContextProvider: Error during initial getSession:", err);
+      setIsLoadingAuth(false); // Ensure loading state is cleared even on error
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+    // Listen for login/logout events
+    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      console.log("AuthContextProvider: Supabase auth event:", event, "Session user ID:", session?.user?.id);
       if (mounted) {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        if (event === 'SIGNED_OUT') {
-          sessionStorage.removeItem(SESSION_TOKEN_KEY);
-          setActiveSessionToken(null);
-          setProfile(null);
-          setUserRole(undefined);
-        }
         if (event === 'SIGNED_IN') {
+          if (session?.user?.id && session.user.id !== currentUserIdRef.current) {
+            console.log("AuthContextProvider: SIGNED_IN - New user detected.");
+            setSession(session);
+            setUser(session.user);
+            currentUserIdRef.current = session.user.id;
+            setIsLoadingAuth(false);
+          } else if (!session?.user?.id && currentUserIdRef.current) {
+            console.log("AuthContextProvider: SIGNED_IN with no user, but ref had one. Treating as sign out.");
+            setSession(null);
+            setUser(null);
+            currentUserIdRef.current = null;
+            setIsLoadingAuth(false);
+          } else {
+            console.log("AuthContextProvider: SIGNED_IN - Same user, no state change.");
+          }
+        } else if (event === 'SIGNED_OUT') {
+          console.log("AuthContextProvider: SIGNED_OUT event.");
+          setSession(null);
+          setUser(null);
+          currentUserIdRef.current = null;
           setIsLoadingAuth(false);
+        } else {
+          console.log(`AuthContextProvider: Auth event '${event}' - no explicit state change.`);
         }
       }
     });
@@ -107,114 +133,73 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     return () => {
       mounted = false;
       listener.subscription.unsubscribe();
+      console.log("AuthContextProvider: useEffect for auth state changes unmounted.");
     };
   }, []);
 
-  // Realtime check for single session
   useEffect(() => {
-    if (!user || !activeSessionToken) return;
-
-    const channel = supabase
-      .channel(`profile-session-check:${user.id}`)
-      .on<Profile>(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => {
-          const newDbToken = payload.new.active_session_token;
-          if (newDbToken && newDbToken !== activeSessionToken) {
-            toast.warning("You have been logged out because you signed in on another device.", { duration: 5000 });
-            silentLogout();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, activeSessionToken, silentLogout]);
-
-  useEffect(() => {
+    console.log("AuthContextProvider: useEffect for user/profile changes. User:", user?.id, "isLoadingAuth:", isLoadingAuth);
     if (user && !isLoadingAuth) {
       fetchProfile(user);
     } else if (!user) {
+      console.log("AuthContextProvider: No user, clearing profile/role.");
       setProfile(null);
       setUserRole(undefined);
     }
   }, [user, fetchProfile, isLoadingAuth]);
 
+  // Redirection logic based on profile/role
   useEffect(() => {
+    console.log("AuthContextProvider: useEffect for redirection. isLoadingAuth:", isLoadingAuth, "User:", user?.id, "UserRole:", userRole, "Path:", location.pathname);
     if (!isLoadingAuth && user) {
       if (location.pathname === '/login') {
-        const target = userRole === 'admin' ? '/admin/users' : '/';
-        navigate(target);
+        if (userRole === 'admin') {
+          console.log("AuthContextProvider: Redirecting to /admin/users (admin).");
+          navigate('/admin/users');
+        } else if (userRole === 'office' || userRole === 'driver') {
+          console.log("AuthContextProvider: Redirecting to / (office/driver).");
+          navigate('/');
+        } else {
+          console.log("AuthContextProvider: Redirecting to / (logged in, no specific role).");
+          navigate('/');
+        }
       }
     } else if (!isLoadingAuth && !user && location.pathname !== '/login') {
+      console.log("AuthContextProvider: Not logged in, redirecting to /login.");
       navigate('/login');
     }
   }, [isLoadingAuth, user, userRole, navigate, location.pathname]);
 
-  const login = async (userIdOrEmail: string, password: string, orgKey: string) => {
-    let emailToLogin = userIdOrEmail.includes('@') ? userIdOrEmail : `${userIdOrEmail.toLowerCase().replace(/\s+/g, '.')}@frs-haulage.local`;
+  const login = async (userIdOrEmail: string, password: string) => {
+    console.log("AuthContextProvider: login called for:", userIdOrEmail);
+    let emailToLogin = userIdOrEmail;
+    if (!userIdOrEmail.includes('@')) {
+      emailToLogin = userIdOrEmail.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
+    }
 
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
     if (error) {
+      console.error("AuthContextProvider: Login failed:", error.message);
       toast.error(error.message);
       return { success: false, error: error.message };
+    } else {
+      console.log("AuthContextProvider: Login successful.");
+      toast.success("Logged in successfully!");
+      return { success: true };
     }
-
-    if (signInData.user) {
-      try {
-        const { data: userProfile, error: profileError } = await supabase.from('profiles').select('org_id').eq('id', signInData.user.id).single();
-        if (profileError || !userProfile) {
-          await supabase.auth.signOut();
-          const message = "Could not verify user profile.";
-          toast.error(message);
-          return { success: false, error: message };
-        }
-
-        const organisation = await getOrganisationDetails(userProfile.org_id);
-        if (!organisation || organisation.display_id !== orgKey) {
-          await supabase.auth.signOut();
-          const message = "Invalid Organisation Key.";
-          toast.error(message);
-          return { success: false, error: message };
-        }
-
-        const newSessionToken = crypto.randomUUID();
-        const { error: updateError } = await supabase.from('profiles').update({ active_session_token: newSessionToken }).eq('id', signInData.user.id);
-        if (updateError) {
-          await supabase.auth.signOut();
-          toast.error("Failed to initialize session. Please try again.");
-          return { success: false, error: "Failed to initialize session." };
-        }
-
-        sessionStorage.setItem(SESSION_TOKEN_KEY, newSessionToken);
-        setActiveSessionToken(newSessionToken);
-        setSession(signInData.session);
-        setUser(signInData.user);
-
-      } catch (validationError: any) {
-        await supabase.auth.signOut();
-        const message = validationError.message || "An error occurred during organisation validation.";
-        toast.error(message);
-        return { success: false, error: message };
-      }
-    }
-
-    toast.success("Logged in successfully!");
-    return { success: true };
   };
 
-  const logout = useCallback(async () => {
-    if (user) {
-      await supabase.from('profiles').update({ active_session_token: null }).eq('id', user.id);
+  const logout = async () => {
+    console.log("AuthContextProvider: logout called.");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("AuthContextProvider: Logout failed:", error.message);
+      toast.error("Failed to log out: " + error.message);
+    } else {
+      console.log("AuthContextProvider: Logout successful.");
+      toast.info("Logged out.");
     }
-    await supabase.auth.signOut();
-    sessionStorage.removeItem(SESSION_TOKEN_KEY);
-    setActiveSessionToken(null);
-    toast.info("Logged out.");
-  }, [user]);
+  };
 
   return (
     <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, login, logout, refreshProfile }}>

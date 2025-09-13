@@ -1,4 +1,4 @@
-import { Job, JobStop, JobProgressLog } from '@/types';
+import { Job } from '@/utils/mockData';
 
 export const jobStatusOrder: Array<Job['status']> = [
   'planned',
@@ -170,85 +170,4 @@ export const getDisplayStatus = (status: string): string => {
     default:
       return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }
-};
-
-export const getJobStatusColor = (status: Job['status']): string => {
-  switch (status) {
-    case 'planned':
-      return 'bg-yellow-500 text-white';
-    case 'assigned':
-    case 'accepted':
-    case 'on_route_collection':
-    case 'at_collection':
-    case 'loaded':
-    case 'on_route_delivery':
-    case 'at_delivery':
-      return 'bg-blue-500 text-white';
-    case 'delivered':
-    case 'pod_received':
-      return 'bg-green-500 text-white';
-    case 'cancelled':
-      return 'bg-red-500 text-white';
-    default:
-      return 'bg-gray-500 text-white';
-  }
-};
-
-export const getStatusColorClass = (status: Job['status']): string => {
-  switch (status) {
-    case 'planned':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'assigned':
-    case 'accepted':
-    case 'on_route_collection':
-    case 'at_collection':
-    case 'loaded':
-    case 'on_route_delivery':
-    case 'at_delivery':
-      return 'bg-blue-100 text-blue-800';
-    case 'delivered':
-    case 'pod_received':
-      return 'bg-green-100 text-green-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-export const getNextActionForDriver = (
-  job: Job,
-  stops: JobStop[],
-  progressLogs: JobProgressLog[]
-): { description: string; stop?: JobStop; action?: 'arrive' | 'depart' | 'complete' } | null => {
-  if (job.status === 'cancelled' || job.status === 'delivered' || job.status === 'pod_received') {
-    return null; // Job is complete or cancelled
-  }
-
-  const sortedStops = [...stops].sort((a, b) => a.seq - b.seq);
-
-  for (const stop of sortedStops) {
-    const stopLogs = progressLogs.filter(log => log.stop_id === stop.id);
-    const hasArrived = stopLogs.some(log => log.action_type === 'arrived_at_stop');
-    const hasDeparted = stopLogs.some(log => log.action_type === 'departed_from_stop');
-    const hasCompleted = stopLogs.some(log => log.action_type === 'pod_received' || (stop.type === 'collection' && log.action_type === 'departed_from_stop'));
-
-    if (!hasArrived) {
-      return { description: `Arrive at ${stop.name} (${stop.type})`, stop, action: 'arrive' };
-    }
-    if (hasArrived && !hasDeparted) {
-      return { description: `Depart from ${stop.name} (${stop.type})`, stop, action: 'depart' };
-    }
-    if (hasDeparted && !hasCompleted) {
-      if (stop.type === 'delivery') {
-        return { description: `Capture POD for ${stop.name}`, stop, action: 'complete' };
-      }
-    }
-  }
-
-  if (job.status !== 'delivered' && job.status !== 'pod_received') {
-    return { description: 'Job is complete, awaiting final status update.' };
-  }
-
-  return null;
 };

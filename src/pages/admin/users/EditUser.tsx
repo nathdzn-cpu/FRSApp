@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getProfiles, updateUser, resetUserPassword } from '@/lib/api/profiles';
-import { Profile } from '@/types';
+import { getProfiles, updateUser, resetUserPassword } from '@/lib/supabase';
+import { Profile } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { toast } from 'sonner';

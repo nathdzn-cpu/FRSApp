@@ -11,7 +11,7 @@ import {
 import { Loader2, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getJobDocuments } from '@/lib/api/jobs';
-import { Job, Document } from '@/types';
+import { Job, Document } from '@/utils/mockData';
 import JobPodsGrid from '../JobPodsGrid';
 
 interface JobAttachmentsDialogProps {

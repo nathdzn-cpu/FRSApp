@@ -2,10 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getJobs, cancelJob as apiCancelJob } from '@/lib/api/jobs';
-import { getProfiles } from '@/lib/api/profiles';
+import { getJobs, getProfiles, cancelJob as apiCancelJob } from '@/lib/api/jobs';
 import { useAuth } from '@/context/AuthContext';
-import { Job, Profile } from '@/types';
+import { Job, Profile } from '@/utils/mockData';
 import { DataTable } from '@/components/data-table/DataTable';
 import { getColumns } from '@/components/job-dashboard/columns';
 import { getStatusOptions, getDriverOptions } from '@/components/job-dashboard/filters';

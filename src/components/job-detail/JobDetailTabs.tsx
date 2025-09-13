@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import JobTimeline from '@/components/JobTimeline';
 import JobAuditLog from '@/components/JobAuditLog';
 import JobStopsTable from '@/components/JobStopsTable';
-import JobPodsGrid from '../JobPodsGrid';
-import { JobProgressLog, JobStop, Document, Profile, Job } from '@/types';
+import JobPodsGrid from '@/components/JobPodsGrid';
+import { JobProgressLog, JobStop, Document, Profile, Job } from '@/utils/mockData'; // Import Job
 import { coreProgressActionTypes } from '@/lib/utils/statusUtils';
 
 interface JobDetailTabsProps {
@@ -17,7 +17,7 @@ interface JobDetailTabsProps {
   documents: Document[];
   currentOrgId: string;
   onLogVisibilityChange: () => void;
-  job: Job;
+  job: Job; // Added job prop
 }
 
 const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles, stops, documents, currentOrgId, onLogVisibilityChange, job }) => {
@@ -42,7 +42,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
               profiles={allProfiles}
               currentOrgId={currentOrgId}
               onLogVisibilityChange={onLogVisibilityChange}
-              job={job}
+              job={job} // Pass job to JobTimeline
             />
           </CardContent>
         </Card>
@@ -73,7 +73,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
             <CardTitle className="text-xl font-semibold text-gray-900">Proof of Delivery (PODs)</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <JobPodsGrid documents={documents} job={job} />
+            <JobPodsGrid documents={documents} />
           </CardContent>
         </Card>
       </TabsContent>

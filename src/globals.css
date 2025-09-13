@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 100%; /* White background for main content */
     --foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* White cards */
     --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
@@ -32,21 +32,59 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Increased for more rounded corners */
 
-    /* Custom SaaS Theme Variables */
-    --saas-primary: 256, 67%, 52%;
-    --saas-secondary: 220, 13%, 91%;
-    --saas-accent: 220, 14%, 96%;
-    --saas-text: 220, 9%, 46%;
-    --saas-heading: 220, 24%, 15%;
-    --saas-bg: 0, 0%, 100%;
-    --saas-card-bg: 240, 10%, 99%;
-    --saas-border: 220, 13%, 91%;
+    /* Custom colors for the new SaaS theme */
+    --saas-background: 220 14.3% 95.9%; /* Very light gray for overall app background */
+    --saas-sidebar-bg: 0 0% 100%; /* White sidebar */
+    --saas-sidebar-text: 240 5.3% 26.1%;
+    --saas-sidebar-active-bg: 217.2 91.2% 59.8%; /* Blue for active link */
+    --saas-sidebar-active-text: 0 0% 100%; /* White for active link text */
+    --saas-sidebar-hover-bg: 210 40% 96.1%; /* Light gray for hover */
+    --saas-header-bg: 0 0% 100%; /* White header */
+    --saas-card-bg: 0 0% 100%; /* White cards */
+    --saas-border: 214.3 31.8% 91.4%; /* Light border */
   }
 
   .dark {
-    /* ... dark theme variables ... */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Dark mode custom colors */
+    --saas-background: 222.2 84% 4.9%;
+    --saas-sidebar-bg: 222.2 84% 4.9%;
+    --saas-sidebar-text: 210 40% 98%;
+    --saas-sidebar-active-bg: 217.2 91.2% 59.8%;
+    --saas-sidebar-active-text: 0 0% 100%;
+    --saas-sidebar-hover-bg: 217.2 32.6% 17.5%;
+    --saas-header-bg: 222.2 84% 4.9%;
+    --saas-card-bg: 222.2 84% 4.9%;
+    --saas-border: 217.2 32.6% 17.5%;
   }
 }
 
@@ -54,11 +92,8 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
-  }
-  html, body, #root {
-    width: 100%;
-    overflow-x: hidden;
+    @apply bg-[var(--saas-background)] text-foreground;
   }
 }

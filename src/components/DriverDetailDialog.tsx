@@ -26,12 +26,12 @@ import {
   ArrowRight,
   Loader2
 } from 'lucide-react';
-import { Profile, Job } from '@/types';
+import { Profile, Job } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { formatGBPDisplay, formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { getJobs } from '@/lib/api/jobs';
+import { getJobs } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
 dayjs.extend(weekOfYear);
@@ -92,16 +92,14 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({
   const calculateRevenue = (filter: 'today' | 'week' | 'month') => {
     const now = dayjs();
     return completedJobs.reduce((sum, job) => {
-      if (!job.last_status_update_at) return sum;
-
-      const completionDate = dayjs(job.last_status_update_at);
+      const jobDate = dayjs(job.date_created);
       let include = false;
 
-      if (filter === 'today' && completionDate.isSame(now, 'day')) {
+      if (filter === 'today' && jobDate.isSame(now, 'day')) {
         include = true;
-      } else if (filter === 'week' && completionDate.isSame(now, 'week')) {
+      } else if (filter === 'week' && jobDate.isSame(now, 'week')) {
         include = true;
-      } else if (filter === 'month' && completionDate.isSame(now, 'month')) {
+      } else if (filter === 'month' && jobDate.isSame(now, 'month')) {
         include = true;
       }
 
