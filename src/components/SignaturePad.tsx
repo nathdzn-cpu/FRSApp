@@ -15,10 +15,11 @@ export interface SignaturePadRef {
 interface SignaturePadProps {
   signatureName: string;
   setSignatureName: (name: string) => void;
+  nameError?: string | null; // New prop for validation error
 }
 
 const SignaturePad = React.forwardRef<SignaturePadRef, SignaturePadProps>(
-  ({ signatureName, setSignatureName }, ref) => {
+  ({ signatureName, setSignatureName, nameError }, ref) => {
     const sigCanvas = useRef<SignatureCanvas>(null);
 
     React.useImperativeHandle(ref, () => ({
@@ -49,6 +50,7 @@ const SignaturePad = React.forwardRef<SignaturePadRef, SignaturePadProps>(
             onChange={(e) => setSignatureName(e.target.value)}
             className="mt-1"
           />
+          {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>} {/* Display error */}
         </div>
         <div>
           <Label htmlFor="signature-canvas" className="text-gray-700">Signature</Label>

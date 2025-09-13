@@ -63,6 +63,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [signatureName, setSignatureName] = useState('');
+  const [signatureNameError, setSignatureNameError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(initialTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -71,6 +72,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
     if (open) {
       setSelectedFile(null);
       setSignatureName('');
+      setSignatureNameError(null);
       setIsLoading(false);
       setActiveTab(initialTab);
     }
@@ -138,8 +140,22 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   };
 
   const handleSignatureUpload = async () => {
-    if (signaturePadRef.current?.isEmpty() || !signatureName.trim()) {
-      toast.error("Please provide a signature and the recipient's name.");
+    setSignatureNameError(null);
+
+    if (!signatureName.trim()) {
+      setSignatureNameError("Recipient's full name is required.");
+      return;
+    }
+
+    // Validate full name has at least two words
+    const nameParts = signatureName.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      setSignatureNameError("Ensure you have received the receiver's FULL NAME (first and last name).");
+      return;
+    }
+
+    if (signaturePadRef.current?.isEmpty()) {
+      toast.error("Please provide a signature.");
       return;
     }
     if (!currentProfile?.org_id || !job.order_number) {
@@ -187,6 +203,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   const handleClose = (openState: boolean) => {
     if (!openState) {
       setSelectedFile(null);
+      setSignatureNameError(null);
       setIsLoading(false);
     }
     onOpenChange(openState);
@@ -195,7 +212,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   const isSubmitDisabled = () => {
     if (isLoading) return true;
     if (activeTab === 'upload') return !selectedFile;
-    if (activeTab === 'signature') return signaturePadRef.current?.isEmpty() || !signatureName.trim();
+    if (activeTab === 'signature') return signaturePadRef.current?.isEmpty() || !signatureName.trim() || signatureNameError;
     return true;
   };
 
@@ -258,7 +275,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
             </div>
           </TabsContent>
           <TabsContent value="signature" className="pt-4">
-            <SignaturePad ref={signaturePadRef} signatureName={signatureName} setSignatureName={setSignatureName} />
+            <SignaturePad ref={signaturePadRef} signatureName={signatureName} setSignatureName={setSignatureName} nameError={signatureNameError} />
           </TabsContent>
         </Tabs>
 
