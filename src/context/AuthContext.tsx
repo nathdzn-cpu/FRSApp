@@ -170,6 +170,41 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     }
   }, [isLoadingAuth, user, userRole, navigate, location.pathname]);
 
+  // Effect for single-session enforcement
+  useEffect(() => {
+    if (!session || !user) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      if (!document.hidden) { // Only check if the tab is active
+        try {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('active_session_token')
+            .eq('id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error("Single-session check: Error fetching active session token:", error);
+            return;
+          }
+
+          // If a token is set in DB and it doesn't match the current one, log out.
+          if (profileData && profileData.active_session_token && profileData.active_session_token !== session.access_token) {
+            clearInterval(intervalId);
+            await supabase.auth.signOut();
+            toast.error("You have been logged out because your account was accessed from another device.");
+          }
+        } catch (e) {
+          console.error("Single-session check: Error in validation interval:", e);
+        }
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(intervalId);
+  }, [session, user]);
+
   const login = async (userIdOrEmail: string, password: string) => {
     console.log("AuthContextProvider: login called for:", userIdOrEmail);
     let emailToLogin = userIdOrEmail;
@@ -177,13 +212,24 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       emailToLogin = userIdOrEmail.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
     if (error) {
       console.error("AuthContextProvider: Login failed:", error.message);
       toast.error(error.message);
       return { success: false, error: error.message };
     } else {
       console.log("AuthContextProvider: Login successful.");
+      // Invalidate other sessions by setting the active session token
+      if (data.session) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ active_session_token: data.session.access_token })
+          .eq('id', data.session.user.id);
+        if (updateError) {
+          console.error("AuthContextProvider: Failed to update active session token:", updateError);
+          // Don't block login, but log the error
+        }
+      }
       toast.success("Logged in successfully!");
       return { success: true };
     }
@@ -191,6 +237,13 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
 
   const logout = async () => {
     console.log("AuthContextProvider: logout called.");
+    // Clear the active session token on manual logout
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ active_session_token: null })
+        .eq('id', user.id);
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("AuthContextProvider: Logout failed:", error.message);

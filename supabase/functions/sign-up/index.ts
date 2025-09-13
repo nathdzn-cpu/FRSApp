@@ -115,6 +115,14 @@ serve(async (req) => {
         throw new Error(`Failed to create session for new user: ${sessionError.message}`);
     }
 
+    // Update profile with the new session token to enforce single session
+    if (sessionData.session) {
+      await admin
+        .from('profiles')
+        .update({ active_session_token: sessionData.session.access_token })
+        .eq('id', newUserId);
+    }
+
     return new Response(
       JSON.stringify(sessionData),
       { headers: { "Content-Type": "application/json", ...corsHeaders } },
