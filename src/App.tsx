@@ -25,6 +25,7 @@ import AdminDailyChecks from './pages/admin/DailyChecks';
 import AdminSavedAddresses from './pages/admin/SavedAddresses';
 import Map from './pages/Map'; // Import new Map page
 import Quotes from './pages/Quotes'; // Import new Quotes page
+import Jobs from './pages/Jobs'; // Import the new Jobs page
 import { useNotifications } from './hooks/use-notifications';
 import { supabase } from './lib/supabaseClient';
 import { JobProgressLog } from './utils/mockData';
@@ -87,6 +88,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/jobs" element={<Jobs />} /> {/* Add the new Jobs dashboard route */}
             <Route path="/jobs/:orderNumber" element={<JobDetail />} />
             <Route path="/jobs/new" element={<CreateJob />} />
             <Route path="/drivers" element={<Drivers />} />
