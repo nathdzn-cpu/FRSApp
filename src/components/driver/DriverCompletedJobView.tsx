@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, UploadCloud, FileText, Image as ImageIcon, Clock, User } from 'lucide-react';
+import { CheckCircle, UploadCloud, FileText, Image as ImageIcon, Clock, User, Loader2, Edit } from 'lucide-react';
 import { Job, JobProgressLog, Profile, Document } from '@/utils/mockData';
 import { format, parseISO } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
@@ -30,6 +30,7 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
 }) => {
   const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
   const [isUploadingAdditionalPod, setIsUploadingAdditionalPod] = useState(false);
+  const [podDialogInitialTab, setPodDialogInitialTab] = useState<'upload' | 'signature'>('upload');
 
   // Filter progress logs to only show the current driver's actions
   const driverProgressLogs = useMemo(() => {
@@ -48,6 +49,11 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
   const handlePodUploadSuccess = () => {
     refetchJobData(); // Refetch after POD upload to update job status and document list
     setIsUploadingAdditionalPod(false);
+  };
+
+  const openPodDialog = (tab: 'upload' | 'signature') => {
+    setPodDialogInitialTab(tab);
+    setIsPodUploadDialogOpen(true);
   };
 
   return (
@@ -96,19 +102,32 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
         {/* All Uploaded Files Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-gray-900">All Uploaded Files</h3>
-            <Button
-              onClick={() => setIsPodUploadDialogOpen(true)}
-              disabled={isUploadingAdditionalPod}
-              variant="outline"
-              size="sm"
-            >
-              {isUploadingAdditionalPod ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UploadCloud className="h-4 w-4 mr-2" />}
-              Upload More
-            </Button>
+            <h3 className="text-xl font-semibold text-gray-900">Proof of Delivery</h3>
           </div>
 
           <JobPodsGrid documents={jobDocuments} job={job} />
+
+          <div className="mt-6 border-t pt-6 space-y-4">
+             <p className="text-center text-gray-600">Need to add more documentation?</p>
+            <Button
+              onClick={() => openPodDialog('upload')}
+              disabled={isUploadingAdditionalPod}
+              variant="outline"
+              className="w-full"
+            >
+              {isUploadingAdditionalPod ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UploadCloud className="h-4 w-4 mr-2" />}
+              Upload Paperwork
+            </Button>
+             <Button
+              onClick={() => openPodDialog('signature')}
+              disabled={isUploadingAdditionalPod}
+              variant="secondary"
+              className="w-full"
+            >
+              {isUploadingAdditionalPod ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+              Capture Signature
+            </Button>
+          </div>
         </div>
       </CardContent>
 
@@ -119,7 +138,8 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
         currentProfile={currentProfile}
         onUploadSuccess={handlePodUploadSuccess}
         isLoading={isUploadingAdditionalPod}
-        setIsLoading={setIsUploadingAdditionalPod} // Pass setter for internal loading state
+        setIsLoading={setIsUploadingAdditionalPod}
+        initialTab={podDialogInitialTab}
       />
     </Card>
   );

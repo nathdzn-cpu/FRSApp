@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, Image as ImageIcon, XCircle, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadDocument, updateJobProgress, updateJob } from '@/lib/api/jobs';
+import { processPod } from '@/lib/api/jobs';
 import { Job, Profile } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SignaturePad, { SignaturePadRef } from '@/components/SignaturePad';
@@ -47,6 +47,7 @@ interface PodUploadDialogProps {
   onUploadSuccess: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  initialTab?: 'upload' | 'signature';
 }
 
 const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
@@ -58,10 +59,11 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   onUploadSuccess,
   isLoading,
   setIsLoading,
+  initialTab = 'upload',
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [signatureName, setSignatureName] = useState('');
-  const [activeTab, setActiveTab] = useState('upload');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const signaturePadRef = useRef<SignaturePadRef>(null);
 
@@ -70,9 +72,9 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       setSelectedFile(null);
       setSignatureName('');
       setIsLoading(false);
-      setActiveTab('upload');
+      setActiveTab(initialTab);
     }
-  }, [open, setIsLoading]);
+  }, [open, setIsLoading, initialTab]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -114,20 +116,15 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fullStoragePath);
       if (!urlData?.publicUrl) throw new Error("Failed to get public URL.");
 
-      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', urlData.publicUrl, 'pod_uploaded', stopId);
-      
-      if (stopId) {
-        await updateJobProgress({
-          job_id: job.id,
-          org_id: currentProfile.org_id,
-          actor_id: currentProfile.id,
-          actor_role: currentProfile.role,
-          new_status: 'pod_received',
-          timestamp: new Date().toISOString(),
-          notes: `POD uploaded for stop.`,
-          stop_id: stopId,
-        });
-      }
+      await processPod({
+        job_id: job.id,
+        org_id: currentProfile.org_id,
+        actor_id: currentProfile.id,
+        actor_role: currentProfile.role,
+        stop_id: stopId,
+        pod_type: 'file',
+        storage_path: urlData.publicUrl,
+      });
 
       toast.success("POD uploaded successfully!");
       onUploadSuccess();
@@ -165,33 +162,16 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fullStoragePath);
       if (!urlData?.publicUrl) throw new Error("Failed to get public URL.");
 
-      // Store as a document
-      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'check_signature', urlData.publicUrl, 'signature_captured', stopId);
-      
-      // Also update the job with signature details
-      await updateJob({
+      await processPod({
         job_id: job.id,
         org_id: currentProfile.org_id,
         actor_id: currentProfile.id,
-        actor_role: 'driver',
-        job_updates: {
-          pod_signature_name: signatureName,
-          pod_signature_path: urlData.publicUrl,
-        },
+        actor_role: currentProfile.role,
+        stop_id: stopId,
+        pod_type: 'signature',
+        storage_path: urlData.publicUrl,
+        signature_name: signatureName.trim(),
       });
-
-      if (stopId) {
-        await updateJobProgress({
-          job_id: job.id,
-          org_id: currentProfile.org_id,
-          actor_id: currentProfile.id,
-          actor_role: currentProfile.role,
-          new_status: 'pod_received',
-          timestamp: new Date().toISOString(),
-          notes: `Signature captured from ${signatureName}.`,
-          stop_id: stopId,
-        });
-      }
 
       toast.success("Signature captured successfully!");
       onUploadSuccess();

@@ -312,6 +312,29 @@ export const uploadDocument = async (
   return data;
 };
 
+// Process a POD upload (file or signature)
+export const processPod = async (payload: {
+  job_id: string;
+  org_id: string;
+  actor_id: string;
+  actor_role: string;
+  stop_id?: string;
+  pod_type: 'file' | 'signature';
+  storage_path: string;
+  signature_name?: string;
+}): Promise<any> => {
+  const { data, error } = await supabase.functions.invoke('process-pod', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  if (error) {
+    console.error('Error in processPod Edge Function:', error);
+    throw new Error(data?.error || error.message);
+  }
+  return data;
+};
+
 // Update job progress log visibility
 export const updateJobProgressLogVisibility = async (payload: {
   log_id: string;
