@@ -504,15 +504,17 @@ const Index = () => {
                 onAction={handleJobTableAction}
               />
             ) : (
-              <JobsTable
-                jobs={filteredJobs}
-                profiles={profiles}
-                userRole={userRole}
-                currentProfile={currentProfile}
-                currentOrgId={currentOrgId}
-                onAction={handleJobTableAction}
-                onCancelJob={handleCancelJob}
-              />
+              <div className="overflow-x-auto">
+                <JobsTable
+                  jobs={filteredJobs}
+                  profiles={profiles}
+                  userRole={userRole}
+                  currentProfile={currentProfile}
+                  currentOrgId={currentOrgId}
+                  onAction={handleJobTableAction}
+                  onCancelJob={handleCancelJob}
+                />
+              </div>
             )}
           </CardContent>
         </Card>

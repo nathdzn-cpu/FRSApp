@@ -93,6 +93,11 @@
     @apply border-border;
   }
 
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-[var(--saas-background)] text-foreground;
   }
