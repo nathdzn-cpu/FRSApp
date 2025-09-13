@@ -77,7 +77,6 @@ const Jobs: React.FC = () => {
         <p>{error}</p>
       </div>
     );
-  );
   }
 
   return (
