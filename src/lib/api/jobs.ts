@@ -9,7 +9,13 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
     .eq('org_id', orgId);
 
   if (userRole === 'driver') {
-    query = query.eq('assigned_driver_id', supabase.auth.getUser().then(u => u.data.user?.id));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      query = query.eq('assigned_driver_id', user.id);
+    } else {
+      console.warn("Driver role specified but no authenticated user found. Returning empty array.");
+      return [];
+    }
   }
 
   if (statusFilter === 'active') {
@@ -47,7 +53,13 @@ export const getJobById = async (orgId: string, orderNumber: string, userRole: '
     .eq('order_number', orderNumber);
 
   if (userRole === 'driver') {
-    query = query.eq('assigned_driver_id', supabase.auth.getUser().then(u => u.data.user?.id));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      query = query.eq('assigned_driver_id', user.id);
+    } else {
+      console.warn("Driver role specified but no authenticated user found. Returning null.");
+      return null;
+    }
   }
 
   const { data, error } = await query.single();
