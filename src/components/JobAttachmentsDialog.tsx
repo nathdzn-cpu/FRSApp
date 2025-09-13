@@ -60,7 +60,7 @@ const JobAttachmentsDialog: React.FC<JobAttachmentsDialogProps> = ({
               No attachments found for this job.
             </div>
           ) : (
-            <JobPodsGrid documents={documents} />
+            <JobPodsGrid documents={documents} job={job} />
           )}
         </div>
       </DialogContent>

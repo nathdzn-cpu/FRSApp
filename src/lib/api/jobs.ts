@@ -187,7 +187,7 @@ export const updateJob = async (payload: {
   org_id: string;
   actor_id: string;
   actor_role: 'admin' | 'office' | 'driver';
-  job_updates?: Partial<Job>;
+  job_updates?: Partial<Job> & { pod_signature_name?: string; pod_signature_path?: string };
   stops_to_add?: Array<any>;
   stops_to_update?: Array<any>;
   stops_to_delete?: Array<string>;

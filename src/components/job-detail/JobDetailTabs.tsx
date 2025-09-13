@@ -73,7 +73,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
             <CardTitle className="text-xl font-semibold text-gray-900">Proof of Delivery (PODs)</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <JobPodsGrid documents={documents} />
+            <JobPodsGrid documents={documents} job={job} />
           </CardContent>
         </Card>
       </TabsContent>

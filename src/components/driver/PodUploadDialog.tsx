@@ -13,11 +13,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
+import { Loader2, UploadCloud, Image as ImageIcon, XCircle, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadDocument, updateJobProgress } from '@/lib/api/jobs';
+import { uploadDocument, updateJobProgress, updateJob } from '@/lib/api/jobs';
 import { Job, Profile } from '@/utils/mockData';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SignaturePad, { SignaturePadRef } from '@/components/SignaturePad';
+
+// Helper to convert base64 to File
+const dataURLtoFile = (dataurl: string, filename: string): File => {
+  const arr = dataurl.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  if (!mimeMatch) {
+    throw new Error('Invalid data URL');
+  }
+  const mime = mimeMatch[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
 
 interface PodUploadDialogProps {
   open: boolean;
@@ -41,12 +60,17 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   setIsLoading,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [signatureName, setSignatureName] = useState('');
+  const [activeTab, setActiveTab] = useState('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const signaturePadRef = useRef<SignaturePadRef>(null);
 
   useEffect(() => {
     if (open) {
       setSelectedFile(null);
+      setSignatureName('');
       setIsLoading(false);
+      setActiveTab('upload');
     }
   }, [open, setIsLoading]);
 
@@ -58,16 +82,20 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   };
 
   const handleUpload = async () => {
+    if (activeTab === 'upload') {
+      await handleFileUpload();
+    } else {
+      await handleSignatureUpload();
+    }
+  };
+
+  const handleFileUpload = async () => {
     if (!selectedFile) {
       toast.error("Please select a file to upload.");
       return;
     }
-    if (!currentProfile || !currentProfile.org_id || !currentProfile.role) {
-      toast.error("User profile or organization ID not found. Cannot upload POD.");
-      return;
-    }
-    if (!job.order_number) {
-      toast.error("Job order number is missing. Cannot generate filename.");
+    if (!currentProfile?.org_id || !job.order_number) {
+      toast.error("Profile or job data is missing.");
       return;
     }
 
@@ -75,36 +103,19 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
     try {
       const fileExtension = selectedFile.name.split('.').pop();
       const storagePathPrefix = `${currentProfile.org_id}/${job.id}/`;
-
-      const { data: existingFiles, error: listError } = await supabase.storage
-        .from("pods")
-        .list(storagePathPrefix, {
-          search: `${job.order_number}_`,
-        });
-
-      if (listError) {
-        throw listError;
-      }
-
+      const { data: existingFiles } = await supabase.storage.from("pods").list(storagePathPrefix, { search: `${job.order_number}_` });
       const nextIndex = (existingFiles?.length || 0) + 1;
-      const fileName = `${job.order_number}_${nextIndex}.${fileExtension}`;
+      const fileName = `${job.order_number}_pod_${nextIndex}.${fileExtension}`;
       const fullStoragePath = `${storagePathPrefix}${fileName}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage.from("pods").upload(fullStoragePath, selectedFile, { upsert: false });
-
-      if (uploadError) {
-        throw uploadError;
-      }
+      const { error: uploadError } = await supabase.storage.from("pods").upload(fullStoragePath, selectedFile, { upsert: false });
+      if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fullStoragePath);
-      const publicUrl = urlData?.publicUrl;
+      if (!urlData?.publicUrl) throw new Error("Failed to get public URL.");
 
-      if (!publicUrl) {
-        throw new Error("Failed to get public URL for uploaded file.");
-      }
-
-      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', publicUrl, 'pod_uploaded', stopId);
-
+      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'pod', urlData.publicUrl, 'pod_uploaded', stopId);
+      
       if (stopId) {
         await updateJobProgress({
           job_id: job.id,
@@ -113,7 +124,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
           actor_role: currentProfile.role,
           new_status: 'pod_received',
           timestamp: new Date().toISOString(),
-          notes: `POD uploaded for ${stopId ? `stop ${stopId}` : 'job'} by driver.`,
+          notes: `POD uploaded for stop.`,
           stop_id: stopId,
         });
       }
@@ -129,6 +140,70 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
     }
   };
 
+  const handleSignatureUpload = async () => {
+    if (signaturePadRef.current?.isEmpty() || !signatureName.trim()) {
+      toast.error("Please provide a signature and the recipient's name.");
+      return;
+    }
+    if (!currentProfile?.org_id || !job.order_number) {
+      toast.error("Profile or job data is missing.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const signatureDataUrl = signaturePadRef.current.getSignature();
+      const signatureFile = dataURLtoFile(signatureDataUrl, 'signature.png');
+      
+      const storagePathPrefix = `${currentProfile.org_id}/${job.id}/`;
+      const fileName = `${job.order_number}_signature_${Date.now()}.png`;
+      const fullStoragePath = `${storagePathPrefix}${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from("pods").upload(fullStoragePath, signatureFile, { upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("pods").getPublicUrl(fullStoragePath);
+      if (!urlData?.publicUrl) throw new Error("Failed to get public URL.");
+
+      // Store as a document
+      await uploadDocument(job.id, currentProfile.org_id, currentProfile.id, 'check_signature', urlData.publicUrl, 'signature_captured', stopId);
+      
+      // Also update the job with signature details
+      await updateJob({
+        job_id: job.id,
+        org_id: currentProfile.org_id,
+        actor_id: currentProfile.id,
+        actor_role: 'driver',
+        job_updates: {
+          pod_signature_name: signatureName,
+          pod_signature_path: urlData.publicUrl,
+        },
+      });
+
+      if (stopId) {
+        await updateJobProgress({
+          job_id: job.id,
+          org_id: currentProfile.org_id,
+          actor_id: currentProfile.id,
+          actor_role: currentProfile.role,
+          new_status: 'pod_received',
+          timestamp: new Date().toISOString(),
+          notes: `Signature captured from ${signatureName}.`,
+          stop_id: stopId,
+        });
+      }
+
+      toast.success("Signature captured successfully!");
+      onUploadSuccess();
+      onOpenChange(false);
+    } catch (e: any) {
+      console.error("Error capturing signature:", e);
+      toast.error(`Failed to capture signature: ${e.message || String(e)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleClose = (openState: boolean) => {
     if (!openState) {
       setSelectedFile(null);
@@ -137,71 +212,81 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
     onOpenChange(openState);
   };
 
+  const isSubmitDisabled = () => {
+    if (isLoading) return true;
+    if (activeTab === 'upload') return !selectedFile;
+    if (activeTab === 'signature') return signaturePadRef.current?.isEmpty() || !signatureName.trim();
+    return true;
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col">
+      <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col max-w-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-xl font-semibold text-gray-900">Upload Proof of Delivery</AlertDialogTitle>
+          <AlertDialogTitle className="text-xl font-semibold text-gray-900">Provide Proof of Delivery</AlertDialogTitle>
           <AlertDialogDescription>
-            Please select the POD document to upload.
-            <p className="text-sm text-blue-600 font-medium mt-2">
-              All PODs must clearly show full name printed, signature, date, and in/out times.
-            </p>
+            Choose to upload paperwork or capture a digital signature.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
-            <Label htmlFor="pod-file-upload" className="block text-sm font-medium text-gray-700 mb-2">
-              Select POD File
-            </Label>
-            <div
-              className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-              data-testid="driver-pod-upload-area"
-            >
-              <div className="space-y-1 text-center">
-                <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="flex text-sm text-gray-600">
-                  <span className="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 hover:text-blue-500">
-                    Upload a file
-                  </span>
-                  <p className="pl-1">or drag and drop</p>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full py-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload"><UploadCloud className="h-4 w-4 mr-2"/>Upload Paperwork</TabsTrigger>
+            <TabsTrigger value="signature"><Edit className="h-4 w-4 mr-2"/>Capture Signature</TabsTrigger>
+          </TabsList>
+          <TabsContent value="upload" className="pt-4">
+            <div className="space-y-4">
+              <Label htmlFor="pod-file-upload" className="block text-sm font-medium text-gray-700 mb-2">
+                Select POD File
+              </Label>
+              <div
+                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="driver-pod-upload-area"
+              >
+                <div className="space-y-1 text-center">
+                  <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="flex text-sm text-gray-600">
+                    <span className="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 hover:text-blue-500">
+                      Upload a file
+                    </span>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
                 </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
               </div>
+              <input
+                id="pod-file-upload"
+                ref={fileInputRef}
+                type="file"
+                className="sr-only"
+                onChange={handleFileChange}
+                accept="image/png, image/jpeg, application/pdf"
+                disabled={isLoading}
+              />
+              {selectedFile && (
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <div className="flex items-center">
+                    <ImageIcon className="h-5 w-5 text-blue-600 mr-2" />
+                    <span className="text-sm font-medium text-gray-800 truncate">{selectedFile.name}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)} disabled={isLoading}>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              )}
             </div>
-            <input
-              id="pod-file-upload"
-              ref={fileInputRef}
-              type="file"
-              className="sr-only"
-              onChange={handleFileChange}
-              accept="image/png, image/jpeg, image/gif"
-              disabled={isLoading}
-            />
-            {selectedFile && (
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-gray-50">
-                <div className="flex items-center">
-                  <ImageIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-gray-800 truncate">{selectedFile.name}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedFile(null)}
-                  disabled={isLoading}
-                >
-                  <XCircle className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+          </TabsContent>
+          <TabsContent value="signature" className="pt-4">
+            <SignaturePad ref={signaturePadRef} signatureName={signatureName} setSignatureName={setSignatureName} />
+          </TabsContent>
+        </Tabs>
+
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => handleClose(false)} disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleUpload} disabled={isLoading || !selectedFile}>
+          <AlertDialogAction onClick={handleUpload} disabled={isSubmitDisabled()}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Upload POD
+            {activeTab === 'upload' ? 'Upload POD' : 'Save Signature'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

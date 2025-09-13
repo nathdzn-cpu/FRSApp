@@ -99,10 +99,11 @@ export interface Job {
   created_at: string;
   deleted_at?: string | null; // Added for soft deletion
   last_status_update_at?: string | null; // New field for last status update timestamp
+  pod_signature_path?: string | null; // New field for signature path
+  pod_signature_name?: string | null; // New field for signature name
   // New fields from jobs_with_stop_details view
   collection_name?: string | null;
   collection_city?: string | null;
-  collection_postcode?: string | null; // Added
   delivery_name?: string | null;
   delivery_city?: string | null;
   delivery_postcode?: string | null; // Added
@@ -129,7 +130,7 @@ export interface Document {
   org_id: string;
   job_id: string;
   stop_id?: string | null;
-  type: 'pod' | 'cmr' | 'damage' | 'check_signature';
+  type: 'pod' | 'cmr' | 'damage' | 'check_signature' | 'document_uploaded';
   storage_path: string;
   uploaded_by: string; // profile_id
   created_at: string;

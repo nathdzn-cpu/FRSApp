@@ -9,6 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import PodUploadDialog from './PodUploadDialog';
 import { cn } from '@/lib/utils';
+import JobPodsGrid from '../JobPodsGrid';
 
 interface DriverCompletedJobViewProps {
   job: Job;
@@ -94,34 +95,20 @@ const DriverCompletedJobView: React.FC<DriverCompletedJobViewProps> = ({
 
         {/* All Uploaded Files Section */}
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">All Uploaded Files</h3>
-          <Button
-            onClick={() => setIsPodUploadDialogOpen(true)}
-            disabled={isUploadingAdditionalPod}
-            className="w-full bg-blue-600 text-white hover:bg-blue-700 mb-4"
-          >
-            {isUploadingAdditionalPod ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UploadCloud className="h-4 w-4 mr-2" />}
-            Upload Additional POD
-          </Button>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">All Uploaded Files</h3>
+            <Button
+              onClick={() => setIsPodUploadDialogOpen(true)}
+              disabled={isUploadingAdditionalPod}
+              variant="outline"
+              size="sm"
+            >
+              {isUploadingAdditionalPod ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UploadCloud className="h-4 w-4 mr-2" />}
+              Upload More
+            </Button>
+          </div>
 
-          {jobDocuments.length === 0 ? (
-            <p className="text-gray-600">No files uploaded for this job yet.</p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {jobDocuments.map((doc) => (
-                <Card key={doc.id} className="p-3 shadow-sm rounded-md"> {/* Removed border */}
-                  <div className="flex flex-col items-start mb-2">
-                    <ImageIcon className="h-5 w-5 text-blue-600 mb-1" />
-                    <span className="text-sm font-medium text-gray-900 truncate w-full">{doc.storage_path.split('/').pop()}</span>
-                  </div>
-                  <p className="text-xs text-gray-500">Uploaded: {format(parseISO(doc.created_at), 'MMM dd, HH:mm')}</p>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-blue-600" onClick={() => window.open(doc.storage_path, '_blank')}>
-                    View
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          )}
+          <JobPodsGrid documents={jobDocuments} job={job} />
         </div>
       </CardContent>
 
