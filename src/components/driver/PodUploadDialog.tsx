@@ -20,6 +20,14 @@ import { processPod } from '@/lib/api/jobs';
 import { Job, Profile } from '@/utils/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SignaturePad, { SignaturePadRef } from '@/components/SignaturePad';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"; // Import Dialog components
 
 // Helper to convert base64 to File
 const dataURLtoFile = (dataurl: string, filename: string): File => {
@@ -67,6 +75,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   const [activeTab, setActiveTab] = useState(initialTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const signaturePadRef = useRef<SignaturePadRef>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false); // New state for cancel confirmation
 
   useEffect(() => {
     if (open) {
@@ -75,6 +84,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
       setSignatureNameError(null);
       setIsLoading(false);
       setActiveTab(initialTab);
+      setShowCancelConfirm(false); // Ensure confirmation dialog is closed when main dialog opens
     }
   }, [open, setIsLoading, initialTab]);
 
@@ -200,13 +210,19 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
     }
   };
 
-  const handleClose = (openState: boolean) => {
-    if (!openState) {
-      setSelectedFile(null);
-      setSignatureNameError(null);
-      setIsLoading(false);
+  const handleCancelClick = () => {
+    const isSignatureDirty = signatureName.trim() !== '' || (signaturePadRef.current && !signaturePadRef.current.isEmpty());
+    if (activeTab === 'signature' && isSignatureDirty) {
+      setShowCancelConfirm(true);
+    } else {
+      // If not dirty or not signature tab, just close the main dialog
+      onOpenChange(false); // This will trigger the useEffect to reset states
     }
-    onOpenChange(openState);
+  };
+
+  const confirmCancelAndClose = () => {
+    setShowCancelConfirm(false); // Close confirmation dialog
+    onOpenChange(false); // Close main dialog, which also resets states via useEffect
   };
 
   const isSubmitDisabled = () => {
@@ -217,7 +233,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={handleClose}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}> {/* onOpenChange now directly controls main dialog */}
       <AlertDialogContent className="bg-white p-6 shadow-xl rounded-xl flex flex-col max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">Provide Proof of Delivery</AlertDialogTitle>
@@ -280,13 +296,29 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
         </Tabs>
 
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => handleClose(false)} disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={handleCancelClick} disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleUpload} disabled={isSubmitDisabled()}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             {activeTab === 'upload' ? 'Upload POD' : 'Save Signature'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
+
+      {/* Confirmation Dialog for Cancel */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Signature Capture?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel? Any entered name or signature will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>Go Back</Button>
+            <Button variant="destructive" onClick={confirmCancelAndClose}>Yes, Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AlertDialog>
   );
 };

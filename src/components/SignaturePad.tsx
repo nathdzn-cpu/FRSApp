@@ -10,6 +10,7 @@ export interface SignaturePadRef {
   getSignature: () => string; // Returns base64
   getSignatureName: () => string;
   isEmpty: () => boolean;
+  clear: () => void; // Added clear method
 }
 
 interface SignaturePadProps {
@@ -32,6 +33,7 @@ const SignaturePad = React.forwardRef<SignaturePadRef, SignaturePadProps>(
       },
       getSignatureName: () => signatureName,
       isEmpty: () => sigCanvas.current?.isEmpty() ?? true,
+      clear: () => sigCanvas.current?.clear(), // Implemented clear method
     }));
 
     const handleClear = () => {
