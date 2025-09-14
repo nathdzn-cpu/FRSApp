@@ -14,7 +14,8 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface JobFormValues {
   order_number?: string | null; // Now optional, can be null for auto-generation
-  date_created: Date;
+  collection_date: Date;
+  delivery_date: Date;
   price: number | null;
   assigned_driver_id: string | null;
   notes: string | null;
@@ -80,7 +81,8 @@ const CreateJob: React.FC = () => {
       const newJobData = {
         order_number: values.order_number || null, // Pass null if empty for auto-generation
         status: initialStatus as Job['status'], // Set initial status based on driver assignment
-        date_created: values.date_created.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        collection_date: values.collection_date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        delivery_date: values.delivery_date.toISOString().split('T')[0], // Format as YYYY-MM-DD
         price: values.price,
         assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
         notes: values.notes,

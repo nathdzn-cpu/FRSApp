@@ -53,7 +53,8 @@ const stopSchema = z.object({
 
 const formSchema = z.object({
   order_number: z.string().optional().or(z.literal('')), // Optional for auto-generation
-  date_created: z.date({ required_error: 'Date Created is required.' }),
+  collection_date: z.date({ required_error: 'Collection Date is required.' }),
+  delivery_date: z.date({ required_error: 'Delivery Date is required.' }),
   price: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
     z.number().min(0, { message: 'Price must be non-negative.' }).nullable().optional()
@@ -78,7 +79,8 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues || {
       order_number: '', // Default to empty, trigger will generate if not provided
-      date_created: new Date(), // Default to today
+      collection_date: new Date(), // Default to today
+      delivery_date: new Date(), // Default to today
       price: null,
       assigned_driver_id: null,
       notes: '',
@@ -158,13 +160,54 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
               )}
             />
 
-            {/* Date Created */}
+            {/* Collection Date */}
             <FormField
               control={form.control}
-              name="date_created"
+              name="collection_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="text-gray-700">Date Created</FormLabel>
+                  <FormLabel className="text-gray-700">Collection Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                          disabled={isSubmitting}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-[var(--saas-card-bg)] shadow-sm rounded-xl" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Delivery Date */}
+            <FormField
+              control={form.control}
+              name="delivery_date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-gray-700">Delivery Date</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>

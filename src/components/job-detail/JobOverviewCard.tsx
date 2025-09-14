@@ -32,8 +32,12 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
     <CardContent className="p-0 pt-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
         <div>
-          <p className="font-medium text-gray-900">Date Created:</p>
-          <p>{format(new Date(job.date_created), 'PPP')}</p>
+          <p className="font-medium text-gray-900">Collection Date:</p>
+          <p>{format(new Date(job.collection_date), 'PPP')}</p>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900">Delivery Date:</p>
+          <p>{format(new Date(job.delivery_date), 'PPP')}</p>
         </div>
         <div>
           <p className="font-medium text-gray-900">Assigned Driver:</p>
@@ -53,10 +57,6 @@ const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfil
           ) : (
             <p>Unassigned</p>
           )}
-        </div>
-        <div>
-          <p className="font-medium text-gray-900">Price:</p>
-          <p>{job.price ? `£${job.price.toFixed(2)}` : '-'}</p>
         </div>
         <div className="lg:col-span-1">
           <p className="font-medium text-gray-900">Notes:</p>
