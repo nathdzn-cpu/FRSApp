@@ -15,6 +15,16 @@ function adminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
+// Custom error for handling specific HTTP status codes
+class AuthError extends Error {
+  status: number;
+  constructor(message: string, status = 401) {
+    super(message);
+    this.name = 'AuthError';
+    this.status = status;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -23,13 +33,13 @@ serve(async (req) => {
   try {
     const admin = adminClient();
     const { orgKey, username, password } = await req.json();
-    const genericError = "Invalid organisation key, username, or password.";
+    const invalidCredsError = "Invalid username or password.";
 
     if (!orgKey || !username || !password) {
-      throw new Error("Organisation key, username, and password are required.");
+      throw new AuthError("Organisation key, username, and password are required.", 400);
     }
 
-    // 1. Find the organisation by its key
+    // 1. Validate the Organisation Key first.
     const { data: org, error: orgError } = await admin
       .from('orgs')
       .select('id')
@@ -37,80 +47,54 @@ serve(async (req) => {
       .single();
 
     if (orgError || !org) {
-      throw new Error(genericError);
+      throw new AuthError("Invalid organisation key.");
     }
 
     let emailToLogin: string | undefined;
-    let userId: string | undefined;
 
-    // 2. Find the user and their email
+    // 2. Find the user's email, strictly within the context of the given organisation if possible.
     if (username.includes('@')) {
-      // User is logging in with email
+      // If logging in with email, we can't pre-filter by org.
+      // The final validation after password check becomes critical.
       emailToLogin = username;
-      const { data: { user }, error: userError } = await admin.auth.admin.getUserByEmail(emailToLogin);
-      
-      if (userError || !user) {
-        // To prevent user enumeration attacks, we don't fail fast.
-        // The final signInWithPassword will fail, providing a consistent response time.
-      } else {
-        userId = user.id;
-      }
-
     } else {
-      // User is logging in with full_name (username)
-      const { data: profiles, error: profileError } = await admin
+      // If logging in with a username (full_name), we can and must find the user within the org.
+      const { data: profile, error: profileError } = await admin
         .from('profiles')
         .select('user_id')
         .eq('org_id', org.id)
-        .eq('full_name', username);
+        .eq('full_name', username)
+        .single(); // Enforces one user per name per org.
 
-      if (profileError || !profiles || profiles.length === 0) {
-        throw new Error(genericError);
-      }
-      if (profiles.length > 1) {
-        throw new Error("Multiple users found with that name in this organisation. Please use email to log in.");
+      if (profileError || !profile) {
+        // This covers cases where the username doesn't exist in this org.
+        throw new AuthError(invalidCredsError);
       }
       
-      userId = profiles[0].user_id;
-      
-      const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(userId);
+      const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.user_id);
       if (authUserError || !authUser.user) {
-        throw new Error(genericError);
+        // This case indicates data inconsistency but is a necessary safeguard.
+        throw new AuthError(invalidCredsError);
       }
       emailToLogin = authUser.user.email;
     }
 
     if (!emailToLogin) {
-        throw new Error(genericError);
+        throw new AuthError(invalidCredsError);
     }
     
-    // 3. If we have a userId, verify they belong to the specified organisation
-    if (userId) {
-        const { error: finalProfileError } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('id', userId)
-          .eq('org_id', org.id)
-          .single();
-
-        if (finalProfileError) {
-          // This user exists but does not belong to the org matching the key.
-          throw new Error(genericError);
-        }
-    }
-
-    // 4. Attempt to sign in with the verified email and password
+    // 3. Attempt to sign in. This is the primary check for password validity.
     const { data: sessionData, error: sessionError } = await admin.auth.signInWithPassword({
       email: emailToLogin,
       password,
     });
 
     if (sessionError) {
-      throw new Error(genericError);
+      // This handles wrong password or if the email doesn't exist at all in auth.users.
+      throw new AuthError(invalidCredsError);
     }
 
-    // This check is vital. If the user who signed in doesn't belong to the org, reject.
-    // This covers the case where an email is used and the user exists, but not in this org.
+    // 4. CRITICAL FINAL VALIDATION: Ensure the successfully logged-in user belongs to the specified organisation.
     const loggedInUserId = sessionData.user.id;
     const { error: finalCheckError } = await admin
         .from('profiles')
@@ -120,11 +104,13 @@ serve(async (req) => {
         .single();
 
     if (finalCheckError) {
-        await admin.auth.signOut(); // Sign out the incorrectly logged-in user.
-        throw new Error(genericError);
+        // The user's email and password are correct, but they do not belong to this organisation.
+        // We must reject the login and invalidate the session we just created.
+        await admin.auth.signOut(sessionData.session.access_token);
+        throw new AuthError(invalidCredsError);
     }
 
-    // 5. Update active session token to enforce single-session
+    // 5. Success: Update the active session token to enforce a single-session policy.
     if (sessionData.session) {
       await admin
         .from('profiles')
@@ -132,16 +118,20 @@ serve(async (req) => {
         .eq('id', sessionData.session.user.id);
     }
 
+    // Return the session data on full success.
     return new Response(
       JSON.stringify(sessionData),
       { headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
 
   } catch (e) {
+    const error = e as AuthError | Error;
+    const status = (error as AuthError).status || 401; // Default to 401 for any auth-related failure
+    
     return new Response(
-      JSON.stringify({ error: (e as Error).message }),
+      JSON.stringify({ error: error.message }),
       {
-        status: 400,
+        status,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );
