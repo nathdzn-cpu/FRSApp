@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import SignUpDialog from '@/components/auth/SignUpDialog';
 
 const LoginPage: React.FC = () => {
+  const [organisationKey, setOrganisationKey] = useState('');
   const [userIdOrEmail, setUserIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -22,12 +23,12 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLocalError(null);
 
-    if (!userIdOrEmail || !password) {
-      setLocalError("Please enter both User ID/Email and password.");
+    if (!organisationKey || !userIdOrEmail || !password) {
+      setLocalError("Please enter Organisation Key, User ID/Email, and password.");
       return;
     }
 
-    const { success, error } = await login(userIdOrEmail, password);
+    const { success, error } = await login(organisationKey, userIdOrEmail, password);
     if (!success && error) {
       setLocalError(error);
     }
@@ -53,6 +54,25 @@ const LoginPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="organisationKey">Organisation Key</Label>
+                <Input
+                  id="organisationKey"
+                  type="text"
+                  placeholder="e.g., 1234"
+                  value={organisationKey}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    if (val.length <= 4) {
+                      setOrganisationKey(val);
+                    }
+                  }}
+                  required
+                  disabled={isLoadingAuth}
+                  maxLength={4}
+                  pattern="\d{4}"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="userIdOrEmail">User ID / Email</Label>
                 <Input

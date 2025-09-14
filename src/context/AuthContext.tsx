@@ -15,7 +15,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole;
   isLoadingAuth: boolean;
-  login: (userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (organisationKey: string, userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -205,33 +205,45 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     return () => clearInterval(intervalId);
   }, [session, user]);
 
-  const login = async (userIdOrEmail: string, password: string) => {
-    console.log("AuthContextProvider: login called for:", userIdOrEmail);
-    let emailToLogin = userIdOrEmail;
-    if (!userIdOrEmail.includes('@')) {
-      emailToLogin = userIdOrEmail.toLowerCase().replace(/\s+/g, '.') + '@frs-haulage.local';
-    }
+  const login = async (organisationKey: string, userIdOrEmail: string, password: string) => {
+    console.log("AuthContextProvider: login called for:", userIdOrEmail, "in org key:", organisationKey);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email: emailToLogin, password });
-    if (error) {
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('login', {
+        body: { orgKey: organisationKey, username: userIdOrEmail, password },
+      });
+
+      if (functionError) {
+        const errorMessage = data?.error || functionError.message;
+        console.error("AuthContextProvider: Login function failed:", errorMessage);
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      const { session, user } = data;
+
+      if (session && user) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+
+        if (setSessionError) {
+          console.error("AuthContextProvider: Failed to set session:", setSessionError);
+          toast.error("Login succeeded but failed to set session.");
+          return { success: false, error: "Failed to set session." };
+        }
+
+        console.log("AuthContextProvider: Login successful.");
+        toast.success("Logged in successfully!");
+        return { success: true };
+      } else {
+        throw new Error("Login response was invalid.");
+      }
+    } catch (error: any) {
       console.error("AuthContextProvider: Login failed:", error.message);
       toast.error(error.message);
       return { success: false, error: error.message };
-    } else {
-      console.log("AuthContextProvider: Login successful.");
-      // Invalidate other sessions by setting the active session token
-      if (data.session) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ active_session_token: data.session.access_token })
-          .eq('id', data.session.user.id);
-        if (updateError) {
-          console.error("AuthContextProvider: Failed to update active session token:", updateError);
-          // Don't block login, but log the error
-        }
-      }
-      toast.success("Logged in successfully!");
-      return { success: true };
     }
   };
 

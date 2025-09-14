@@ -81,8 +81,12 @@ const OrganisationDetailsSection: React.FC<OrganisationDetailsSectionProps> = ({
 
   return (
     <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
-      <CardHeader className="p-0 pb-4">
+      <CardHeader className="p-0 pb-4 flex flex-row justify-between items-center">
         <CardTitle className="text-2xl font-bold text-gray-900">Organisation Details</CardTitle>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">Organisation Key</p>
+          <p className="text-lg font-bold text-gray-800 tracking-widest">{organisation.organisation_key || 'N/A'}</p>
+        </div>
       </CardHeader>
       <CardContent className="p-0 pt-4">
         <Form {...form}>

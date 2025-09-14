@@ -4,7 +4,7 @@ import { Organisation } from '@/utils/mockData';
 export const getOrganisationDetails = async (orgId: string): Promise<Organisation | null> => {
   const { data, error } = await supabase
     .from('orgs')
-    .select('*')
+    .select('*, organisation_key')
     .eq('id', orgId)
     .single();
 

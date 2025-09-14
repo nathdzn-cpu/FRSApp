@@ -21,8 +21,8 @@ interface JobsTableProps {
   currentProfile: Profile | null;
   currentOrgId: string;
   onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void;
-  onCancelJob: (job: Job) => void; // New prop
-  onViewDriverProfile: (driver: Profile) => void; // New prop for viewing driver profile
+  onCancelJob: (job: Job) => void;
+  onViewDriverProfile: (driver: Profile) => void;
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({
@@ -32,8 +32,8 @@ const JobsTable: React.FC<JobsTableProps> = ({
   currentProfile,
   currentOrgId,
   onAction,
-  onCancelJob, // Use new prop
-  onViewDriverProfile, // New prop for viewing driver profile
+  onCancelJob,
+  onViewDriverProfile,
 }) => {
   const navigate = useNavigate();
 
@@ -186,7 +186,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-red-600 focus:text-red-600"
-                            onClick={() => onCancelJob(job)} // Call onCancelJob
+                            onClick={() => onCancelJob(job)}
                           >
                             <XCircle className="mr-2 h-4 w-4" />
                             Cancel Job

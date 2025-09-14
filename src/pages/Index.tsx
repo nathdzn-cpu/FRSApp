@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import DriverDetailDialog from '@/components/DriverDetailDialog';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -63,6 +64,7 @@ const Index = () => {
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [jobToCancel, setJobToCancel] = useState<Job | null>(null); // State for job to cancel
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false); // State for cancel confirmation dialog
+  const [viewingDriver, setViewingDriver] = useState<Profile | null>(null);
   const navigate = useNavigate();
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
@@ -280,6 +282,9 @@ const Index = () => {
     }
   };
 
+  const handleViewDriverProfile = (driver: Profile) => {
+    setViewingDriver(driver);
+  };
 
   if (isLoading) {
     return (
@@ -513,6 +518,7 @@ const Index = () => {
                   currentOrgId={currentOrgId}
                   onAction={handleJobTableAction}
                   onCancelJob={handleCancelJob}
+                  onViewDriverProfile={handleViewDriverProfile}
                 />
               </div>
             )}
@@ -522,6 +528,13 @@ const Index = () => {
       <MadeWithDyad />
 
       {/* Dialogs */}
+      {viewingDriver && (
+        <DriverDetailDialog
+          open={!!viewingDriver}
+          onOpenChange={() => setViewingDriver(null)}
+          driver={viewingDriver}
+        />
+      )}
       {dialogState.type === 'statusUpdate' && dialogState.job && currentProfile && userRole && (
         <JobProgressUpdateDialog
           open={true}
