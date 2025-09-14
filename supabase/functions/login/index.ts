@@ -23,57 +23,105 @@ serve(async (req) => {
   try {
     const admin = adminClient();
     const { orgKey, username, password } = await req.json();
+    const genericError = "Invalid organisation key, username, or password.";
 
     if (!orgKey || !username || !password) {
       throw new Error("Organisation key, username, and password are required.");
     }
 
-    let emailToLogin = username;
+    // 1. Find the organisation by its key
+    const { data: org, error: orgError } = await admin
+      .from('orgs')
+      .select('id')
+      .eq('organisation_key', orgKey)
+      .single();
 
-    // If username is not an email, we need to find the email from the profile
-    if (!username.includes('@')) {
-      // 1. Find org_id from organisation_key
-      const { data: org, error: orgError } = await admin
-        .from('orgs')
-        .select('id')
-        .eq('organisation_key', orgKey)
-        .single();
+    if (orgError || !org) {
+      throw new Error(genericError);
+    }
 
-      if (orgError || !org) {
-        throw new Error("Invalid organisation key.");
+    let emailToLogin: string | undefined;
+    let userId: string | undefined;
+
+    // 2. Find the user and their email
+    if (username.includes('@')) {
+      // User is logging in with email
+      emailToLogin = username;
+      const { data: { user }, error: userError } = await admin.auth.admin.getUserByEmail(emailToLogin);
+      
+      if (userError || !user) {
+        // To prevent user enumeration attacks, we don't fail fast.
+        // The final signInWithPassword will fail, providing a consistent response time.
+      } else {
+        userId = user.id;
       }
 
-      // 2. Find user's email from username (full_name) and org_id
-      const { data: profile, error: profileError } = await admin
+    } else {
+      // User is logging in with full_name (username)
+      const { data: profiles, error: profileError } = await admin
         .from('profiles')
         .select('user_id')
         .eq('org_id', org.id)
-        .eq('full_name', username)
-        .single();
+        .eq('full_name', username);
 
-      if (profileError || !profile) {
-        if (profileError && profileError.code === 'PGRST116' && profileError.details.includes('multiple rows')) {
-            throw new Error("Multiple users found with that name in this organisation. Please use email to log in.");
-        }
-        throw new Error("Invalid username or password.");
+      if (profileError || !profiles || profiles.length === 0) {
+        throw new Error(genericError);
       }
-
-      // 3. Get email from auth.users using user_id
-      const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.user_id);
+      if (profiles.length > 1) {
+        throw new Error("Multiple users found with that name in this organisation. Please use email to log in.");
+      }
+      
+      userId = profiles[0].user_id;
+      
+      const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(userId);
       if (authUserError || !authUser.user) {
-        throw new Error("Could not find authentication profile for this user.");
+        throw new Error(genericError);
       }
       emailToLogin = authUser.user.email;
     }
 
-    // 4. Sign in
+    if (!emailToLogin) {
+        throw new Error(genericError);
+    }
+    
+    // 3. If we have a userId, verify they belong to the specified organisation
+    if (userId) {
+        const { error: finalProfileError } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .eq('org_id', org.id)
+          .single();
+
+        if (finalProfileError) {
+          // This user exists but does not belong to the org matching the key.
+          throw new Error(genericError);
+        }
+    }
+
+    // 4. Attempt to sign in with the verified email and password
     const { data: sessionData, error: sessionError } = await admin.auth.signInWithPassword({
       email: emailToLogin,
       password,
     });
 
     if (sessionError) {
-      throw new Error("Invalid username or password.");
+      throw new Error(genericError);
+    }
+
+    // This check is vital. If the user who signed in doesn't belong to the org, reject.
+    // This covers the case where an email is used and the user exists, but not in this org.
+    const loggedInUserId = sessionData.user.id;
+    const { error: finalCheckError } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('id', loggedInUserId)
+        .eq('org_id', org.id)
+        .single();
+
+    if (finalCheckError) {
+        await admin.auth.signOut(); // Sign out the incorrectly logged-in user.
+        throw new Error(genericError);
     }
 
     // 5. Update active session token to enforce single-session
