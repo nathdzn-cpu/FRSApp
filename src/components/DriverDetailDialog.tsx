@@ -4,7 +4,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Profile } from '@/utils/mockData';
-import { Phone, Truck, BarChart2, CheckCircle, Clock, ShieldCheck } from 'lucide-react';
+import { Phone, Truck, BarChart2, CheckCircle, Clock, ShieldCheck, Mail } from 'lucide-react';
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -43,6 +43,10 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({ open, onOpenCha
               <div className="flex items-center">
                 <Truck className="h-4 w-4 mr-3 text-gray-400" />
                 <span>{driver.truck_reg || 'No truck assigned'}</span>
+              </div>
+              <div className="flex items-center">
+                <Mail className="h-4 w-4 mr-3 text-gray-400" />
+                <span>{driver.email || 'Not provided'}</span>
               </div>
             </div>
           </div>

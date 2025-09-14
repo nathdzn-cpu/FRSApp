@@ -22,6 +22,7 @@ interface JobsTableProps {
   currentOrgId: string;
   onAction: (type: 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage', job: Job) => void;
   onCancelJob: (job: Job) => void; // New prop
+  onViewDriverProfile: (driver: Profile) => void; // New prop for viewing driver profile
 }
 
 const JobsTable: React.FC<JobsTableProps> = ({
@@ -32,6 +33,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
   currentOrgId,
   onAction,
   onCancelJob, // Use new prop
+  onViewDriverProfile, // New prop for viewing driver profile
 }) => {
   const navigate = useNavigate();
 
@@ -115,7 +117,20 @@ const JobsTable: React.FC<JobsTableProps> = ({
                       )}
                     </Avatar>
                     <div>
-                      <div className="font-medium text-gray-900">{driverInfo.name}</div>
+                      {job.assigned_driver_id ? (
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto font-medium text-blue-700 hover:underline"
+                          onClick={() => {
+                            const driver = profiles.find(p => p.id === job.assigned_driver_id);
+                            if (driver) onViewDriverProfile(driver);
+                          }}
+                        >
+                          {driverInfo.name}
+                        </Button>
+                      ) : (
+                        <div className="font-medium text-gray-900">{driverInfo.name}</div>
+                      )}
                       {driverInfo.reg && driverInfo.name !== 'Unassigned' && (
                         <div className="text-xs text-gray-500">{driverInfo.reg}</div>
                       )}

@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import JobsTable from '@/components/JobsTable'; // Import JobsTable
 
 export default function JobDashboard() {
   const { currentOrgId, profile: currentProfile, userRole } = useAuth();
@@ -145,16 +146,20 @@ export default function JobDashboard() {
   return (
     <div className="container mx-auto py-4">
       <h1 className="text-2xl font-bold mb-4">Job Dashboard</h1>
-      <DataTable
-        columns={columns}
-        data={jobs}
-        filterColumn="order_number"
-        filterPlaceholder="Filter by Order #"
-        statusOptions={statusOptions}
-        driverOptions={driverOptions}
-        getRowClassName={(row) =>
-          cn(row.original.status === 'cancelled' ? 'opacity-70' : '')
-        }
+      {/* Using JobsTable component */}
+      <JobsTable
+        jobs={jobs}
+        profiles={profiles}
+        userRole={userRole}
+        currentProfile={currentProfile}
+        currentOrgId={currentOrgId!}
+        onAction={(type, job) => {
+          if (type === 'statusUpdate') handleStatusUpdate(job);
+          if (type === 'assignDriver') handleAssignDriver(job);
+          if (type === 'viewAttachments') handleViewAttachments(job);
+        }}
+        onCancelJob={handleCancelJob}
+        onViewDriverProfile={handleViewDriverProfile} // Pass the handler here
       />
 
       {selectedJobForAssignment && (

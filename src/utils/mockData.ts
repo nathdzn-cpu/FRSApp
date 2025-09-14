@@ -35,6 +35,7 @@ export interface Profile {
   last_location?: { lat: number; lon: number; timestamp: string };
   last_job_status?: string;
   is_demo: boolean; // New field
+  email?: string; // Added email field
 }
 
 export interface DailyChecklist {
@@ -236,6 +237,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
     user_id: 'auth_user_alice', // Placeholder for Supabase auth.users.id
     created_at: new Date().toISOString(),
     is_demo: true, // Marked as demo
+    email: 'alice.admin@example.com', // Added email
   },
   {
     id: daveDriverId,
@@ -249,6 +251,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
     last_location: { lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() },
     last_job_status: 'delivered',
     is_demo: true,
+    email: 'dave.driver@example.com', // Added email
   },
 ];
 
