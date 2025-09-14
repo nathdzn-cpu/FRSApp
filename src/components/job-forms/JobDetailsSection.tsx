@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { parseCurrencyInput } from '@/lib/utils/formatUtils';
+import { DatePicker } from '@/components/ui/date-picker'; // Import the new DatePicker
 
 interface JobDetailsSectionProps {
   drivers: Profile[];
@@ -126,6 +127,40 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
                 />
               </PopoverContent>
             </Popover>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Collection Date */}
+      <FormField
+        control={control}
+        name="collection_date"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel className="text-gray-700">Collection Date</FormLabel>
+            <DatePicker
+              date={field.value}
+              setDate={field.onChange}
+              disabled={disableAllButDriverFields}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Delivery Date */}
+      <FormField
+        control={control}
+        name="delivery_date"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel className="text-gray-700">Delivery Date</FormLabel>
+            <DatePicker
+              date={field.value}
+              setDate={field.onChange}
+              disabled={disableAllButDriverFields}
+            />
             <FormMessage />
           </FormItem>
         )}

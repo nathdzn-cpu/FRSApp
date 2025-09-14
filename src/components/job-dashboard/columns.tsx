@@ -79,8 +79,28 @@ export const getColumns = ({
       },
     },
     {
+      accessorKey: "collection_date",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Collection" />
+      ),
+      cell: ({ row }) => {
+        const date = parseISO(row.getValue("collection_date"));
+        return <span>{format(date, "dd/MM/yyyy")}</span>;
+      },
+    },
+    {
+      accessorKey: "delivery_date",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Delivery" />
+      ),
+      cell: ({ row }) => {
+        const date = parseISO(row.getValue("delivery_date"));
+        return <span>{format(date, "dd/MM/yyyy")}</span>;
+      },
+    },
+    {
       accessorKey: "collection",
-      header: "Collection",
+      header: "Collection Point",
       cell: ({ row }) => {
         const job = row.original;
         return (
@@ -93,7 +113,7 @@ export const getColumns = ({
     },
     {
       accessorKey: "delivery",
-      header: "Delivery",
+      header: "Delivery Point",
       cell: ({ row }) => {
         const job = row.original;
         return (

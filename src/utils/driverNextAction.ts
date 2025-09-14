@@ -41,8 +41,13 @@ export const computeNextDriverAction = (
     return null;
   }
 
-  // If job is not yet accepted, the first action is to accept it
-  if (job.status === 'assigned' || job.status === 'planned') {
+  // If job is 'planned' and has no driver, no action is possible for a driver.
+  if (job.status === 'planned' && !job.assigned_driver_id) {
+    return null;
+  }
+
+  // If job is not yet accepted by the assigned driver, the first action is to accept it
+  if (job.status === 'planned' || job.status === 'assigned') {
     return {
       label: driverActionLabels['accepted'], // "Accept Job"
       nextStatus: 'accepted',

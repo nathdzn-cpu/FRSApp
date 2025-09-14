@@ -27,13 +27,13 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
   }
 
   if (startDate) {
-    query = query.gte('date_created', startDate);
+    query = query.gte('collection_date', startDate);
   }
   if (endDate) {
-    query = query.lte('date_created', endDate);
+    query = query.lte('collection_date', endDate);
   }
 
-  query = query.order('date_created', { ascending: false });
+  query = query.order('collection_date', { ascending: false });
 
   const { data, error } = await query;
 
@@ -153,7 +153,8 @@ export const createJob = async (
   jobData: {
     order_number: string | null;
     status: Job['status'];
-    date_created: string;
+    collection_date: string;
+    delivery_date: string;
     price: number | null;
     assigned_driver_id: string | null;
     notes: string | null;
@@ -247,7 +248,8 @@ export const cloneJob = async (
   jobData: {
     order_number: string | null;
     status: Job['status'];
-    date_created: string;
+    collection_date: string;
+    delivery_date: string;
     price: number | null;
     assigned_driver_id: string | null;
   },

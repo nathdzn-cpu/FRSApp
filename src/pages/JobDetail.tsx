@@ -18,7 +18,8 @@ import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockDat
 
 interface JobFormValues {
   order_number?: string | null;
-  date_created: Date;
+  collection_date: Date;
+  delivery_date: Date;
   price: number | null;
   assigned_driver_id: string | null;
   notes: string | null;
@@ -198,7 +199,8 @@ const JobDetail: React.FC = () => {
 
       const jobUpdates: Partial<Job> = {
         order_number: values.order_number || null,
-        date_created: values.date_created.toISOString().split('T')[0],
+        collection_date: values.collection_date.toISOString().split('T')[0],
+        delivery_date: values.delivery_date.toISOString().split('T')[0],
         price: values.price,
         assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
         notes: values.notes,

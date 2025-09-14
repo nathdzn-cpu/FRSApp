@@ -35,7 +35,8 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
           <TableRow>
             <TableHead className="text-gray-700 font-medium">Order Number</TableHead>
             <TableHead className="text-gray-700 font-medium">Status</TableHead>
-            <TableHead className="text-gray-700 font-medium">Date</TableHead>
+            <TableHead className="text-gray-700 font-medium">Collection Date</TableHead>
+            <TableHead className="text-gray-700 font-medium">Delivery Date</TableHead>
             <TableHead className="text-gray-700 font-medium">Collection</TableHead>
             <TableHead className="text-gray-700 font-medium">Delivery</TableHead>
             <TableHead className="text-center text-gray-700 font-medium">Actions</TableHead>
@@ -68,7 +69,8 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>{format(parseISO(job.date_created), 'dd/MM/yyyy')}</TableCell>
+                <TableCell>{job.collection_date ? format(parseISO(job.collection_date), 'dd/MM/yyyy') : '-'}</TableCell>
+                <TableCell>{job.delivery_date ? format(parseISO(job.delivery_date), 'dd/MM/yyyy') : '-'}</TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-gray-900">{formatAddressPart(job.collection_name)}</span>

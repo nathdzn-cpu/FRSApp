@@ -49,7 +49,8 @@ const stopSchema = z.object({
 
 const formSchema = z.object({
   order_number: z.string().optional().or(z.literal('')),
-  date_created: z.date({ required_error: 'Date Created is required.' }),
+  collection_date: z.date({ required_error: 'Collection Date is required.' }),
+  delivery_date: z.date({ required_error: 'Delivery Date is required.' }),
   price: z.preprocess(
     (val) => (val === "" ? null : Number(val)),
     z.number().min(0, { message: 'Price must be non-negative.' }).nullable().optional()
@@ -80,7 +81,8 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
     resolver: zodResolver(formSchema),
     defaultValues: {
       order_number: initialJob.order_number || '',
-      date_created: parseISO(initialJob.date_created),
+      collection_date: initialJob.collection_date ? parseISO(initialJob.collection_date) : new Date(),
+      delivery_date: initialJob.delivery_date ? parseISO(initialJob.delivery_date) : new Date(),
       price: initialJob.price,
       assigned_driver_id: initialJob.assigned_driver_id || null,
       notes: initialJob.notes || '',
