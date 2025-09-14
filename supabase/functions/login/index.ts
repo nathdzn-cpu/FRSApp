@@ -54,26 +54,21 @@ serve(async (req) => {
 
     // 2. Find the user's email, strictly within the context of the given organisation if possible.
     if (username.includes('@')) {
-      // If logging in with email, we can't pre-filter by org.
-      // The final validation after password check becomes critical.
       emailToLogin = username;
     } else {
-      // If logging in with a username (full_name), we can and must find the user within the org.
       const { data: profile, error: profileError } = await admin
         .from('profiles')
         .select('user_id')
         .eq('org_id', org.id)
         .eq('full_name', username)
-        .single(); // Enforces one user per name per org.
+        .single();
 
       if (profileError || !profile) {
-        // This covers cases where the username doesn't exist in this org.
         throw new AuthError(invalidCredsError);
       }
       
       const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.user_id);
       if (authUserError || !authUser.user) {
-        // This case indicates data inconsistency but is a necessary safeguard.
         throw new AuthError(invalidCredsError);
       }
       emailToLogin = authUser.user.email;
@@ -90,22 +85,19 @@ serve(async (req) => {
     });
 
     if (sessionError) {
-      // This handles wrong password or if the email doesn't exist at all in auth.users.
       throw new AuthError(invalidCredsError);
     }
 
     // 4. CRITICAL FINAL VALIDATION: Ensure the successfully logged-in user belongs to the specified organisation.
     const loggedInUserId = sessionData.user.id;
-    const { error: finalCheckError } = await admin
+    const { data: finalProfile, error: finalCheckError } = await admin
         .from('profiles')
-        .select('id')
+        .select('id, org_id, full_name')
         .eq('id', loggedInUserId)
         .eq('org_id', org.id)
         .single();
 
-    if (finalCheckError) {
-        // The user's email and password are correct, but they do not belong to this organisation.
-        // We must reject the login and invalidate the session we just created.
+    if (finalCheckError || !finalProfile) {
         await admin.auth.signOut(sessionData.session.access_token);
         throw new AuthError(invalidCredsError);
     }
@@ -118,18 +110,38 @@ serve(async (req) => {
         .eq('id', sessionData.session.user.id);
     }
 
-    // Return the session data on full success.
+    // 6. Construct and return success response
+    const successResponse = {
+      success: true,
+      session: sessionData.session, // Includes the token
+      user: {
+        id: sessionData.user.id,
+        username: finalProfile.full_name,
+        organisation_id: finalProfile.org_id,
+        ...sessionData.user
+      },
+    };
+
     return new Response(
-      JSON.stringify(sessionData),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } },
+      JSON.stringify(successResponse),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders } 
+      },
     );
 
   } catch (e) {
     const error = e as AuthError | Error;
-    const status = (error as AuthError).status || 401; // Default to 401 for any auth-related failure
+    // Use the status from AuthError, or default to 500 for unexpected server errors.
+    const status = (error instanceof AuthError) ? error.status : 500;
+    
+    const errorResponse = {
+      success: false,
+      message: error.message,
+    };
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify(errorResponse),
       {
         status,
         headers: { "Content-Type": "application/json", ...corsHeaders },
