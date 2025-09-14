@@ -214,7 +214,8 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       });
 
       if (functionError) {
-        const errorMessage = data?.error || functionError.message;
+        // Prioritize the specific message from the Edge Function's JSON response body
+        const errorMessage = data?.error?.message || data?.message || functionError.message;
         console.error("AuthContextProvider: Login function failed:", errorMessage);
         toast.error(errorMessage);
         return { success: false, error: errorMessage };
