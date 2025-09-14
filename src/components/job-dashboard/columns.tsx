@@ -26,7 +26,8 @@ interface GetColumnsProps {
   onJobView: (orderNumber: string) => void;
   onAssignDriver: (job: Job) => void;
   onViewAttachments: (job: Job) => void;
-  onCancelJob: (job: Job) => void; // New prop for cancelling a job
+  onCancelJob: (job: Job) => void;
+  onViewDriverProfile: (driver: Profile) => void;
 }
 
 export const getColumns = ({
@@ -35,7 +36,8 @@ export const getColumns = ({
   onJobView,
   onAssignDriver,
   onViewAttachments,
-  onCancelJob, // New prop
+  onCancelJob,
+  onViewDriverProfile,
 }: GetColumnsProps): ColumnDef<Job>[] => {
   const { userRole } = useAuth();
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
@@ -132,7 +134,13 @@ export const getColumns = ({
         const driver = profiles.find(p => p.id === driverId);
         return driver ? (
           <div className="text-xs">
-            <p className="font-semibold">{driver.full_name}</p>
+            <Button
+              variant="link"
+              className="p-0 h-auto font-semibold text-xs text-blue-600"
+              onClick={() => onViewDriverProfile(driver)}
+            >
+              {driver.full_name}
+            </Button>
             <p>{driver.truck_reg || 'N/A'}</p>
           </div>
         ) : (

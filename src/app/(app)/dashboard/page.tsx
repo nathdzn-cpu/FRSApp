@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
 import JobAttachmentsDialog from '@/components/job-detail/JobAttachmentsDialog';
+import DriverDetailDialog from '@/components/DriverDetailDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,9 @@ export default function JobDashboard() {
   const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
+  const [isDriverDetailOpen, setIsDriverDetailOpen] = useState(false);
 
   const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
     queryKey: ['jobs', currentOrgId],
@@ -73,6 +77,11 @@ export default function JobDashboard() {
   const handleViewAttachments = (job: Job) => {
     setSelectedJobForAttachments(job);
     setIsAttachmentsDialogOpen(true);
+  };
+
+  const handleViewDriverProfile = (driver: Profile) => {
+    setSelectedDriver(driver);
+    setIsDriverDetailOpen(true);
   };
 
   const handleCancelJob = (job: Job) => {
@@ -113,6 +122,7 @@ export default function JobDashboard() {
     onAssignDriver: handleAssignDriver,
     onViewAttachments: handleViewAttachments,
     onCancelJob: handleCancelJob,
+    onViewDriverProfile: handleViewDriverProfile,
   }), [profiles]);
 
   if (isLoadingJobs || isLoadingProfiles) {
@@ -175,6 +185,12 @@ export default function JobDashboard() {
           currentOrgId={currentOrgId}
         />
       )}
+
+      <DriverDetailDialog
+        open={isDriverDetailOpen}
+        onOpenChange={setIsDriverDetailOpen}
+        driver={selectedDriver}
+      />
 
       {jobToCancel && (
         <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
