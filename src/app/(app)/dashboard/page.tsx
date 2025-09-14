@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import JobsTable from '@/components/JobsTable'; // Import JobsTable
-import { useState } from 'react'; // Import useState
+import { useMutation } from '@tanstack/react-query'; // Add useMutation import
 
 export default function JobDashboard() {
   const { currentOrgId, profile: currentProfile, userRole } = useAuth();
