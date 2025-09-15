@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -48,7 +48,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
   });
 
   return (
-    <Form {...form}>
+    <div>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
@@ -101,7 +101,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Month" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                         {months.map((month) => (
@@ -179,7 +179,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
         </Card>
         <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Driver</Button>
       </form>
-    </Form>
+    </div>
   );
 };
 
