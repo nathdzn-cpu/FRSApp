@@ -18,6 +18,7 @@ import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
 import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import CloneJobDialog from '@/components/CloneJobDialog';
 import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
+import CancelJobDialog from '@/components/CancelJobDialog';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -72,6 +73,7 @@ const JobDetail: React.FC = () => {
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentOrgId = profile?.org_id;
@@ -196,15 +198,16 @@ const JobDetail: React.FC = () => {
     navigate(`/jobs/${newJobOrderNumber}`);
   };
 
-  const handleCancelJob = async () => {
+  const handleCancelJob = async (cancellationPrice: number) => {
     if (!job || !profile || !userRole) return;
-    const promise = cancelJob(job.id, currentOrgId, profile.id, userRole);
+    const promise = cancelJob(job.id, currentOrgId, profile.id, userRole, cancellationPrice);
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
       error: 'Failed to cancel job.',
     });
     await promise;
+    setJobToCancel(null);
     refetchJobData();
   };
 
@@ -409,7 +412,7 @@ const JobDetail: React.FC = () => {
             onRequestPod={handleRequestPod}
             onExportPdf={handleExportPdf}
             onCloneJob={handleCloneJob}
-            onCancelJob={handleCancelJob}
+            onCancelJob={() => setJobToCancel(job)}
             isSubmittingEdit={isSubmittingEdit}
             isAssigningDriver={isAssigningDriver}
             isUpdatingProgress={isUpdatingProgress}
@@ -441,6 +444,14 @@ const JobDetail: React.FC = () => {
             onCloneSuccess={handleCloneSuccess}
           />
         )}
+
+        <CancelJobDialog
+          open={!!jobToCancel}
+          onOpenChange={(open) => !open && setJobToCancel(null)}
+          job={jobToCancel}
+          onConfirm={handleCancelJob}
+          isCancelling={isSubmittingEdit}
+        />
 
         {/* Hidden component for PDF generation */}
         {job && stops && (

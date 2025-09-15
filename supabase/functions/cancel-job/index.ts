@@ -57,7 +57,7 @@ serve(async (req) => {
 
     // 2) Parse body
     const body = await req.json().catch(() => ({}));
-    const { job_id, org_id, actor_id, actor_role } = body;
+    const { job_id, org_id, actor_id, actor_role, cancellation_price } = body;
 
     if (!job_id || !org_id || !actor_id || !actor_role) {
       throw new Error("Missing required fields: job_id, org_id, actor_id, actor_role.");
@@ -75,7 +75,7 @@ serve(async (req) => {
     // Fetch the existing job to get its current status for the audit log
     const { data: oldJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status, order_number")
+      .select("status, order_number, price")
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
@@ -85,13 +85,19 @@ serve(async (req) => {
 
     // 3) Update job status to 'cancelled' and set deleted_at
     const currentTimestamp = new Date().toISOString();
+    const jobUpdates: any = {
+      status: 'cancelled',
+      deleted_at: currentTimestamp,
+      last_status_update_at: currentTimestamp,
+    };
+
+    if (typeof cancellation_price === 'number' && cancellation_price >= 0) {
+      jobUpdates.price = cancellation_price;
+    }
+
     const { data: updatedJob, error: updateJobError } = await admin
       .from("jobs")
-      .update({
-        status: 'cancelled',
-        deleted_at: currentTimestamp,
-        last_status_update_at: currentTimestamp,
-      })
+      .update(jobUpdates)
       .eq("id", job_id)
       .eq("org_id", org_id)
       .select()
@@ -122,9 +128,9 @@ serve(async (req) => {
       entity: "jobs",
       entity_id: job_id,
       action: "cancel",
-      before: { status: oldJob.status },
-      after: { status: updatedJob.status, deleted_at: updatedJob.deleted_at },
-      notes: `Job '${oldJob.order_number}' cancelled by ${me.full_name || me.role}.`,
+      before: { status: oldJob.status, price: oldJob.price },
+      after: { status: updatedJob.status, deleted_at: updatedJob.deleted_at, price: updatedJob.price },
+      notes: `Job '${oldJob.order_number}' cancelled by ${me.full_name || me.role}. Cancellation fee set to ${jobUpdates.price !== undefined ? jobUpdates.price : 'not changed'}.`,
       created_at: currentTimestamp,
     });
     if (auditError) {
@@ -133,7 +139,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(updatedJob),
-      { status, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (e) {
     console.error("DEBUG: function error in cancel-job", e);

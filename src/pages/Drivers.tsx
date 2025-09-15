@@ -15,7 +15,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import DriverDetailDialog from '@/components/DriverDetailDialog'; // Import the new dialog component
 import dayjs from 'dayjs'; // Import dayjs for date calculations
+import isToday from 'dayjs/plugin/isToday';
+import isBetween from 'dayjs/plugin/isBetween';
+import weekOfYear from 'dayjs/plugin/weekOfYear';
 import DriverCard from '@/components/DriverCard'; // Import the new DriverCard component
+
+dayjs.extend(isToday);
+dayjs.extend(isBetween);
+dayjs.extend(weekOfYear);
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
@@ -78,8 +85,25 @@ const Drivers: React.FC = () => {
     );
   }, [drivers, searchTerm]);
 
-  const getJobsAssignedCount = (driverId: string) => {
-    return allJobs.filter(job => job.assigned_driver_id === driverId && !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+  const getDriverStats = (driverId: string) => {
+    const driverJobs = allJobs.filter(job => job.assigned_driver_id === driverId);
+    const now = dayjs();
+    const startOfWeek = now.startOf('week');
+    const endOfWeek = now.endOf('week');
+
+    const activeJobs = driverJobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+    
+    const jobsToday = driverJobs.filter(job => {
+      const completionDate = job.last_status_update_at ? dayjs(job.last_status_update_at) : dayjs(job.delivery_date);
+      return (job.status === 'delivered' || job.status === 'pod_received' || job.status === 'cancelled') && completionDate.isToday();
+    }).length;
+
+    const jobsThisWeek = driverJobs.filter(job => {
+      const completionDate = job.last_status_update_at ? dayjs(job.last_status_update_at) : dayjs(job.delivery_date);
+      return (job.status === 'delivered' || job.status === 'pod_received' || job.status === 'cancelled') && completionDate.isBetween(startOfWeek, endOfWeek, null, '[]');
+    }).length;
+
+    return { activeJobs, jobsToday, jobsThisWeek };
   };
 
   const handleViewDetails = (driver: Profile) => {
@@ -89,7 +113,7 @@ const Drivers: React.FC = () => {
 
   if (isLoadingAuth || loadingData) {
     return (
-      <div className="flex items-center justify-center bg-[var(--saas-background)]">
+      <div className="flex items-center justify-center h-screen bg-[var(--saas-background)]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-2 text-gray-700">Loading drivers data...</p>
       </div>
@@ -153,7 +177,7 @@ const Drivers: React.FC = () => {
                   <DriverCard
                     key={driver.id}
                     driver={driver}
-                    jobsAssignedCount={getJobsAssignedCount(driver.id)}
+                    stats={getDriverStats(driver.id)}
                     onViewDetails={handleViewDetails}
                   />
                 ))}
@@ -168,12 +192,7 @@ const Drivers: React.FC = () => {
           open={isDetailDialogOpen}
           onOpenChange={setIsDetailDialogOpen}
           driver={selectedDriver}
-          allJobs={allJobs}
-          currentOrgId={currentOrgId}
-          onJobView={(orderNumber) => {
-            setIsDetailDialogOpen(false); // Close dialog before navigating
-            navigate(`/jobs/${orderNumber}`);
-          }}
+          allJobs={allJobs.filter(j => j.assigned_driver_id === selectedDriver.id)}
         />
       )}
     </div>

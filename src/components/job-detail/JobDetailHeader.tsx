@@ -38,7 +38,7 @@ interface JobDetailHeaderProps {
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;
   onCloneJob: () => void;
-  onCancelJob: () => Promise<void>;
+  onCancelJob: () => void;
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;
   isUpdatingProgress: boolean;
@@ -173,27 +173,9 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               <Copy className="h-4 w-4 mr-2" /> Clone Job
             </Button>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <XCircle className="h-4 w-4 mr-2" /> Cancel Job
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="overflow-y-auto">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure you want to cancel this job?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently mark the job as cancelled and it will no longer appear in active job lists.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel asChild>
-                    <Button variant="outline">Dismiss</Button>
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={onCancelJob} variant="destructive">Cancel Job</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button variant="destructive" onClick={onCancelJob}>
+              <XCircle className="h-4 w-4 mr-2" /> Cancel Job
+            </Button>
           </>
         )}
       </div>

@@ -29,16 +29,7 @@ import { toast } from 'sonner';
 import ActiveJobBanner from '@/components/driver/ActiveJobBanner';
 import DriverJobsTable from '@/components/driver/DriverJobsTable';
 import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import CancelJobDialog from '@/components/CancelJobDialog';
 import DriverDetailDialog from '@/components/DriverDetailDialog';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -52,7 +43,7 @@ interface DialogState {
 }
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin, supabase } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
@@ -62,8 +53,7 @@ const Index = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
   const [isActionBusy, setIsActionBusy] = useState(false);
-  const [jobToCancel, setJobToCancel] = useState<Job | null>(null); // State for job to cancel
-  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false); // State for cancel confirmation dialog
+  const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Profile | null>(null);
   const navigate = useNavigate();
 
@@ -276,10 +266,9 @@ const Index = () => {
 
   const handleCancelJob = (job: Job) => {
     setJobToCancel(job);
-    setIsCancelConfirmOpen(true);
   };
 
-  const confirmCancelJob = async () => {
+  const confirmCancelJob = async (cancellationPrice: number) => {
     if (!jobToCancel || !currentProfile || !userRole) {
       toast.error("Job to cancel or user profile/role not found. Cannot cancel job.");
       return;
@@ -287,7 +276,7 @@ const Index = () => {
 
     setIsActionBusy(true);
     try {
-      const promise = cancelJob(jobToCancel.id, currentOrgId, currentProfile.id, userRole);
+      const promise = cancelJob(jobToCancel.id, currentOrgId, currentProfile.id, userRole, cancellationPrice);
       toast.promise(promise, {
         loading: `Cancelling job ${jobToCancel.order_number}...`,
         success: `Job ${jobToCancel.order_number} cancelled successfully!`,
@@ -297,7 +286,6 @@ const Index = () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['jobDetail', jobToCancel.order_number, userRole] });
       setJobToCancel(null);
-      setIsCancelConfirmOpen(false);
     } catch (err: any) {
       console.error("Error cancelling job:", err);
       toast.error("An unexpected error occurred while cancelling the job.");
@@ -615,29 +603,13 @@ const Index = () => {
         />
       )}
 
-      {jobToCancel && (
-        <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
-          <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to cancel this job?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will cancel job <span className="font-bold">{jobToCancel.order_number}</span>. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isActionBusy}>Back</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmCancelJob}
-                disabled={isActionBusy}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {isActionBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Yes, Cancel Job
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <CancelJobDialog
+        open={!!jobToCancel}
+        onOpenChange={(open) => !open && setJobToCancel(null)}
+        job={jobToCancel}
+        onConfirm={confirmCancelJob}
+        isCancelling={isActionBusy}
+      />
     </div>
   );
 };

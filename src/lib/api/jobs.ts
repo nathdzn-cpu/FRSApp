@@ -263,13 +263,24 @@ export const cloneJob = async (
 };
 
 // Cancel a job
-export const cancelJob = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Job> => {
-  const payload = {
+export const cancelJob = async (jobId: string, orgId: string, actorId: string, actorRole: 'admin' | 'office' | 'driver', cancellationPrice?: number): Promise<Job> => {
+  const payload: {
+    job_id: string;
+    org_id: string;
+    actor_id: string;
+    actor_role: 'admin' | 'office' | 'driver';
+    cancellation_price?: number;
+  } = {
     job_id: jobId,
     org_id: orgId,
     actor_id: actorId,
     actor_role: actorRole,
   };
+
+  if (typeof cancellationPrice === 'number') {
+    payload.cancellation_price = cancellationPrice;
+  }
+
   const { data, error } = await supabase.functions.invoke('cancel-job', {
     method: 'POST',
     body: JSON.stringify(payload),
