@@ -150,15 +150,27 @@ serve(async (req) => {
     }
 
     // 4) Update jobs table
-    const jobUpdates: Record<string, any> = {
-      status: new_status,
-      last_status_update_at: timestamp,
-    };
+    const jobUpdates: Record<string, any> = {};
+    let actionToLog = new_status;
 
-    // If status is moving away from a waiting state, reset the overdue flag
-    if (oldJob.status === 'at_collection' || oldJob.status === 'at_delivery') {
-      if (new_status !== oldJob.status) {
-        jobUpdates.overdue_notification_sent = false;
+    if (new_status === 'eta_set') {
+      // For ETA updates, only update the ETA field, not the main status.
+      if (oldJob.status === 'on_route_collection') {
+        jobUpdates.pickup_eta = timestamp;
+      } else if (oldJob.status === 'on_route_delivery') {
+        jobUpdates.delivery_eta = timestamp;
+      }
+      actionToLog = 'eta_set';
+    } else {
+      // For regular status updates
+      jobUpdates.status = new_status;
+      jobUpdates.last_status_update_at = timestamp;
+
+      // If status is moving away from a waiting state, reset the overdue flag
+      if (oldJob.status === 'at_collection' || oldJob.status === 'at_delivery') {
+        if (new_status !== oldJob.status) {
+          jobUpdates.overdue_notification_sent = false;
+        }
       }
     }
 
@@ -200,7 +212,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Updating job ${job_id} with status: ${jobUpdates.status}`);
+    console.log(`Updating job ${job_id} with:`, jobUpdates);
     const { data: updatedJob, error: updateJobError } = await admin
       .from("jobs")
       .update(jobUpdates)
@@ -225,7 +237,7 @@ serve(async (req) => {
         job_id: job_id,
         actor_id: actor_id,
         actor_role: actor_role,
-        action_type: new_status,
+        action_type: actionToLog,
         timestamp: timestamp,
         notes: notes || null,
         stop_id: stop_id || null,
@@ -251,8 +263,8 @@ serve(async (req) => {
       entity_id: job_id,
       action: "update_progress",
       before: { status: oldJob.status },
-      after: { status: updatedJob.status, last_status_update_at: timestamp },
-      notes: `Job progress updated to: ${new_status}`,
+      after: { status: updatedJob.status, ...jobUpdates },
+      notes: `Job progress updated. Action: ${actionToLog}`,
       created_at: new Date().toISOString(),
     });
     if (auditError) {
@@ -273,8 +285,10 @@ serve(async (req) => {
       if (profileError) {
         console.error("Error fetching office/admin profiles for notification:", profileError.message);
       } else if (officeAdminProfiles && officeAdminProfiles.length > 0) {
-        const notificationTitle = `Job Update: ${updatedJob.order_number}`;
-        const notificationMessage = `${me.full_name} updated status to "${new_status.replace(/_/g, ' ')}".`;
+        const notificationTitle = `Job Update: ${oldJob.order_number}`;
+        const notificationMessage = actionToLog === 'eta_set'
+          ? `${me.full_name} updated the ETA.`
+          : `${me.full_name} updated status to "${new_status.replace(/_/g, ' ')}".`;
 
         const notificationsToInsert = officeAdminProfiles
           .filter(p => p.id !== actor_id) // Don't notify the actor

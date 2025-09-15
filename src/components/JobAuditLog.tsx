@@ -102,7 +102,11 @@ const JobAuditLog: React.FC<JobAuditLogProps> = ({ progressLogs, profiles }) => 
         const actorInfo = getActorInfo(log.actor_id);
         const locationName = locations[log.id];
         const locationText = locationName ? ` in ${locationName}` : (log.lat && log.lon && isLoadingLocations) ? ' at location...' : '';
-        const message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred${locationText}.`;
+        
+        let message = log.notes || `An event of type '${getDisplayStatus(log.action_type)}' occurred${locationText}.`;
+        if (log.action_type === 'eta_set' && log.created_at) {
+          message = `Driver updated ETA to ${format(logDate, 'HH:mm')} at ${format(parseISO(log.created_at), 'HH:mm')}.`;
+        }
 
         return (
           <div key={log.id} className="mb-4 relative">

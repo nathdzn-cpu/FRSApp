@@ -153,14 +153,14 @@ export interface JobProgressLog {
   org_id: string;
   job_id: string;
   actor_id: string;
-  action_type: string; // Renamed from status
-  actor_role?: 'driver' | 'office' | 'admin'; // New field
-  timestamp: string;
+  actor_role: 'admin' | 'office' | 'driver';
+  action_type: string;
+  timestamp: string; // ISO 8601
+  created_at: string; // ISO 8601
   notes?: string | null;
-  created_at: string;
-  lat?: number; // Added lat/lon for location pings
-  lon?: number; // Added lat/lon for location pings
-  stop_id?: string | null; // Added stop_id for stop-specific events
+  stop_id?: string;
+  lat?: number;
+  lon?: number;
   visible_in_timeline?: boolean; // New field for timeline visibility
   file_path?: string | null; // New field for file paths in logs
 }

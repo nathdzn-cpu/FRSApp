@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, CheckCircle, Camera, Clock } from 'lucide-react';
 import { Job, JobStop, Profile, JobProgressLog, Document } from '@/utils/mockData';
 import { updateJobProgress } from '@/lib/api/jobs';
 import { toast } from 'sonner';
@@ -67,6 +67,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [nextAction, setNextAction] = useState<NextDriverAction | null>(null);
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+  const [isEtaUpdateDialogOpen, setIsEtaUpdateDialogOpen] = useState(false);
   const [isPodUploadDialogOpen, setIsPodUploadDialogOpen] = useState(false);
   const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -85,7 +86,7 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   }, [job, safeStops, safeProgressLogs, currentProfile]);
 
   const handleUpdateProgress = async (
-    newStatus: Job['status'],
+    newStatus: Job['status'] | 'eta_set',
     timestamp: Date,
     notes: string,
     stopId?: string
@@ -123,10 +124,10 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
       };
       await updateJobProgress(payload);
       refetchJobData();
-      toast.success(`${nextAction?.label || 'Action'} logged successfully!`);
+      toast.success(`${newStatus === 'eta_set' ? 'ETA' : (nextAction?.label || 'Action')} logged successfully!`);
     } catch (err: any) {
       console.error("Error updating job progress:", err);
-      toast.error(`Failed to log ${nextAction?.label || 'action'}: ${err.message || String(err)}`);
+      toast.error(`Failed to log ${newStatus === 'eta_set' ? 'ETA' : (nextAction?.label || 'action')}: ${err.message || String(err)}`);
       throw err;
     } finally {
       setIsUpdatingProgress(false);
@@ -225,6 +226,17 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
                       {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                       {nextAction.label}
                     </Button>
+                    {(job.status === 'on_route_collection' || job.status === 'on_route_delivery') && (
+                      <Button
+                        onClick={() => setIsEtaUpdateDialogOpen(true)}
+                        disabled={isUpdatingProgress || isUploadingImage}
+                        variant="secondary"
+                        className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                      >
+                        {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Clock className="h-5 w-5 mr-2" />}
+                        Update ETA
+                      </Button>
+                    )}
                     {nextAction.nextStatus !== 'pod_received' && (
                       <Button
                         onClick={() => setIsImageUploadDialogOpen(true)}
@@ -258,6 +270,18 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
           description={`Enter the date and time for the "${nextAction.promptLabel}" action.`}
           actionLabel={`Log ${nextAction.label}`}
           onSubmit={(dateTime, notes) => handleUpdateProgress(nextAction.nextStatus, dateTime, notes, nextAction.stopId)}
+          isLoading={isUpdatingProgress}
+        />
+      )}
+
+      {(job.status === 'on_route_collection' || job.status === 'on_route_delivery') && (
+        <ProgressActionDialog
+          open={isEtaUpdateDialogOpen}
+          onOpenChange={setIsEtaUpdateDialogOpen}
+          title="Update ETA"
+          description={`Enter the new ETA for your ${job.status === 'on_route_collection' ? 'collection' : 'delivery'}.`}
+          actionLabel="Update ETA"
+          onSubmit={(dateTime, notes) => handleUpdateProgress('eta_set', dateTime, notes, nextAction?.stopId)}
           isLoading={isUpdatingProgress}
         />
       )}

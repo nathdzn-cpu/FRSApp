@@ -169,7 +169,11 @@ const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, curre
         const actorInfo = getActorInfo(log.actor_id);
         const locationName = locations[log.id];
         const locationText = locationName ? ` in ${locationName}` : (log.lat && log.lon && isLoadingLocations) ? ' at location...' : '';
-        const message = log.notes || `${actorInfo.fullName} marked as "${getDisplayStatus(log.action_type)}"${locationText}.`;
+        
+        let message = log.notes || `${actorInfo.fullName} marked as "${getDisplayStatus(log.action_type)}"${locationText}.`;
+        if (log.action_type === 'eta_set' && log.created_at) {
+          message = `${actorInfo.fullName} updated ETA to ${format(logDate, 'HH:mm')} at ${format(parseISO(log.created_at), 'HH:mm')}.`;
+        }
 
         return (
           <div key={log.id} className="mb-6 relative">
