@@ -22,6 +22,11 @@ import { format, setHours, setMinutes, setSeconds } from 'date-fns';
 import { formatAndValidateTimeInput } from '@/lib/utils/timeUtils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { getOrganisation } from '@/lib/api/organisation';
+import { Organisation } from '@/utils/mockData';
+import { Phone } from 'lucide-react';
 
 interface ProgressActionDialogProps {
   open: boolean;
@@ -50,6 +55,16 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
   const [timeInput, setTimeInput] = useState<string>(initialDateTime ? format(initialDateTime, 'HH:mm') : format(new Date(), 'HH:mm'));
   const [notes, setNotes] = useState<string>(initialNotes || '');
   const [timeError, setTimeError] = useState<string | null>(null);
+  const { profile } = useAuth();
+  const orgId = profile?.org_id;
+
+  const { data: organisation } = useQuery<Organisation, Error>({
+    queryKey: ['organisation', orgId],
+    queryFn: () => getOrganisation(orgId!),
+    enabled: !!orgId,
+  });
+
+  const orgPhoneNumber = organisation?.contact_number;
 
   useEffect(() => {
     if (open) {
@@ -206,6 +221,27 @@ const ProgressActionDialog: React.FC<ProgressActionDialogProps> = ({
               />
             </div>
           </div>
+        </div>
+        <div className="pt-4 mt-4 border-t border-gray-200">
+          <p className="text-center text-sm text-gray-600 mb-2">
+            If you have any issues please call us at the earliest possible opportunity.
+          </p>
+          {orgPhoneNumber ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(`tel:${orgPhoneNumber.replace(/\s/g, '')}`)}
+              disabled={isLoading}
+            >
+              <Phone className="mr-2 h-4 w-4" />
+              Call Office
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full" disabled>
+              <Phone className="mr-2 h-4 w-4" />
+              Call Office (No number available)
+            </Button>
+          )}
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => handleClose(false)} disabled={isLoading}>Cancel</AlertDialogCancel>
