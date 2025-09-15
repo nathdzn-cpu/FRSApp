@@ -10,6 +10,9 @@ import Index from './pages/Index';
 import JobDetail from './pages/JobDetail';
 import CreateJob from './pages/CreateJob';
 import Drivers from './pages/Drivers';
+import DriverDetailDialog from './components/DriverDetailDialog';
+import AdminRoute from './components/auth/AdminRoute';
+import BillingPage from './pages/admin/Billing';
 import AdminChecklists from './pages/AdminChecklists';
 import AdminUsersPage from './pages/admin/users/AdminUsersPage';
 import CreateUserChoice from './pages/admin/users/CreateUserChoice';
@@ -29,6 +32,20 @@ import { useNotifications } from './hooks/use-notifications';
 import { supabase } from './lib/supabaseClient';
 import { JobProgressLog } from './utils/mockData';
 import { getDisplayStatus } from './lib/utils/statusUtils';
+
+const queryClient = new QueryClient();
+
+const Layout = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex min-h-screen bg-[var(--saas-background)]">
+    <Sidebar />
+    <div className="flex flex-col flex-1">
+      <Header />
+      <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        {children}
+      </main>
+    </div>
+  </div>
+);
 
 const AppContent = () => {
   const { userRole, profile } = useAuth();
@@ -79,35 +96,27 @@ const AppContent = () => {
   }, [userRole, profile, showNotification]);
 
   return (
-    <div className="flex min-h-screen bg-[var(--saas-background)]">
-      <Sidebar />
-      <div className="flex flex-col flex-1">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/jobs/:orderNumber" element={<JobDetail />} />
-            <Route path="/jobs/new" element={<CreateJob />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/daily-check" element={<DriverDailyCheck />} />
-            <Route path="/map" element={<Map />} />
-            <Route path="/quotes" element={<Quotes />} />
-            <Route path="/admin/checklists" element={<AdminChecklists />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/users/new" element={<CreateUserChoice />} />
-            <Route path="/admin/users/new/driver" element={<CreateDriver />} />
-            <Route path="/admin/users/new/office" element={<CreateOffice />} />
-            <Route path="/admin/users/:id/edit" element={<EditUser />} />
-            <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
-            <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/env-debug" element={<EnvDebug />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/jobs/:orderNumber" element={<JobDetail />} />
+      <Route path="/jobs/new" element={<CreateJob />} />
+      <Route path="/drivers" element={<Drivers />} />
+      <Route path="/daily-check" element={<DriverDailyCheck />} />
+      <Route path="/map" element={<Map />} />
+      <Route path="/quotes" element={<Quotes />} />
+      <Route path="/admin/checklists" element={<Layout><AdminChecklists /></Layout>} />
+      <Route path="/admin/users" element={<Layout><AdminUsersPage /></Layout>} />
+      <Route path="/admin/users/new" element={<Layout><CreateUserChoice /></Layout>} />
+      <Route path="/admin/users/new/driver" element={<Layout><CreateDriver /></Layout>} />
+      <Route path="/admin/users/new/office" element={<Layout><CreateOffice /></Layout>} />
+      <Route path="/admin/users/:id/edit" element={<Layout><EditUser /></Layout>} />
+      <Route path="/admin/daily-checks" element={<Layout><AdminDailyChecks /></Layout>} />
+      <Route path="/admin/saved-addresses" element={<Layout><AdminSavedAddresses /></Layout>} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/env-debug" element={<EnvDebug />} />
+      <Route path="*" element={<Layout><NotFound /></Layout>} />
+    </Routes>
   );
 };
 

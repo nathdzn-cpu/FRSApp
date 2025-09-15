@@ -2,107 +2,84 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, ChevronDown, User as UserIcon, Settings } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { LogOut, Settings, Users, CreditCard } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
-const Header: React.FC = () => {
-  const { user, profile, logout, isOfficeOrAdmin } = useAuth();
-  const isMobile = useIsMobile();
+const Header = () => {
+  const { user, profile, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const canCreateJob = isOfficeOrAdmin;
-  const canSeeBell = isOfficeOrAdmin;
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
-  const userInitials = profile?.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'JD';
-  const userName = profile?.full_name || 'John Doe';
-
-  // Simple breadcrumb generation
-  const pathnames = location.pathname.split('/').filter(x => x);
-  const breadcrumbs = pathnames.map((value, index) => {
-    const to = `/${pathnames.slice(0, index + 1).join('/')}`;
-    const isLast = index === pathnames.length - 1;
-    const displayValue = value.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-
-    return (
-      <React.Fragment key={to}>
-        <BreadcrumbItem>
-          {isLast ? (
-            <BreadcrumbPage className="text-gray-700">{displayValue}</BreadcrumbPage>
-          ) : (
-            <BreadcrumbLink asChild>
-              <Link to={to} className="text-gray-500 hover:text-gray-700">{displayValue}</Link>
-            </BreadcrumbLink>
-          )}
-        </BreadcrumbItem>
-        {!isLast && <BreadcrumbSeparator />}
-      </React.Fragment>
-    );
-  });
+  const getInitials = (name: string | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-[var(--saas-header-bg)] shadow-sm">
-      <div className="flex items-center gap-4">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/" className="text-gray-500 hover:text-gray-700">Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {pathnames.length > 0 && <BreadcrumbSeparator />}
-            {breadcrumbs}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-      <div className="flex items-center space-x-4">
-        {canCreateJob && !isMobile && ( // Only show "New Job" button on non-mobile
-          <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
-            <PlusCircle className="h-4 w-4 mr-2" /> New Job
-          </Button>
-        )}
-        {canSeeBell && <NotificationBell />}
-        {user && profile && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                  ) : (
-                    <AvatarFallback className="bg-blue-100 text-blue-600">{userInitials}</AvatarFallback>
-                  )}
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-white shadow-lg rounded-md" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{userName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Log Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+    <header className="bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-end items-center h-16">
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
+                    <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Admin: Users</span>
+                  </DropdownMenuItem>
+                )}
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate('/admin/billing')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Admin: Billing</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </div>
     </header>
   );
