@@ -556,6 +556,7 @@ const Index = () => {
           open={!!viewingDriver}
           onOpenChange={() => setViewingDriver(null)}
           driver={viewingDriver}
+          allJobs={jobs.filter(j => j.assigned_driver_id === viewingDriver.id)}
         />
       )}
       {dialogState.type === 'statusUpdate' && dialogState.job && currentProfile && userRole && (
