@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
   });
 
   return (
-    <div>
+    <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
@@ -179,7 +179,7 @@ const CreateDriverForm: React.FC<CreateDriverFormProps> = ({ onSubmit }) => {
         </Card>
         <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">Create Driver</Button>
       </form>
-    </div>
+    </FormProvider>
   );
 };
 
