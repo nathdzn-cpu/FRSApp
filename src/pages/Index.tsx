@@ -547,7 +547,6 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
-      <MadeWithDyad />
 
       {/* Dialogs */}
       {viewingDriver && (
