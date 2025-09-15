@@ -33,7 +33,7 @@ interface JobDetailHeaderProps {
   currentProfile: Profile;
   currentOrgId: string;
   onEditSubmit: (values: any) => Promise<void>;
-  onAssignDriver: () => void;
+  onAssignDriver: (driverId: string | null) => Promise<void>;
   onUpdateProgress: (entries: any[]) => Promise<void>;
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;

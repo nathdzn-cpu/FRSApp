@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs } from '@/lib/api/jobs';
+import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,11 @@ import { Job, JobStop, Document as JobDocument, JobProgressLog, Profile, Organis
 import { getOrganisationDetails } from '@/lib/api/organisation';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
+import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
+import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
+import CloneJobDialog from '@/components/CloneJobDialog';
+import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -66,8 +71,6 @@ const JobDetail: React.FC = () => {
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
-  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
-  const [isEditJobOpen, setIsEditJobOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const pdfRef = useRef<HTMLDivElement>(null);
 
@@ -331,6 +334,12 @@ const JobDetail: React.FC = () => {
     }
   };
 
+  const handleLogVisibilityChange = async (logId: string, isVisible: boolean) => {
+    // This functionality can be fully implemented later.
+    console.log(`Visibility change for log ${logId} to ${isVisible}`);
+    toast.info("Log visibility change is not yet implemented.");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center bg-[var(--saas-background)]">
@@ -389,11 +398,21 @@ const JobDetail: React.FC = () => {
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <JobDetailHeader
             job={job}
-            onAssignDriver={() => setIsAssignDriverOpen(true)}
-            onCloneJob={() => setIsCloneDialogOpen(true)}
-            onCancelJob={() => setIsCancelConfirmOpen(true)}
-            onEditJob={() => setIsEditJobOpen(true)}
+            stops={stops}
+            allProfiles={allProfiles}
+            userRole={userRole!}
+            currentProfile={profile!}
+            currentOrgId={currentOrgId!}
+            onEditSubmit={handleEditSubmit}
+            onAssignDriver={handleAssignDriver}
+            onUpdateProgress={handleUpdateProgress}
+            onRequestPod={handleRequestPod}
             onExportPdf={handleExportPdf}
+            onCloneJob={handleCloneJob}
+            onCancelJob={handleCancelJob}
+            isSubmittingEdit={isSubmittingEdit}
+            isAssigningDriver={isAssigningDriver}
+            isUpdatingProgress={isUpdatingProgress}
             isExportingPdf={isExportingPdf}
           />
           <JobOverviewCard
