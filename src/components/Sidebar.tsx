@@ -96,7 +96,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 flex-shrink-0 border-r bg-[var(--saas-sidebar-bg)]">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">FRS Logistics</h2>
+        <h2 className="text-lg font-semibold">HOSS</h2>
       </div>
       <div className="flex-1 overflow-auto py-2">
         {/* User Profile Section */}

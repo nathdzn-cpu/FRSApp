@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -345,7 +344,7 @@ const Index = () => {
     <div className="w-full">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Haulage Office Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">HOSS Dashboard</h1>
           <div className="flex items-center space-x-2">
             {canAccessAdminUsers && (
               <Button onClick={() => navigate('/admin/users')} variant="outline">
