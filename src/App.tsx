@@ -98,14 +98,14 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/jobs/:orderNumber" element={<JobDetail />} />
-      <Route path="/jobs/new" element={<CreateJob />} />
-      <Route path="/drivers" element={<Drivers />} />
-      <Route path="/daily-check" element={<DriverDailyCheck />} />
-      <Route path="/map" element={<Map />} />
-      <Route path="/quotes" element={<Quotes />} />
+      <Route path="/" element={<Layout><Index /></Layout>} />
+      <Route path="/jobs/:orderNumber" element={<Layout><JobDetail /></Layout>} />
+      <Route path="/jobs/new" element={<Layout><CreateJob /></Layout>} />
+      <Route path="/drivers" element={<Layout><Drivers /></Layout>} />
+      <Route path="/daily-check" element={<Layout><DriverDailyCheck /></Layout>} />
+      <Route path="/map" element={<Layout><Map /></Layout>} />
+      <Route path="/quotes" element={<Layout><Quotes /></Layout>} />
       <Route path="/admin/checklists" element={<Layout><AdminChecklists /></Layout>} />
       <Route path="/admin/users" element={<Layout><AdminUsersPage /></Layout>} />
       <Route path="/admin/users/new" element={<Layout><CreateUserChoice /></Layout>} />
@@ -114,8 +114,9 @@ const AppContent = () => {
       <Route path="/admin/users/:id/edit" element={<Layout><EditUser /></Layout>} />
       <Route path="/admin/daily-checks" element={<Layout><AdminDailyChecks /></Layout>} />
       <Route path="/admin/saved-addresses" element={<Layout><AdminSavedAddresses /></Layout>} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/env-debug" element={<EnvDebug />} />
+      <Route path="/settings" element={<Layout><Settings /></Layout>} />
+      <Route path="/env-debug" element={<Layout><EnvDebug /></Layout>} />
+      <Route path="/admin/billing" element={<Layout><AdminRoute><BillingPage /></AdminRoute></Layout>} />
       <Route path="*" element={<Layout><NotFound /></Layout>} />
     </Routes>
   );
