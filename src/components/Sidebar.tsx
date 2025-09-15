@@ -83,59 +83,20 @@ const Sidebar: React.FC = () => {
             <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col w-[250px] sm:w-[280px] bg-[var(--saas-sidebar-bg)] p-0">
-          <div className="flex h-14 items-center border-b border-[var(--saas-border)] px-4 lg:h-[60px] lg:px-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold" onClick={() => setIsOpen(false)}>
-              <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />
-              <span className="text-lg text-gray-900">FRS Haulage</span>
-            </Link>
+        <SheetContent side="left" className="w-[250px] p-0">
+          <div className="p-4 border-b">
+            <h2 className="text-lg font-semibold">Menu</h2>
           </div>
-          <div className="flex-1 overflow-auto py-2">
-            {/* User Profile Section */}
-            {user && profile && (
-              <div className="p-4 border-b border-[var(--saas-border)] mb-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-10 w-10">
-                          {profile.avatar_url ? (
-                            <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                          ) : (
-                            <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium text-gray-900">{userName}</span>
-                          <span className="text-xs text-gray-500">{userRoleDisplay}</span>
-                        </div>
-                      </div>
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-white shadow-lg rounded-md">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-            {renderNavLinks()}
-          </div>
+          {renderNavLinks()}
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-[var(--saas-sidebar-bg)] shadow-sm">
-      <div className="flex h-14 items-center border-b border-[var(--saas-border)] px-4 lg:h-[60px] lg:px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <img src="/FRS_Logo_NO_BG.png" alt="FRS Haulage Logo" className="h-8 w-auto" />
-          <span className="text-lg text-gray-900">FRS Haulage</span>
-        </Link>
+    <aside className="w-64 flex-shrink-0 border-r bg-background">
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-semibold">FRS Logistics</h2>
       </div>
       <div className="flex-1 overflow-auto py-2">
         {/* User Profile Section */}
