@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
             <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[250px] p-0">
+        <SheetContent side="left" className="w-[250px] p-0 bg-card">
           <div className="p-4 border-b">
             <h2 className="text-lg font-semibold">Menu</h2>
           </div>
