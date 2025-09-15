@@ -30,6 +30,7 @@ import DriverJobsTable from '@/components/driver/DriverJobsTable';
 import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
 import CancelJobDialog from '@/components/CancelJobDialog';
 import DriverDetailDialog from '@/components/DriverDetailDialog';
+import { Plus } from 'lucide-react';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled' | 'requested';
@@ -42,11 +43,11 @@ interface DialogState {
 }
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin, supabase } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active'); // Default to active
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>(isOfficeOrAdmin ? 'active' : 'all'); // Default to active for office/admin
   const [searchTerm, setSearchTerm] = useState('');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -56,10 +57,8 @@ const Index = () => {
   const [viewingDriver, setViewingDriver] = useState<Profile | null>(null);
   const navigate = useNavigate();
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
-  const canCreateJob = isOfficeOrAdmin;
-  const canAccessAdminUsers = isAdmin;
+  const currentOrgId = profile?.org_id;
 
   // Fetch tenants
   const { data: tenants = [], isLoading: isLoadingTenants, error: tenantsError } = useQuery<Tenant[], Error>({
@@ -78,7 +77,7 @@ const Index = () => {
   }, [tenants, currentProfile, selectedOrgId]);
 
   // Determine date filters for jobs query (using created_at)
-  const getJobDateFilters = () => {
+  const getJobDateFilters = useMemo(() => {
     let startDate: string | undefined;
     let endDate: string | undefined;
     const now = dayjs();
@@ -100,77 +99,72 @@ const Index = () => {
       endDate = dayjs(customEndDate).endOf('day').toISOString();
     }
     return { startDate, endDate };
-  };
+  }, [filterRange, customStartDate, customEndDate]);
 
-  const { startDate, endDate } = getJobDateFilters();
-
-  // Fetch profiles
-  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
+  // Fetch profiles for the selected organization
+  const { data: profiles = [], isLoading: isLoadingProfiles } = useQuery<Profile[], Error>({
     queryKey: ['profiles', selectedOrgId, userRole],
-    queryFn: () => getProfiles(currentOrgId, userRole),
+    queryFn: () => getProfiles(selectedOrgId!, userRole),
     staleTime: 5 * 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
-    onError: (err) => console.error("Profiles query failed", err),
   });
 
   // Fetch job requests count for notification badge
-  const { data: requestsCount = 0 } = useQuery<number, Error>({
+  const { data: requestsCountResult } = useQuery({
     queryKey: ['jobRequestsCount', selectedOrgId],
     queryFn: async () => {
-      const { count, error } = await getJobs(selectedOrgId!, userRole!, undefined, undefined, 'requested');
-      if (error) throw error;
+      const { count } = await getJobs(selectedOrgId!, userRole!, undefined, undefined, 'requested');
       return count || 0;
     },
     enabled: isOfficeOrAdmin && !!selectedOrgId && !isLoadingAuth,
     refetchInterval: 30000, // Check for new requests every 30 seconds
   });
+  const requestsCount = requestsCountResult || 0;
 
   // Fetch active jobs specifically for the current driver (used for banner and progression rules)
-  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
+  const { data: driverActiveJobsData } = useQuery({
     queryKey: ['driverActiveJobs', currentOrgId, user?.id],
-    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
+    queryFn: async () => {
+        const { data } = await getJobs(currentOrgId!, 'driver', undefined, undefined, 'active');
+        return data;
+    },
     staleTime: 30 * 1000,
     enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
+  const driverActiveJobs = driverActiveJobsData || [];
 
   // Fetch jobs
-  const { data: jobs = [], isLoading: isLoadingJobs, error: jobsError } = useQuery<Job[], Error>({
-    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter],
-    queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate, jobStatusFilter),
-    staleTime: 60 * 1000,
-    enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
-    onError: (err) => console.error("Jobs query failed", err),
-  });
-
-  // Periodically check for overdue jobs
-  useQuery({
-    queryKey: ['checkOverdueJobs'],
+  const { data: jobsData, isLoading: isLoadingJobs, error: jobsError } = useQuery({
+    queryKey: ['jobs', selectedOrgId, userRole, getJobDateFilters().startDate, getJobDateFilters().endDate, jobStatusFilter],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('check-overdue-jobs');
-      if (error) throw error;
-      return data;
+        const { data } = await getJobs(selectedOrgId!, userRole, getJobDateFilters().startDate, getJobDateFilters().endDate, jobStatusFilter);
+        return data;
     },
-    enabled: userRole === 'admin' || userRole === 'office',
-    refetchInterval: 5 * 60 * 1000, // Every 5 minutes
-    refetchOnWindowFocus: true,
+    enabled: !!selectedOrgId && !!userRole && !isLoadingAuth,
+  });
+  const jobs = jobsData || [];
+
+  // Check for overdue jobs
+  const { data: overdueCheckResult } = useQuery({
+    queryKey: ['overdueJobsCheck', selectedOrgId],
+    queryFn: () => checkOverdueJobs(selectedOrgId!),
+    enabled: isOfficeOrAdmin && !!selectedOrgId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     staleTime: 4 * 60 * 1000,
-    onSuccess: (data) => {
-      if (data?.notifiedJobs > 0) {
-        // Invalidate the main jobs query to show new highlighting
-        queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      }
-    },
-    onError: (err: any) => {
-      // Don't show a toast, as it would be annoying on a periodic check
-      console.warn("Periodic check for overdue jobs failed:", err.message);
-    },
   });
 
-  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs || isLoadingDriverActiveJobs;
-  const error = tenantsError || profilesError || jobsError || driverActiveJobsError;
+  useEffect(() => {
+    if (overdueCheckResult?.notifiedJobs && overdueCheckResult.notifiedJobs > 0) {
+      toast.info(`${overdueCheckResult.notifiedJobs} job(s) are overdue for status updates.`);
+    }
+  }, [overdueCheckResult]);
+
+  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;
+  const error = tenantsError || profilesError || jobsError;
 
   // Filter jobs by search term on the client side
-  const filteredJobs = React.useMemo(() => {
+  const filteredJobs = useMemo(() => {
     if (!searchTerm) return jobs;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     return jobs.filter(job =>
@@ -187,7 +181,7 @@ const Index = () => {
 
   // Calculate job statistics for StatCards
   const totalJobs = jobs.length;
-  const activeJobsCount = jobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+  const activeJobsCount = jobs.filter(job => !['delivered', 'pod_received', 'cancelled', 'requested'].includes(job.status)).length;
   const completedJobsCount = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
   const cancelledJobsCount = jobs.filter(job => job.status === 'cancelled').length;
 
@@ -275,33 +269,15 @@ const Index = () => {
     setDialogState({ type: null, job: null });
   };
 
-  const handleCancelJob = (job: Job) => {
-    setJobToCancel(job);
-  };
-
-  const confirmCancelJob = async (cancellationPrice: number) => {
-    if (!jobToCancel || !currentProfile || !userRole) {
-      toast.error("Job to cancel or user profile/role not found. Cannot cancel job.");
-      return;
-    }
-
-    setIsActionBusy(true);
+  const handleCancelJob = async (jobId: string, cancellationPrice?: number) => {
+    if (!currentOrgId || !currentProfile || !userRole) return;
     try {
-      const promise = cancelJob(jobToCancel.id, currentOrgId, currentProfile.id, userRole, cancellationPrice);
-      toast.promise(promise, {
-        loading: `Cancelling job ${jobToCancel.order_number}...`,
-        success: `Job ${jobToCancel.order_number} cancelled successfully!`,
-        error: (err) => `Failed to cancel job: ${err.message}`,
-      });
-      await promise;
+      await cancelJob(jobId, currentOrgId, currentProfile.id, userRole, cancellationPrice);
+      toast.success('Job cancelled successfully');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobDetail', jobToCancel.order_number, userRole] });
       setJobToCancel(null);
-    } catch (err: any) {
-      console.error("Error cancelling job:", err);
-      toast.error("An unexpected error occurred while cancelling the job.");
-    } finally {
-      setIsActionBusy(false);
+    } catch (error: any) {
+      toast.error(`Failed to cancel job: ${error.message}`);
     }
   };
 
@@ -311,9 +287,8 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center bg-[var(--saas-background)]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="ml-2 text-gray-700">Loading dashboard...</p>
+      <div className="flex h-screen items-center justify-center bg-[var(--saas-background)]">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -355,13 +330,18 @@ const Index = () => {
   return (
     <div className="w-full">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">HOSS Dashboard</h1>
-          <div className="flex items-center space-x-2">
-            {canAccessAdminUsers && (
-              <Button onClick={() => navigate('/admin/users')} variant="outline">
-                <Users className="h-4 w-4 mr-2" /> Admin Users
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            {isOfficeOrAdmin && (
+              <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" /> Create Job
               </Button>
+            )}
+            {userRole === 'customer' && (
+             <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" /> Request Job
+            </Button>
             )}
           </div>
         </div>
@@ -459,7 +439,7 @@ const Index = () => {
                   size="sm"
                   className={cn(
                     "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'completed' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                    jobStatusFilter === 'completed' ? "bg-green-600 text-white hover:bg-green-700" : "text-gray-700 hover:bg-gray-200"
                   )}
                   onClick={() => setJobStatusFilter('completed')}
                 >
@@ -470,7 +450,7 @@ const Index = () => {
                   size="sm"
                   className={cn(
                     "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'cancelled' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                    jobStatusFilter === 'cancelled' ? "bg-red-600 text-white hover:bg-red-700" : "text-gray-700 hover:bg-gray-200"
                   )}
                   onClick={() => setJobStatusFilter('cancelled')}
                 >
@@ -556,26 +536,37 @@ const Index = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-0 pt-4">
-            {userRole === 'driver' ? (
-              <DriverJobsTable
-                jobs={filteredJobs}
-                onAction={handleJobTableAction}
-              />
+          <CardContent className="p-0 pt-4 -mx-6 px-6">
+            {isLoadingJobs ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : jobsError ? (
+              <div className="text-red-500 text-center py-8">Error loading jobs: {jobsError.message}</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="hidden md:block">
                 <JobsTable
                   jobs={filteredJobs}
                   profiles={profiles}
                   userRole={userRole}
-                  currentProfile={currentProfile}
-                  currentOrgId={currentOrgId}
                   onAction={handleJobTableAction}
                   onCancelJob={handleCancelJob}
-                  onViewDriverProfile={handleViewDriverProfile}
+                  onViewDriver={setViewingDriver}
                 />
               </div>
             )}
+            <div className="md:hidden space-y-4">
+              {filteredJobs.map(job => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  profiles={profiles}
+                  userRole={userRole}
+                  onAction={handleJobTableAction}
+                  onViewDriver={setViewingDriver}
+                />
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -583,7 +574,7 @@ const Index = () => {
       {/* Dialogs */}
       {viewingDriver && (
         <DriverDetailDialog
-          open={!!viewingDriver}
+          isOpen={!!viewingDriver}
           onOpenChange={() => setViewingDriver(null)}
           driver={viewingDriver}
           allJobs={jobs.filter(j => j.assigned_driver_id === viewingDriver.id)}
@@ -634,13 +625,15 @@ const Index = () => {
         />
       )}
 
-      <CancelJobDialog
-        open={!!jobToCancel}
-        onOpenChange={(open) => !open && setJobToCancel(null)}
-        job={jobToCancel}
-        onConfirm={confirmCancelJob}
-        isCancelling={isActionBusy}
-      />
+      {jobToCancel && (
+        <CancelJobDialog
+          open={!!jobToCancel}
+          onOpenChange={(open) => !open && setJobToCancel(null)}
+          job={jobToCancel}
+          onConfirm={handleCancelJob}
+          isCancelling={isActionBusy}
+        />
+      )}
     </div>
   );
 };

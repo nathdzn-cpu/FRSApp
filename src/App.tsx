@@ -31,7 +31,7 @@ import Quotes from './pages/Quotes';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import ActiveJobBanner from './components/driver/ActiveJobBanner';
-import { getJobs } from './lib/supabase';
+import { getJobs } from './lib/api/jobs';
 import { Job } from './utils/mockData';
 
 const queryClient = new QueryClient();
@@ -40,12 +40,17 @@ const MainLayout = () => {
   const { user, userRole, profile, isLoadingAuth } = useAuth();
   const currentOrgId = profile?.org_id;
 
-  const { data: driverActiveJobs = [] } = useQuery<Job[], Error>({
+  const { data: driverActiveJobsData } = useQuery({
     queryKey: ['driverActiveJobs', currentOrgId, user?.id],
-    queryFn: () => getJobs(currentOrgId!, 'driver', undefined, undefined, 'active'),
+    queryFn: async () => {
+        if (!currentOrgId) return [];
+        const { data } = await getJobs(currentOrgId, 'driver', undefined, undefined, 'active');
+        return data;
+    },
     staleTime: 30 * 1000,
     enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
+  const driverActiveJobs = driverActiveJobsData || [];
 
   if (isLoadingAuth) {
     return (

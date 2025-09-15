@@ -13,7 +13,6 @@ import PodUploadDialog from '@/components/driver/PodUploadDialog';
 import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
 import { computeNextDriverAction, NextDriverAction } from '@/utils/driverNextAction';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
-import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import DriverCompletedJobView from '@/components/driver/DriverCompletedJobView';
 import { useQuery } from '@tanstack/react-query';
 

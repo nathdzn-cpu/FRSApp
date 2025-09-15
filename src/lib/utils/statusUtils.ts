@@ -11,6 +11,7 @@ export const jobStatusOrder: Array<Job['status']> = [
   'at_delivery',
   'delivered',
   'pod_received',
+  'requested',
 ];
 
 // Define core progress action types to display in the timeline
@@ -75,20 +76,32 @@ export const driverPromptLabels: Record<Job['status'], string> = {
   'cancelled': 'Job Cancellation Time',
 };
 
-
-export const getSkippedStatuses = (currentStatus: Job['status'], newStatus: Job['status']): Job['status'][] => {
-  const currentIndex = jobStatusOrder.indexOf(currentStatus);
-  const newIndex = jobStatusOrder.indexOf(newStatus);
-
-  if (currentIndex === -1 || newIndex === -1 || newIndex <= currentIndex) {
-    return []; // No valid progression or no skipped statuses
-  }
-
-  // Return statuses strictly between current and new
-  return jobStatusOrder.slice(currentIndex + 1, newIndex);
+export const getStatusVariant = (status: Job['status']): "default" | "destructive" | "outline" | "secondary" => {
+    switch (status) {
+        case 'planned':
+        case 'assigned':
+        case 'accepted':
+        case 'requested':
+            return 'secondary';
+        case 'on_route_collection':
+        case 'on_route_delivery':
+            return 'default';
+        case 'at_collection':
+        case 'at_delivery':
+        case 'loaded':
+            return 'outline';
+        case 'delivered':
+        case 'pod_received':
+            return 'default'; // Should be a success variant, but using default for now
+        case 'cancelled':
+            return 'destructive';
+        default:
+            return 'secondary';
+    }
 };
 
 export const getDisplayStatus = (status: string): string => {
+  if (!status) return 'Unknown';
   switch (status) {
     case 'planned':
       return 'Planned';
@@ -170,4 +183,16 @@ export const getDisplayStatus = (status: string): string => {
     default:
       return status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }
+};
+
+export const getSkippedStatuses = (currentStatus: Job['status'], newStatus: Job['status']): Job['status'][] => {
+  const currentIndex = jobStatusOrder.indexOf(currentStatus);
+  const newIndex = jobStatusOrder.indexOf(newStatus);
+
+  if (currentIndex === -1 || newIndex === -1 || newIndex <= currentIndex) {
+    return []; // No valid progression or no skipped statuses
+  }
+
+  // Return statuses strictly between current and new
+  return jobStatusOrder.slice(currentIndex + 1, newIndex);
 };

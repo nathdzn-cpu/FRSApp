@@ -1,6 +1,6 @@
 "use client";
 
-import { Job, JobStop, JobProgressLog } from '@/utils/mockData';
+import { Job, JobStop, JobProgressLog } from './mockData';
 import {
   collectionStopStatusSequence,
   deliveryStopStatusSequence,
@@ -9,12 +9,25 @@ import {
 } from '@/lib/utils/statusUtils';
 import { formatAddressPart } from '@/lib/utils/formatUtils';
 
-interface NextDriverAction {
+export type NextAction =
+  | 'accept_job'
+  | 'start_travel_to_collection'
+  | 'arrive_at_collection'
+  | 'load_goods'
+  | 'start_travel_to_delivery'
+  | 'arrive_at_delivery'
+  | 'get_pod'
+  | 'job_complete'
+  | 'view_completed_job'
+  | 'none';
+
+export interface NextDriverAction {
+  action: NextAction;
   label: string;
-  nextStatus: Job['status'];
-  stopId: string;
-  promptLabel: string;
-  stopContext: string;
+  nextStatus: Job['status'] | null;
+  stop?: JobStop;
+  disabled: boolean;
+  disabledReason?: string;
 }
 
 /**
@@ -32,28 +45,41 @@ export const computeNextDriverAction = (
   stops: JobStop[] | undefined, // Allow undefined
   progressLogs: JobProgressLog[] | undefined, // Allow undefined
   userId: string,
+  activeJobs: Job[],
 ): NextDriverAction | null => {
   const safeStops = stops ?? [];
   const safeProgressLogs = progressLogs ?? [];
 
   // If job is cancelled or already delivered, no further actions
   if (job.status === 'cancelled' || job.status === 'delivered' || job.status === 'pod_received') {
-    return null;
+    return {
+      action: 'none',
+      label: 'No further actions',
+      nextStatus: null,
+      disabled: true,
+      disabledReason: 'Job is complete.',
+    };
   }
 
   // If job is 'planned' and has no driver, no action is possible for a driver.
   if (job.status === 'planned' && !job.assigned_driver_id) {
-    return null;
+    return {
+      action: 'none',
+      label: 'No further actions',
+      nextStatus: null,
+      disabled: true,
+      disabledReason: 'No driver assigned.',
+    };
   }
 
   // If job is not yet accepted by the assigned driver, the first action is to accept it
   if (job.status === 'planned' || job.status === 'assigned') {
     return {
-      label: driverActionLabels['accepted'], // "Accept Job"
+      action: 'accept_job',
+      label: 'Accept Job',
       nextStatus: 'accepted',
-      stopId: '', // No specific stop for initial job acceptance
-      promptLabel: driverPromptLabels['accepted'], // "Accept Job Time"
-      stopContext: 'Job Acceptance',
+      disabled: false,
+      disabledReason: undefined,
     };
   }
 
@@ -64,14 +90,20 @@ export const computeNextDriverAction = (
     // Allow accepting the job even if stops are not loaded
     if (job.status === 'assigned' || job.status === 'planned') {
       return {
-        label: driverActionLabels['accepted'],
+        action: 'accept_job',
+        label: 'Accept Job',
         nextStatus: 'accepted',
-        stopId: '',
-        promptLabel: driverPromptLabels['accepted'],
-        stopContext: 'Job Acceptance',
+        disabled: false,
+        disabledReason: undefined,
       };
     }
-    return null;
+    return {
+      action: 'none',
+      label: 'No further actions',
+      nextStatus: null,
+      disabled: true,
+      disabledReason: 'No stops defined.',
+    };
   }
 
   // Sort stops by sequence number
@@ -130,15 +162,22 @@ export const computeNextDriverAction = (
       }
 
       return {
+        action: nextStatus as NextAction,
         label: driverActionLabels[nextStatus],
         nextStatus: nextStatus,
-        stopId: stop.id,
-        promptLabel: driverPromptLabels[nextStatus],
-        stopContext: stopContext,
+        stop: stop,
+        disabled: false,
+        disabledReason: undefined,
       };
     }
   }
 
   // If all stops are complete, and we reached here, the job is fully delivered
-  return null;
+  return {
+    action: 'job_complete',
+    label: 'Job Complete',
+    nextStatus: null,
+    disabled: true,
+    disabledReason: 'Job is complete.',
+  };
 };

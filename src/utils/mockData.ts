@@ -18,6 +18,8 @@ export interface Organisation {
   postcode?: string | null;
   contact_number?: string | null;
   website?: string | null;
+  display_id: string;
+  organisation_key?: string;
 }
 
 export interface Profile {
@@ -32,10 +34,11 @@ export interface Profile {
   truck_reg?: string;
   trailer_no?: string;
   created_at: string;
-  last_location?: { lat: number; lon: number; timestamp: string };
-  last_job_status?: string;
-  is_demo: boolean; // New field
+  last_location?: string | null;
+  last_job_status?: string | null;
+  is_demo?: boolean; // New field
   email?: string; // Added email field
+  company_name?: string | null;
 }
 
 export interface DailyChecklist {
@@ -88,11 +91,25 @@ export interface DailyCheck {
   created_at: string;
 }
 
+export type JobStatus =
+  | 'planned'
+  | 'assigned'
+  | 'accepted'
+  | 'delivered'
+  | 'cancelled'
+  | 'on_route_collection'
+  | 'at_collection'
+  | 'loaded'
+  | 'on_route_delivery'
+  | 'at_delivery'
+  | 'pod_received'
+  | 'requested'; // Added requested status
+
 export interface Job {
   id: string;
   org_id: string;
   order_number: string; // Changed from 'ref'
-  status: 'planned' | 'assigned' | 'accepted' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received'; // Renamed 'in_progress' to 'accepted'
+  status: JobStatus;
   collection_date: string; // New field
   delivery_date: string; // New field
   price: number | null; // New field
@@ -110,6 +127,7 @@ export interface Job {
   delivery_name?: string | null;
   delivery_city?: string | null;
   delivery_postcode?: string | null; // Added
+  created_by?: string;
 }
 
 export interface JobStop {
@@ -141,8 +159,8 @@ export interface Document {
 
 export interface ProfileDevice {
   id: string;
-  org_id: string;
   profile_id: string;
+  org_id: string;
   platform: 'ios' | 'android';
   expo_push_token: string;
   created_at: string;

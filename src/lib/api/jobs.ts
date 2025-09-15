@@ -14,12 +14,20 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
       query = query.eq('assigned_driver_id', user.id);
     } else {
       console.warn("Driver role specified but no authenticated user found. Returning empty array.");
-      return { data: [], count: null };
+      return { data: [], count: 0 };
+    }
+  } else if (userRole === 'customer') {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      query = query.eq('created_by', user.id);
+    } else {
+      console.warn("Customer role specified but no authenticated user found. Returning empty array.");
+      return { data: [], count: 0 };
     }
   }
 
   if (statusFilter === 'active') {
-    query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled")');
+    query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled","requested")');
   } else if (statusFilter === 'completed') {
     query = query.in('status', ['delivered', 'pod_received']);
   } else if (statusFilter === 'cancelled') {
@@ -261,7 +269,7 @@ export const cloneJob = async (
 ): Promise<Job> => {
   // This function is essentially a wrapper around createJob with pre-filled data.
   // The actual logic is in the createJob Edge Function.
-  return createJob(orgId, jobData, stopsData, actorId, actorRole);
+  return createJob(orgId, { ...jobData, notes: jobData.notes || null }, stopsData, actorId, actorRole);
 };
 
 // Cancel a job
