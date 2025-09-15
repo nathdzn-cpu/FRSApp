@@ -32,6 +32,7 @@ import { useNotifications } from './hooks/use-notifications';
 import { supabase } from './lib/supabaseClient';
 import { JobProgressLog } from './utils/mockData';
 import { getDisplayStatus } from './lib/utils/statusUtils';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
@@ -122,12 +123,14 @@ const AppContent = () => {
 
 function App() {
   return (
-    <Router>
-      <AuthContextProvider initialSession={null} initialUser={null}>
-        <Toaster richColors position="top-right" />
-        <AppContent />
-      </AuthContextProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthContextProvider initialSession={null} initialUser={null}>
+          <Toaster richColors position="top-right" />
+          <AppContent />
+        </AuthContextProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
