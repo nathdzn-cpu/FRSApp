@@ -1,292 +1,48 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getJobs, getProfiles, cancelJob, getTenants } from '@/lib/supabase';
-import { Job, Profile, Tenant } from '@/utils/mockData';
-import { Loader2, PlusCircle, Users, CalendarIcon, Search, Truck, CheckCircle2, XCircle, Camera } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Label } from '@/components/ui/label';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { getDisplayStatus } from '@/lib/utils/statusUtils';
-import { Input } from '@/components/ui/input';
-import StatCard from '@/components/StatCard';
-import JobsTable from '@/components/JobsTable';
-import JobProgressUpdateDialog from '@/components/job-detail/JobProgressUpdateDialog';
-import AssignDriverDialog from '@/components/AssignDriverDialog';
-import JobAttachmentsDialog from '@/components/JobAttachmentsDialog';
-import { updateJob, updateJobProgress } from '@/lib/api/jobs';
-import { toast } from 'sonner';
 import ActiveJobBanner from '@/components/driver/ActiveJobBanner';
-import DriverJobsTable from '@/components/driver/DriverJobsTable';
-import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
-import CancelJobDialog from '@/components/CancelJobDialog';
-import DriverDetailDialog from '@/components/DriverDetailDialog';
-import { Plus } from 'lucide-react';
-
-type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
-type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled' | 'requested';
-
-type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage';
-
-interface DialogState {
-  type: DialogType | null;
-  job: Job | null;
-}
+import { useDashboard } from '@/hooks/useDashboard';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import DashboardFilters from '@/components/dashboard/DashboardFilters';
+import DashboardStatCards from '@/components/dashboard/DashboardStatCards';
+import JobsDisplay from '@/components/dashboard/JobsDisplay';
+import DashboardDialogs from '@/components/dashboard/DashboardDialogs';
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin } = useAuth();
-  const queryClient = useQueryClient();
-  const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
-  const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>(isOfficeOrAdmin ? 'active' : 'all'); // Default to active for office/admin
-  const [searchTerm, setSearchTerm] = useState('');
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  const [dialogState, setDialogState] = useState<DialogState>({ type: null, job: null });
-  const [isActionBusy, setIsActionBusy] = useState(false);
-  const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
-  const [viewingDriver, setViewingDriver] = useState<Profile | null>(null);
-  const navigate = useNavigate();
-
-  const currentProfile = profile;
-  const currentOrgId = profile?.org_id;
-
-  // Fetch tenants
-  const { data: tenants = [], isLoading: isLoadingTenants, error: tenantsError } = useQuery<Tenant[], Error>({
-    queryKey: ['tenants'],
-    queryFn: getTenants,
-    staleTime: 5 * 60 * 1000,
-    enabled: !!user && !!currentProfile && !isLoadingAuth,
-  });
-
-  // Set selectedOrgId once tenants and profile are loaded
-  useEffect(() => {
-    if (tenants.length > 0 && currentProfile && !selectedOrgId) {
-      setSelectedOrgId(currentProfile.org_id || tenants[0]?.id);
-    }
-  }, [tenants, currentProfile, selectedOrgId]);
-
-  // Determine date filters for jobs query (using created_at)
-  const { startDate, endDate } = useMemo(() => {
-    let startDate: string | undefined;
-    let endDate: string | undefined;
-    const now = dayjs();
-
-    if (filterRange === 'today') {
-      startDate = now.startOf('day').toISOString();
-      endDate = now.endOf('day').toISOString();
-    } else if (filterRange === 'week') {
-      startDate = now.startOf('week').toISOString();
-      endDate = now.endOf('day').toISOString();
-    } else if (filterRange === 'month') {
-      startDate = now.startOf('month').toISOString();
-      endDate = now.endOf('day').toISOString();
-    } else if (filterRange === 'year') {
-      startDate = now.startOf('year').toISOString();
-      endDate = now.endOf('day').toISOString();
-    } else if (filterRange === 'custom' && customStartDate && customEndDate) {
-      startDate = dayjs(customStartDate).startOf('day').toISOString();
-      endDate = dayjs(customEndDate).endOf('day').toISOString();
-    }
-    return { startDate, endDate };
-  }, [filterRange, customStartDate, customEndDate]);
-
-  // Fetch profiles for the selected organization
-  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
-    queryKey: ['profiles', selectedOrgId, userRole],
-    queryFn: () => getProfiles(selectedOrgId!, userRole),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
-  });
-
-  // Fetch job requests count for notification badge
-  const { data: requestsCountResult } = useQuery({
-    queryKey: ['jobRequestsCount', selectedOrgId],
-    queryFn: async () => {
-      const { count } = await getJobs(selectedOrgId!, userRole!, undefined, undefined, 'requested');
-      return count || 0;
-    },
-    enabled: isOfficeOrAdmin && !!selectedOrgId && !isLoadingAuth,
-    refetchInterval: 30000, // Check for new requests every 30 seconds
-  });
-  const requestsCount = requestsCountResult || 0;
-
-  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
-  const { data: driverActiveJobsData } = useQuery({
-    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
-    queryFn: async () => {
-        const { data } = await getJobs(currentOrgId!, 'driver', undefined, undefined, 'active');
-        return data;
-    },
-    staleTime: 30 * 1000,
-    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
-  });
-  const driverActiveJobs = driverActiveJobsData || [];
-
-  // Fetch jobs
-  const { data: jobsData, isLoading: isLoadingJobs, error: jobsError } = useQuery({
-    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter],
-    queryFn: async () => {
-        const { data } = await getJobs(selectedOrgId!, userRole, startDate, endDate, jobStatusFilter);
-        return data;
-    },
-    enabled: !!selectedOrgId && !!userRole && !isLoadingAuth,
-  });
-  const jobs = jobsData || [];
-
-  // Check for overdue jobs
-  const { data: overdueCheckResult } = useQuery({
-    queryKey: ['overdueJobsCheck', selectedOrgId],
-    queryFn: () => checkOverdueJobs(selectedOrgId!),
-    enabled: isOfficeOrAdmin && !!selectedOrgId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 4 * 60 * 1000,
-  });
-
-  useEffect(() => {
-    if (overdueCheckResult?.notifiedJobs && overdueCheckResult.notifiedJobs > 0) {
-      toast.info(`${overdueCheckResult.notifiedJobs} job(s) are overdue for status updates.`);
-    }
-  }, [overdueCheckResult]);
-
-  const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs;
-  const error = tenantsError || profilesError || jobsError;
-
-  // Filter jobs by search term on the client side
-  const filteredJobs = useMemo(() => {
-    if (!searchTerm) return jobs;
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return jobs.filter(job =>
-      job.order_number?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.collection_name?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.collection_city?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.collection_postcode?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.delivery_name?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.delivery_city?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      job.delivery_postcode?.toLowerCase().includes(lowerCaseSearchTerm) ||
-      profiles.find(p => p.id === job.assigned_driver_id)?.full_name.toLowerCase().includes(lowerCaseSearchTerm)
-    );
-  }, [jobs, searchTerm, profiles]);
-
-  // Calculate job statistics for StatCards
-  const totalJobs = jobs.length;
-  const activeJobsCount = jobs.filter(job => !['delivered', 'pod_received', 'cancelled', 'requested'].includes(job.status)).length;
-  const completedJobsCount = jobs.filter(job => ['delivered', 'pod_received'].includes(job.status)).length;
-  const cancelledJobsCount = jobs.filter(job => job.status === 'cancelled').length;
-
-  const handleJobTableAction = (type: DialogType, job: Job) => {
-    setDialogState({ type, job });
-  };
-
-  const handleUpdateProgress = async (entries: any[]) => { // entries will be ProgressUpdateEntry[]
-    if (!dialogState.job || !currentProfile || !userRole || entries.length === 0) {
-      toast.error("No job or user profile/role found, or no status updates to log.");
-      return;
-    }
-
-    setIsActionBusy(true);
-    try {
-      const sortedEntries = [...entries].sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
-
-      for (const entry of sortedEntries) {
-        const payload = {
-          job_id: dialogState.job.id,
-          org_id: currentOrgId!,
-          actor_id: currentProfile.id,
-          actor_role: userRole,
-          new_status: entry.status,
-          timestamp: entry.dateTime.toISOString(),
-          notes: entry.notes.trim() || undefined,
-        };
-        await updateJobProgress(payload);
-      }
-      toast.success('Job progress updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
-      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] });
-      setDialogState({ type: null, job: null });
-    } catch (err: any) {
-      console.error("Error updating job progress:", err);
-      toast.error("An unexpected error occurred while updating job progress.");
-      throw err;
-    } finally {
-      setIsActionBusy(false);
-    }
-  };
-
-  const handleAssignDriver = async (driverId: string | null) => {
-    if (!dialogState.job || !currentProfile || !userRole) {
-      toast.error("No job or user profile/role found. Cannot assign driver.");
-      return;
-    }
-    setIsActionBusy(true);
-    try {
-      const jobUpdates: Partial<Job> = {
-        assigned_driver_id: driverId,
-      };
-
-      const payload = {
-        job_id: dialogState.job.id,
-        org_id: currentOrgId!,
-        actor_id: currentProfile.id,
-        actor_role: userRole,
-        job_updates: jobUpdates,
-      };
-
-      const promise = updateJob(payload);
-      toast.promise(promise, {
-        loading: driverId ? 'Assigning driver...' : 'Unassigning driver...',
-        success: driverId ? 'Driver assigned successfully!' : 'Driver unassigned successfully!',
-        error: (err) => `Failed to assign driver: ${err.message}`,
-      });
-      await promise;
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job.order_number, userRole] });
-      queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] });
-      setDialogState({ type: null, job: null });
-    } catch (err: any) {
-      console.error("Error assigning driver:", err);
-      toast.error("An unexpected error occurred while assigning the driver.");
-    } finally {
-      setIsActionBusy(false);
-    }
-  };
-
-  const handleImageUploadSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['jobs'] });
-    queryClient.invalidateQueries({ queryKey: ['jobDetail', dialogState.job?.order_number, userRole] });
-    setDialogState({ type: null, job: null });
-  };
-
-  const handleCancelJob = async (job: Job) => {
-    setJobToCancel(job);
-  };
-
-  const handleConfirmCancel = async (jobId: string, cancellationPrice?: number) => {
-    if (!currentOrgId || !currentProfile || !userRole) return;
-    try {
-      await cancelJob(jobId, currentOrgId, currentProfile.id, userRole, cancellationPrice);
-      toast.success('Job cancelled successfully');
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      setJobToCancel(null);
-    } catch (error: any) {
-      toast.error(`Failed to cancel job: ${error.message}`);
-    }
-  };
-
-  const handleViewDriverProfile = (driver: Profile) => {
-    setViewingDriver(driver);
-  };
+  const {
+    user,
+    profile,
+    userRole,
+    isOfficeOrAdmin,
+    isLoading,
+    error,
+    navigate,
+    filterRange, setFilterRange,
+    jobStatusFilter, setJobStatusFilter,
+    searchTerm, setSearchTerm,
+    customStartDate, setCustomStartDate,
+    customEndDate, setCustomEndDate,
+    jobs,
+    profiles,
+    requestsCount,
+    driverActiveJobs,
+    filteredJobs,
+    stats,
+    dialogState, setDialogState,
+    isActionBusy, setIsActionBusy,
+    jobToCancel, setJobToCancel,
+    viewingDriver, setViewingDriver,
+    handleJobTableAction,
+    handleUpdateProgress,
+    handleAssignDriver,
+    handleImageUploadSuccess,
+    handleConfirmCancel,
+  } = useDashboard();
 
   if (isLoading) {
     return (
@@ -297,7 +53,6 @@ const Index = () => {
   }
 
   if (error) {
-    console.error("Dashboard query error:", error);
     return (
       <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
         <p className="text-red-600 font-bold mb-2">Dashboard failed to load</p>
@@ -306,25 +61,12 @@ const Index = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !profile) {
     return (
       <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
-        <p className="text-red-600 font-bold mb-2">You are not logged in.</p>
+        <p className="text-red-600 font-bold mb-2">You are not logged in or your profile is missing.</p>
         <Button onClick={() => navigate('/login')} variant="outline">
           Log In
-        </Button>
-      </div>
-    );
-  }
-
-  if (!profile || userRole === undefined) {
-    console.warn("Profile or role missing:", { profile, userRole });
-    return (
-      <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
-        <p className="text-red-600 font-bold mb-2">No role assigned to your user account.</p>
-        <pre className="text-xs bg-gray-100 p-2 rounded">{JSON.stringify(profile, null, 2)}</pre>
-        <Button onClick={() => navigate('/login')} variant="outline" className="mt-4">
-          Log In Again
         </Button>
       </div>
     );
@@ -333,315 +75,68 @@ const Index = () => {
   return (
     <div className="w-full">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Dashboard</h1>
-          <div className="flex items-center gap-4">
-            {isOfficeOrAdmin && (
-              <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" /> Create Job
-              </Button>
-            )}
-            {userRole === 'customer' && (
-             <Button onClick={() => navigate('/jobs/new')} className="bg-blue-600 text-white hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" /> Request Job
-            </Button>
-            )}
-          </div>
-        </div>
+        <DashboardHeader userRole={userRole} isOfficeOrAdmin={isOfficeOrAdmin} onNavigate={navigate} />
 
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
 
-        {/* Stat Cards Section */}
-        {isOfficeOrAdmin && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            <StatCard
-              title="Total Jobs"
-              value={totalJobs}
-              icon={Truck}
-              iconColorClass="text-blue-600"
-              valueColorClass="text-blue-800"
-              description="All jobs in the system"
-            />
-            <StatCard
-              title="Active Jobs"
-              value={activeJobsCount}
-              icon={Truck}
-              iconColorClass="text-yellow-600"
-              valueColorClass="text-yellow-800"
-              description="Jobs currently in progress"
-            />
-            <StatCard
-              title="Completed Jobs"
-              value={completedJobsCount}
-              icon={CheckCircle2}
-              iconColorClass="text-green-600"
-              valueColorClass="text-green-800"
-              description="Jobs successfully delivered"
-            />
-            <StatCard
-              title="Cancelled Jobs"
-              value={cancelledJobsCount}
-              icon={XCircle}
-              iconColorClass="text-red-600"
-              valueColorClass="text-red-800"
-              description="Jobs that were cancelled"
-            />
-          </div>
-        )}
+        {isOfficeOrAdmin && <DashboardStatCards stats={stats} />}
 
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-center p-0 pb-4 sticky top-0 bg-[var(--saas-card-bg)] z-10 border-b border-[var(--saas-border)] -mx-6 px-6 pt-6 -mt-6">
             <CardTitle className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Jobs</CardTitle>
-            <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-              {/* Status Filter Buttons */}
-              <div className="flex space-x-1 rounded-full bg-gray-100 p-1">
-                {isOfficeOrAdmin && (
-                  <Button
-                    variant={jobStatusFilter === 'requested' ? 'default' : 'ghost'}
-                    size="sm"
-                    className={cn(
-                      "rounded-full px-4 py-2 text-sm font-medium relative",
-                      jobStatusFilter === 'requested' ? "bg-orange-500 text-white hover:bg-orange-600" : "text-gray-700 hover:bg-gray-200"
-                    )}
-                    onClick={() => setJobStatusFilter('requested')}
-                  >
-                    Requests
-                    {requestsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white">
-                        {requestsCount}
-                      </span>
-                    )}
-                  </Button>
-                )}
-                <Button
-                  variant={jobStatusFilter === 'all' ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'all' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
-                  )}
-                  onClick={() => setJobStatusFilter('all')}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={jobStatusFilter === 'active' ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'active' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
-                  )}
-                  onClick={() => setJobStatusFilter('active')}
-                >
-                  Active
-                </Button>
-                <Button
-                  variant={jobStatusFilter === 'completed' ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'completed' ? "bg-green-600 text-white hover:bg-green-700" : "text-gray-700 hover:bg-gray-200"
-                  )}
-                  onClick={() => setJobStatusFilter('completed')}
-                >
-                  Completed
-                </Button>
-                <Button
-                  variant={jobStatusFilter === 'cancelled' ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-medium",
-                    jobStatusFilter === 'cancelled' ? "bg-red-600 text-white hover:bg-red-700" : "text-gray-700 hover:bg-gray-200"
-                  )}
-                  onClick={() => setJobStatusFilter('cancelled')}
-                >
-                  Cancelled
-                </Button>
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search jobs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-3 py-2 rounded-full border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                />
-              </div>
-
-              {/* Date Range Filter */}
-              <Label htmlFor="job-filter-range" className="sr-only sm:not-sr-only text-gray-500">Filter by date:</Label>
-              <Select value={filterRange} onValueChange={(value: DateRangeFilter) => setFilterRange(value)}>
-                <SelectTrigger id="job-filter-range" className="w-full sm:w-[180px] rounded-full">
-                  <SelectValue placeholder="Select date range" />
-                </SelectTrigger>
-                <SelectContent className="bg-white shadow-sm rounded-xl">
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="year">This Year</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {filterRange === 'custom' && (
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal rounded-full",
-                          !customStartDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customStartDate ? format(customStartDate, "PPP") : <span>Start Date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={customStartDate}
-                        onSelect={setCustomStartDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <span>-</span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal rounded-full",
-                          !customEndDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customEndDate ? format(customEndDate, "PPP") : <span>End Date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white shadow-sm rounded-xl" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={customEndDate}
-                        onSelect={setCustomEndDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-            </div>
+            <DashboardFilters
+              isOfficeOrAdmin={isOfficeOrAdmin}
+              jobStatusFilter={jobStatusFilter}
+              setJobStatusFilter={setJobStatusFilter}
+              requestsCount={requestsCount}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              filterRange={filterRange}
+              setFilterRange={setFilterRange}
+              customStartDate={customStartDate}
+              setCustomStartDate={setCustomStartDate}
+              customEndDate={customEndDate}
+              setCustomEndDate={setCustomEndDate}
+            />
           </CardHeader>
           <CardContent className="p-0 pt-4 -mx-6 px-6">
-            {isLoadingJobs ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-            ) : jobsError ? (
-              <div className="text-red-500 text-center py-8">Error loading jobs: {jobsError.message}</div>
-            ) : (
-              <div className="hidden md:block">
-                <JobsTable
-                  jobs={filteredJobs}
-                  profiles={profiles}
-                  userRole={userRole}
-                  currentProfile={currentProfile}
-                  currentOrgId={currentOrgId!}
-                  onAction={handleJobTableAction}
-                  onCancelJob={handleCancelJob}
-                  onViewDriverProfile={handleViewDriverProfile}
-                />
-              </div>
-            )}
-            <div className="md:hidden space-y-4">
-              {filteredJobs.map(job => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  profiles={profiles}
-                  userRole={userRole}
-                  currentProfile={currentProfile}
-                  currentOrgId={currentOrgId!}
-                  onAction={handleJobTableAction}
-                  onCancelJob={handleCancelJob}
-                  onViewDriverProfile={handleViewDriverProfile}
-                />
-              ))}
-            </div>
+            <JobsDisplay
+              isLoading={isLoading}
+              error={error}
+              jobs={filteredJobs}
+              profiles={profiles}
+              userRole={userRole}
+              currentProfile={profile}
+              currentOrgId={profile.org_id}
+              onAction={handleJobTableAction}
+              onCancelJob={setJobToCancel}
+              onViewDriverProfile={setViewingDriver}
+            />
           </CardContent>
         </Card>
       </div>
 
-      {/* Dialogs */}
-      {viewingDriver && (
-        <DriverDetailDialog
-          open={!!viewingDriver}
-          onOpenChange={() => setViewingDriver(null)}
-          driver={viewingDriver}
-          allJobs={jobs.filter(j => j.assigned_driver_id === viewingDriver.id)}
-        />
-      )}
-      {dialogState.type === 'statusUpdate' && dialogState.job && currentProfile && userRole && (
-        <JobProgressUpdateDialog
-          open={true}
-          onOpenChange={() => setDialogState({ type: null, job: null })}
-          job={dialogState.job}
-          currentProfile={currentProfile}
-          userRole={userRole}
-          onUpdateProgress={handleUpdateProgress}
-          isUpdatingProgress={isActionBusy}
-          driverActiveJobs={driverActiveJobs}
-        />
-      )}
-
-      {dialogState.type === 'assignDriver' && dialogState.job && currentProfile && userRole && (
-        <AssignDriverDialog
-          open={true}
-          onOpenChange={() => setDialogState({ type: null, job: null })}
-          drivers={profiles.filter(p => p.role === 'driver')}
-          currentAssignedDriverId={dialogState.job.assigned_driver_id}
-          onAssign={handleAssignDriver}
-          isAssigning={isActionBusy}
-        />
-      )}
-
-      {dialogState.type === 'viewAttachments' && dialogState.job && currentOrgId && (
-        <JobAttachmentsDialog
-          open={true}
-          onOpenChange={() => setDialogState({ type: null, job: null })}
-          job={dialogState.job}
-          currentOrgId={currentOrgId}
-        />
-      )}
-
-      {dialogState.type === 'uploadImage' && dialogState.job && currentProfile && userRole && (
-        <ImageUploadDialog
-          open={true}
-          onOpenChange={() => setDialogState({ type: null, job: null })}
-          job={dialogState.job}
-          currentProfile={currentProfile}
-          onUploadSuccess={handleImageUploadSuccess}
-          isLoading={isActionBusy}
-          setIsLoading={setIsActionBusy}
-        />
-      )}
-
-      {jobToCancel && (
-        <CancelJobDialog
-          open={!!jobToCancel}
-          onOpenChange={(open) => !open && setJobToCancel(null)}
-          job={jobToCancel}
-          onConfirm={handleConfirmCancel}
-          isCancelling={isActionBusy}
-        />
-      )}
+      <DashboardDialogs
+        dialogState={dialogState}
+        setDialogState={setDialogState}
+        isActionBusy={isActionBusy}
+        setIsActionBusy={setIsActionBusy}
+        profiles={profiles}
+        currentProfile={profile}
+        userRole={userRole}
+        driverActiveJobs={driverActiveJobs}
+        onUpdateProgress={handleUpdateProgress}
+        onAssignDriver={handleAssignDriver}
+        onImageUploadSuccess={handleImageUploadSuccess}
+        jobToCancel={jobToCancel}
+        setJobToCancel={setJobToCancel}
+        onConfirmCancel={handleConfirmCancel}
+        viewingDriver={viewingDriver}
+        setViewingDriver={setViewingDriver}
+        allJobs={jobs}
+      />
     </div>
   );
 };
