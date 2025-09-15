@@ -214,14 +214,15 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       });
 
       if (functionError) {
-        // Prioritize the specific message from the Edge Function's JSON response body
-        const errorMessage = data?.error?.message || data?.message || functionError.message;
+        // The Edge Function now returns { error: "message" } for errors.
+        const errorMessage = data?.error || functionError.message; // Directly use data.error
         console.error("AuthContextProvider: Login function failed:", errorMessage);
         toast.error(errorMessage);
         return { success: false, error: errorMessage };
       }
 
-      const { session, user } = data;
+      // The Edge Function now returns the sessionData directly on success.
+      const { session, user } = data; // data itself is the sessionData object
 
       if (session && user) {
         const { error: setSessionError } = await supabase.auth.setSession({
@@ -239,7 +240,8 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
         toast.success("Logged in successfully!");
         return { success: true };
       } else {
-        throw new Error("Login response was invalid.");
+        // This case should ideally not be hit if the Edge Function returns sessionData correctly.
+        throw new Error("Login response was invalid or missing session/user data.");
       }
     } catch (error: any) {
       console.error("AuthContextProvider: Login failed:", error.message);

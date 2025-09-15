@@ -15,10 +15,9 @@ function adminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
-// Custom error for handling specific HTTP status codes
 class AuthError extends Error {
   status: number;
-  constructor(message: string, status = 401) {
+  constructor(message: string, status = 401) { // Default to 401 for authentication issues
     super(message);
     this.name = 'AuthError';
     this.status = status;
@@ -33,10 +32,10 @@ serve(async (req) => {
   try {
     const admin = adminClient();
     const { orgKey, username, password } = await req.json();
-    const invalidCredsError = "Invalid username or password.";
+    const invalidCredsMessage = "Invalid username or password.";
 
     if (!orgKey || !username || !password) {
-      throw new AuthError("Organisation key, username, and password are required.", 400);
+      throw new AuthError("Organisation key, username, and password are required.", 400); // Bad request
     }
 
     // 1. Validate the Organisation Key first.
@@ -47,7 +46,7 @@ serve(async (req) => {
       .single();
 
     if (orgError || !org) {
-      throw new AuthError("Invalid organisation key.");
+      throw new AuthError("Invalid organisation key", 400); // Bad request for invalid org key
     }
 
     let emailToLogin: string | undefined;
@@ -64,18 +63,18 @@ serve(async (req) => {
         .single();
 
       if (profileError || !profile) {
-        throw new AuthError(invalidCredsError);
+        throw new AuthError(invalidCredsMessage); // 401 default
       }
       
       const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.user_id);
       if (authUserError || !authUser.user) {
-        throw new AuthError(invalidCredsError);
+        throw new AuthError(invalidCredsMessage); // 401 default
       }
       emailToLogin = authUser.user.email;
     }
 
     if (!emailToLogin) {
-        throw new AuthError(invalidCredsError);
+        throw new AuthError(invalidCredsMessage); // 401 default
     }
     
     // 3. Attempt to sign in. This is the primary check for password validity.
@@ -85,21 +84,21 @@ serve(async (req) => {
     });
 
     if (sessionError) {
-      throw new AuthError(invalidCredsError);
+      throw new AuthError(invalidCredsMessage); // 401 default
     }
 
     // 4. CRITICAL FINAL VALIDATION: Ensure the successfully logged-in user belongs to the specified organisation.
     const loggedInUserId = sessionData.user.id;
-    const { data: finalProfile, error: finalCheckError } = await admin
+    const { error: finalCheckError } = await admin
         .from('profiles')
-        .select('id, org_id, full_name')
+        .select('id')
         .eq('id', loggedInUserId)
         .eq('org_id', org.id)
         .single();
 
-    if (finalCheckError || !finalProfile) {
+    if (finalCheckError) {
         await admin.auth.signOut(sessionData.session.access_token);
-        throw new AuthError(invalidCredsError);
+        throw new AuthError(invalidCredsMessage); // 401 default
     }
 
     // 5. Success: Update the active session token to enforce a single-session policy.
@@ -110,20 +109,9 @@ serve(async (req) => {
         .eq('id', sessionData.session.user.id);
     }
 
-    // 6. Construct and return success response
-    const successResponse = {
-      success: true,
-      session: sessionData.session, // Includes the token
-      user: {
-        id: sessionData.user.id,
-        username: finalProfile.full_name,
-        organisation_id: finalProfile.org_id,
-        ...sessionData.user
-      },
-    };
-
+    // 6. Return the Supabase data object directly as requested
     return new Response(
-      JSON.stringify(successResponse),
+      JSON.stringify(sessionData), // Directly return sessionData
       { 
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders } 
@@ -132,16 +120,11 @@ serve(async (req) => {
 
   } catch (e) {
     const error = e as AuthError | Error;
-    // Use the status from AuthError, or default to 500 for unexpected server errors.
     const status = (error instanceof AuthError) ? error.status : 500;
     
-    const errorResponse = {
-      success: false,
-      message: error.message,
-    };
-    
+    // Return error in the requested format: { error: "message" }
     return new Response(
-      JSON.stringify(errorResponse),
+      JSON.stringify({ error: error.message }),
       {
         status,
         headers: { "Content-Type": "application/json", ...corsHeaders },
