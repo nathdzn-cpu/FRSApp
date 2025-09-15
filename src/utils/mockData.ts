@@ -103,6 +103,7 @@ export interface Job {
   last_status_update_at?: string | null; // New field for last status update timestamp
   pod_signature_path?: string | null; // New field for signature path
   pod_signature_name?: string | null; // New field for signature name
+  overdue_notification_sent?: boolean; // New field for overdue tracking
   // New fields from jobs_with_stop_details view
   collection_name?: string | null;
   collection_city?: string | null;

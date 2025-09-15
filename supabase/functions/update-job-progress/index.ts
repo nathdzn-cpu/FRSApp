@@ -155,6 +155,13 @@ serve(async (req) => {
       last_status_update_at: timestamp,
     };
 
+    // If status is moving away from a waiting state, reset the overdue flag
+    if (oldJob.status === 'at_collection' || oldJob.status === 'at_delivery') {
+      if (new_status !== oldJob.status) {
+        jobUpdates.overdue_notification_sent = false;
+      }
+    }
+
     // Check if this is the final POD upload for the last delivery stop
     if (new_status === 'pod_received') {
       console.log("Checking for final POD upload status...");

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, CheckCircle, FileText, Edit, Camera, Truck, XCircle } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, FileText, Edit, Camera, Truck, XCircle, AlertTriangle } from 'lucide-react';
 import { Job, Profile } from '@/utils/mockData';
 import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
@@ -77,13 +77,15 @@ const JobsTable: React.FC<JobsTableProps> = ({
             const isDelivered = job.status === 'delivered' || job.status === 'pod_received';
             const isPlanned = job.status === 'planned';
             const isInProgress = ['accepted', 'assigned', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status);
+            const isOverdue = (job.status === 'at_collection' || job.status === 'at_delivery') && job.overdue_notification_sent;
 
             return (
               <TableRow
                 key={job.id}
                 className={cn(
                   "hover:bg-gray-50 transition-colors py-4",
-                  isCancelled && 'opacity-70' // Apply opacity for cancelled jobs
+                  isCancelled && 'opacity-70', // Apply opacity for cancelled jobs
+                  isOverdue && 'bg-yellow-100 hover:bg-yellow-200'
                 )}
               >
                 <TableCell className="font-medium">
@@ -94,13 +96,15 @@ const JobsTable: React.FC<JobsTableProps> = ({
                 <TableCell>
                   <Badge
                     className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium",
+                      "rounded-full px-3 py-1 text-xs font-medium flex items-center",
                       isCancelled && 'bg-red-500 text-white', // Red badge for cancelled
                       isDelivered && 'bg-green-500 text-white',
                       isPlanned && 'bg-yellow-500 text-white',
                       isInProgress && 'bg-blue-500 text-white',
+                      isOverdue && 'bg-yellow-400 text-yellow-900'
                     )}
                   >
+                    {isOverdue && <AlertTriangle className="h-3 w-3 mr-1.5" />}
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>

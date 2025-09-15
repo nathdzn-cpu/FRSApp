@@ -141,6 +141,30 @@ const Index = () => {
     onError: (err) => console.error("Jobs query failed", err),
   });
 
+  // Periodically check for overdue jobs
+  useQuery({
+    queryKey: ['checkOverdueJobs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('check-overdue-jobs');
+      if (error) throw error;
+      return data;
+    },
+    enabled: userRole === 'admin' || userRole === 'office',
+    refetchInterval: 5 * 60 * 1000, // Every 5 minutes
+    refetchOnWindowFocus: true,
+    staleTime: 4 * 60 * 1000,
+    onSuccess: (data) => {
+      if (data?.notifiedJobs > 0) {
+        // Invalidate the main jobs query to show new highlighting
+        queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      }
+    },
+    onError: (err: any) => {
+      // Don't show a toast, as it would be annoying on a periodic check
+      console.warn("Periodic check for overdue jobs failed:", err.message);
+    },
+  });
+
   const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs || isLoadingDriverActiveJobs;
   const error = tenantsError || profilesError || jobsError || driverActiveJobsError;
 
