@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle } from 'lucide-react';
+import { Loader2, Edit, UserPlus, CheckCircle, FileText, FileDown, Copy, XCircle, MoreHorizontal } from 'lucide-react';
 import JobEditForm from '@/components/JobEditForm';
 import AssignDriverDialog from '@/components/AssignDriverDialog';
 import JobProgressUpdateDialog from './JobProgressUpdateDialog';
@@ -32,7 +33,7 @@ interface JobDetailHeaderProps {
   currentProfile: Profile;
   currentOrgId: string;
   onEditSubmit: (values: any) => Promise<void>;
-  onAssignDriver: (driverId: string | null) => Promise<void>;
+  onAssignDriver: () => void;
   onUpdateProgress: (entries: any[]) => Promise<void>;
   onRequestPod: () => Promise<void>;
   onExportPdf: () => Promise<void>;
@@ -41,6 +42,7 @@ interface JobDetailHeaderProps {
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;
   isUpdatingProgress: boolean;
+  isExportingPdf: boolean;
   driverActiveJobs?: Job[]; // New prop
 }
 
@@ -61,6 +63,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   isSubmittingEdit,
   isAssigningDriver,
   isUpdatingProgress,
+  isExportingPdf,
   driverActiveJobs = [], // Default to empty array
 }) => {
   const navigate = useNavigate();
@@ -69,6 +72,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   const [isProgressUpdateDialogOpen, setIsProgressUpdateDialogOpen] = useState(false);
 
   const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
+  const isCancelled = job.status === 'cancelled';
 
   return (
     <CardHeader className="flex flex-row items-center justify-between p-0 pb-2">
@@ -156,8 +160,13 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               </AlertDialogContent>
             </AlertDialog>
 
-            <Button variant="outline" onClick={onExportPdf}>
-              <FileDown className="h-4 w-4 mr-2" /> Export PDF
+            <Button variant="outline" onClick={onExportPdf} disabled={isExportingPdf}>
+              {isExportingPdf ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 mr-2" />
+              )}
+              Export PDF
             </Button>
 
             <Button variant="outline" onClick={onCloneJob}>

@@ -1,20 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getProfiles, requestPod, generateJobPdf, cloneJob, cancelJob, updateJob, getJobProgressLogs, getJobs } from '@/lib/supabase';
+import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, getOrganisation } from '@/lib/api/jobs';
+import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-
-// Import new modular components
-import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
-import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
-import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
-import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
-import CloneJobDialog from '@/components/CloneJobDialog';
-import { Job, JobStop, Document, Profile, JobProgressLog } from '@/utils/mockData';
+import JobPdfDocument from '@/components/job-detail/JobPdfDocument';
+import { Job, JobStop, Document as JobDocument, JobProgressLog, Profile, Organisation } from '@/utils/mockData';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -68,9 +63,17 @@ const JobDetail: React.FC = () => {
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
-  const currentOrgId = profile?.org_id || 'demo-tenant-id';
-  const currentProfile = profile;
+  const currentOrgId = profile?.org_id;
+  const organisation = useQuery<Organisation, Error>({
+    queryKey: ['organisation', currentOrgId!],
+    queryFn: () => getOrganisation(currentOrgId!),
+    enabled: !!currentOrgId,
+  });
 
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
@@ -80,19 +83,11 @@ const JobDetail: React.FC = () => {
     enabled: !!user && !!currentProfile && !isLoadingAuth && !!userRole,
   });
 
-  // Fetch active jobs specifically for the current driver (used for banner and progression rules)
-  const { data: driverActiveJobs = [], isLoading: isLoadingDriverActiveJobs, error: driverActiveJobsError } = useQuery<Job[], Error>({
-    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
-    queryFn: () => getJobs(currentOrgId, 'driver', undefined, undefined, 'active'),
-    staleTime: 30 * 1000,
-    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
-  });
-
   // Use useQuery for job details, stops, and documents
   const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
     job: Job | undefined;
     stops: JobStop[];
-    documents: Document[];
+    documents: JobDocument[];
     progressLogs: JobProgressLog[];
   }, Error>({
     queryKey: ['jobDetail', orderNumber, userRole],
@@ -126,8 +121,8 @@ const JobDetail: React.FC = () => {
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
-  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob || isLoadingDriverActiveJobs;
-  const error = allProfilesError || jobError || driverActiveJobsError;
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
+  const error = allProfilesError || jobError;
 
   const handleRequestPod = async () => {
     if (!job || !currentProfile || !userRole) return;
@@ -142,19 +137,43 @@ const JobDetail: React.FC = () => {
   };
 
   const handleExportPdf = async () => {
-    if (!job || !currentProfile) return;
-    const promise = generateJobPdf(job.id, currentOrgId, currentProfile.id);
-    toast.promise(promise, {
-      loading: 'Generating PDF...',
-      success: (url) => {
-        if (url) {
-          window.open(url, '_blank');
-          return 'PDF generated and opened in new tab!';
-        }
-        return 'PDF generated, but no URL returned.';
-      },
-      error: 'Failed to generate PDF.',
-    });
+    if (!pdfRef.current || !job) {
+      toast.error("Could not export PDF. Content is not ready.");
+      return;
+    }
+
+    setIsExportingPdf(true);
+    toast.loading("Generating PDF...", { id: 'pdf-export' });
+
+    try {
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
+      const imgHeight = pdfWidth / ratio;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+      pdf.save(`Job-${job.order_number}.pdf`);
+
+      toast.success("PDF downloaded successfully!", { id: 'pdf-export' });
+    } catch (error: any) {
+      console.error("Failed to generate PDF:", error);
+      toast.error(`Failed to generate PDF: ${error.message}`, { id: 'pdf-export' });
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleCloneJob = () => {
@@ -350,7 +369,6 @@ const JobDetail: React.FC = () => {
         currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
-        driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
       />
     );
   }
@@ -366,22 +384,12 @@ const JobDetail: React.FC = () => {
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <JobDetailHeader
             job={job}
-            stops={stops}
-            allProfiles={allProfiles}
-            userRole={userRole!}
-            currentProfile={currentProfile!}
-            currentOrgId={currentOrgId}
-            onEditSubmit={handleEditSubmit}
-            onAssignDriver={handleAssignDriver}
-            onUpdateProgress={handleUpdateProgress}
-            onRequestPod={handleRequestPod}
+            onAssignDriver={() => setIsAssignDriverOpen(true)}
+            onCloneJob={() => setIsCloneDialogOpen(true)}
+            onCancelJob={() => setIsCancelConfirmOpen(true)}
+            onEditJob={() => setIsEditJobOpen(true)}
             onExportPdf={handleExportPdf}
-            onCloneJob={handleCloneJob}
-            onCancelJob={handleCancelJob}
-            isSubmittingEdit={isSubmittingEdit}
-            isAssigningDriver={isAssigningDriver}
-            isUpdatingProgress={isUpdatingProgress}
-            driverActiveJobs={driverActiveJobs} // Pass driverActiveJobs
+            isExportingPdf={isExportingPdf}
           />
           <JobOverviewCard
             job={job}
@@ -391,12 +399,13 @@ const JobDetail: React.FC = () => {
         </Card>
 
         <JobDetailTabs
+          job={job}
           progressLogs={progressLogs}
           allProfiles={allProfiles}
           stops={stops}
           documents={documents}
           currentOrgId={currentOrgId}
-          onLogVisibilityChange={refetchJobData}
+          onLogVisibilityChange={handleLogVisibilityChange}
         />
 
         {job && (
@@ -407,6 +416,19 @@ const JobDetail: React.FC = () => {
             originalStops={stops}
             onCloneSuccess={handleCloneSuccess}
           />
+        )}
+
+        {/* Hidden component for PDF generation */}
+        {job && stops && (
+          <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+            <JobPdfDocument
+              ref={pdfRef}
+              job={job}
+              stops={stops}
+              driver={driver}
+              organisation={organisation}
+            />
+          </div>
         )}
       </div>
     </div>
