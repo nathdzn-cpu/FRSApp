@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Profile, Job } from '@/utils/mockData';
-import { Phone, Truck, Mail, DollarSign, CheckCircle, Calendar, ShieldCheck } from 'lucide-react';
+import { Phone, Truck, Mail, PoundSterling, CheckCircle, Calendar, ShieldCheck } from 'lucide-react';
 import { formatGBP } from '@/lib/money';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -22,11 +22,17 @@ interface DriverDetailDialogProps {
   allJobs: Job[];
 }
 
-const StatItem: React.FC<{ icon: React.ElementType, label: string, value: string | number }> = ({ icon: Icon, label, value }) => (
+const StatItem: React.FC<{
+  icon: React.ElementType,
+  label: string,
+  value: string | number,
+  iconColorClass?: string,
+  valueColorClass?: string
+}> = ({ icon: Icon, label, value, iconColorClass = 'text-blue-500', valueColorClass = 'text-gray-800' }) => (
   <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-    <Icon className="h-6 w-6 mr-3 text-blue-500" />
+    <Icon className={`h-6 w-6 mr-3 ${iconColorClass}`} />
     <div>
-      <p className="font-semibold text-gray-800">{value}</p>
+      <p className={`font-semibold ${valueColorClass}`}>{value}</p>
       <p className="text-xs text-gray-500">{label}</p>
     </div>
   </div>
@@ -34,13 +40,15 @@ const StatItem: React.FC<{ icon: React.ElementType, label: string, value: string
 
 const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({ open, onOpenChange, driver, allJobs }) => {
   const performanceSummary = useMemo(() => {
-    if (!driver) return null;
+    if (!driver || !allJobs) return null;
 
     const now = dayjs();
     const startOfWeek = now.startOf('week');
     const endOfWeek = now.endOf('week');
+    const startOfMonth = now.startOf('month');
+    const endOfMonth = now.endOf('month');
 
-    const relevantJobs = allJobs.filter(job => 
+    const relevantJobs = allJobs.filter(job =>
       (job.status === 'delivered' || job.status === 'pod_received' || job.status === 'cancelled') &&
       job.price != null
     );
@@ -53,24 +61,40 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({ open, onOpenCha
       .filter(job => dayjs(job.last_status_update_at).isBetween(startOfWeek, endOfWeek, null, '[]'))
       .reduce((sum, job) => sum + (job.price || 0), 0);
 
-    const totalRevenue = relevantJobs.reduce((sum, job) => sum + (job.price || 0), 0);
+    const revenueThisMonth = relevantJobs
+      .filter(job => dayjs(job.last_status_update_at).isBetween(startOfMonth, endOfMonth, null, '[]'))
+      .reduce((sum, job) => sum + (job.price || 0), 0);
 
     const jobsToday = relevantJobs.filter(job => dayjs(job.last_status_update_at).isToday()).length;
     const jobsThisWeek = relevantJobs.filter(job => dayjs(job.last_status_update_at).isBetween(startOfWeek, endOfWeek, null, '[]')).length;
-    const totalJobs = relevantJobs.length;
     
     const activeJobsCount = allJobs.filter(job => !['delivered', 'pod_received', 'cancelled'].includes(job.status)).length;
+
+    // Calculate averages
+    const avgRevenueToday = revenueToday;
+    const daysInWeekSoFar = now.diff(startOfWeek, 'day') + 1;
+    const avgRevenueThisWeek = daysInWeekSoFar > 0 ? revenueThisWeek / daysInWeekSoFar : 0;
+    const daysInMonthSoFar = now.date();
+    const avgRevenueThisMonth = daysInMonthSoFar > 0 ? revenueThisMonth / daysInMonthSoFar : 0;
 
     return {
       revenueToday,
       revenueThisWeek,
-      totalRevenue,
+      revenueThisMonth,
       jobsToday,
       jobsThisWeek,
-      totalJobs,
       activeJobsCount,
+      avgRevenueToday,
+      avgRevenueThisWeek,
+      avgRevenueThisMonth,
     };
   }, [driver, allJobs]);
+
+  const getRevenueColor = (average: number) => {
+    if (average > 700) return 'text-green-500';
+    if (average >= 600) return 'text-orange-500';
+    return 'text-red-500';
+  };
 
   if (!driver || !performanceSummary) return null;
 
@@ -113,12 +137,30 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({ open, onOpenCha
           <div>
             <h3 className="font-semibold text-gray-800 mb-3">Performance</h3>
             <div className="grid grid-cols-2 gap-4">
-              <StatItem icon={DollarSign} label="Revenue Today" value={formatGBP(performanceSummary.revenueToday)} />
-              <StatItem icon={DollarSign} label="Revenue This Week" value={formatGBP(performanceSummary.revenueThisWeek)} />
+              <StatItem
+                icon={PoundSterling}
+                label="Revenue Today"
+                value={formatGBP(performanceSummary.revenueToday)}
+                iconColorClass={getRevenueColor(performanceSummary.avgRevenueToday)}
+                valueColorClass={getRevenueColor(performanceSummary.avgRevenueToday)}
+              />
+              <StatItem
+                icon={PoundSterling}
+                label="Revenue This Week"
+                value={formatGBP(performanceSummary.revenueThisWeek)}
+                iconColorClass={getRevenueColor(performanceSummary.avgRevenueThisWeek)}
+                valueColorClass={getRevenueColor(performanceSummary.avgRevenueThisWeek)}
+              />
+              <StatItem
+                icon={PoundSterling}
+                label="Revenue This Month"
+                value={formatGBP(performanceSummary.revenueThisMonth)}
+                iconColorClass={getRevenueColor(performanceSummary.avgRevenueThisMonth)}
+                valueColorClass={getRevenueColor(performanceSummary.avgRevenueThisMonth)}
+              />
               <StatItem icon={CheckCircle} label="Jobs Today" value={performanceSummary.jobsToday} />
               <StatItem icon={Calendar} label="Jobs This Week" value={performanceSummary.jobsThisWeek} />
               <StatItem icon={ShieldCheck} label="Active Status" value={performanceSummary.activeJobsCount > 0 ? 'Active' : 'Off Duty'} />
-              <StatItem icon={DollarSign} label="Total Revenue" value={formatGBP(performanceSummary.totalRevenue)} />
             </div>
           </div>
         </div>
