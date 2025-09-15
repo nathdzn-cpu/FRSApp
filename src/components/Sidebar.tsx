@@ -35,14 +35,14 @@ const navLinks: NavLinkItem[] = [
 const Sidebar: React.FC = () => {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, userRole, logout } = useAuth();
+  const { user, profile, userRole, logout, isOfficeOrAdmin } = useAuth();
   const navigate = useNavigate();
 
   const filteredNavLinks = navLinks.filter(link =>
     !link.roles || (userRole && link.roles.includes(userRole))
   );
 
-  const canCreateJob = userRole === 'admin' || userRole === 'office';
+  const canCreateJob = isOfficeOrAdmin;
 
   const renderNavLinks = () => (
     <nav className="flex flex-col gap-1 p-2">

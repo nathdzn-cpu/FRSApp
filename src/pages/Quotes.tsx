@@ -45,7 +45,7 @@ type QuoteFormValues = z.infer<typeof quoteFormSchema>;
 
 const Quotes: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
@@ -53,7 +53,7 @@ const Quotes: React.FC = () => {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const currentOrgId = profile?.org_id;
-  const canAccess = userRole === 'admin' || userRole === 'office';
+  const canAccess = isOfficeOrAdmin;
 
   const { data: quotes = [], isLoading: isLoadingQuotes, error: quotesError } = useQuery<Quote[], Error>({
     queryKey: ['quotes', currentOrgId],

@@ -73,9 +73,11 @@ serve(async (req) => {
 
     let resultData: any;
     let status = 200;
+    const is_admin = me.role === 'admin';
 
     switch (op) {
       case "read_all":
+        // Office and Admin can read all users
         const { data: readProfiles, error: readError } = await admin
           .from("profiles")
           .select("id, org_id, full_name, dob, phone, role, user_id, truck_reg, trailer_no, created_at, last_location, last_job_status, is_demo, avatar_url")
@@ -86,6 +88,7 @@ serve(async (req) => {
         break;
 
       case "create":
+        if (!is_admin) throw new Error("Access denied: Only admins can create users.");
         if (!full_name || !phone || !role || !email || !dob) throw new Error("Missing required fields for user creation (full_name, phone, role, email, dob).");
 
         // Generate password from DOB (format: ddMMyyyy)
@@ -166,6 +169,7 @@ serve(async (req) => {
         break;
 
       case "update":
+        if (!is_admin) throw new Error("Access denied: Only admins can update users.");
         if (!profile_id || !updates) throw new Error("Profile ID and updates are required for updating a user.");
 
         const { data: oldProfile, error: fetchOldProfileError } = await admin
@@ -221,6 +225,7 @@ serve(async (req) => {
         break;
 
       case "delete":
+        if (!is_admin) throw new Error("Access denied: Only admins can delete users.");
         if (!profile_id) throw new Error("Profile ID is required for deleting a user.");
 
         const { data: profileToDelete, error: fetchProfileError } = await admin
@@ -278,6 +283,7 @@ serve(async (req) => {
         break;
 
       case "reset_password":
+        if (!is_admin) throw new Error("Access denied: Only admins can reset passwords.");
         if (!user_id) throw new Error("User ID is required for password reset.");
 
         const { data: userToReset, error: fetchUserToResetError } = await admin
@@ -329,6 +335,7 @@ serve(async (req) => {
         break;
 
       case "purge_demo":
+        if (!is_admin) throw new Error("Access denied: Only admins can purge demo users.");
         const { data: demoProfiles, error: fetchDemoError } = await admin
           .from("profiles")
           .select("id, user_id, full_name, role")
@@ -375,6 +382,7 @@ serve(async (req) => {
         break;
 
       case "purge_all_non_admin":
+        if (!is_admin) throw new Error("Access denied: Only admins can purge all non-admin users.");
         const { data: nonAdminProfiles, error: fetchNonAdminError } = await admin
           .from("profiles")
           .select("id, user_id, full_name, role")

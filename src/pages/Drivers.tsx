@@ -19,7 +19,7 @@ import DriverCard from '@/components/DriverCard'; // Import the new DriverCard c
 
 const Drivers: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isOfficeOrAdmin } = useAuth();
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -29,7 +29,7 @@ const Drivers: React.FC = () => {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
-  const canCreateUser = userRole === 'admin' || userRole === 'office';
+  const canCreateUser = isOfficeOrAdmin;
 
   const fetchData = async () => {
     if (!user || !profile) {

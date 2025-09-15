@@ -16,14 +16,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProfiles } from '@/lib/api/profiles';
 
 const NotificationBell: React.FC = () => {
-  const { user, userRole, profile: currentUserProfile } = useAuth();
+  const { user, userRole, profile: currentUserProfile, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const { data: notifications = [] } = useQuery<Notification[], Error>({
     queryKey: ['notifications', user?.id],
     queryFn: getNotifications,
-    enabled: !!user && (userRole === 'admin' || userRole === 'office'),
+    enabled: !!user && isOfficeOrAdmin,
     refetchOnWindowFocus: true,
     staleTime: 60 * 1000,
   });

@@ -12,13 +12,13 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
-  const { user, profile, userRole, logout } = useAuth();
+  const { user, profile, logout, isOfficeOrAdmin } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const canCreateJob = userRole === 'admin' || userRole === 'office';
-  const canSeeBell = userRole === 'admin' || userRole === 'office';
+  const canCreateJob = isOfficeOrAdmin;
+  const canSeeBell = isOfficeOrAdmin;
 
   const userInitials = profile?.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'JD';
   const userName = profile?.full_name || 'John Doe';

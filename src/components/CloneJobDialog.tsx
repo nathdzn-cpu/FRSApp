@@ -27,13 +27,13 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
   originalStops,
   onCloneSuccess,
 }) => {
-  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
-  const canAccess = userRole === 'admin' || userRole === 'office';
+  const canAccess = isOfficeOrAdmin;
 
   // Fetch all profiles to get drivers for the form
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles } = useQuery<Profile[], Error>({

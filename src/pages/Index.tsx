@@ -52,7 +52,7 @@ interface DialogState {
 }
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
@@ -69,8 +69,8 @@ const Index = () => {
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
-  const canCreateJob = userRole === 'admin' || userRole === 'office';
-  const canAccessAdminUsers = userRole === 'admin';
+  const canCreateJob = isOfficeOrAdmin;
+  const canAccessAdminUsers = isAdmin;
 
   // Fetch tenants
   const { data: tenants = [], isLoading: isLoadingTenants, error: tenantsError } = useQuery<Tenant[], Error>({

@@ -15,6 +15,10 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole;
   isLoadingAuth: boolean;
+  isAdmin: boolean;
+  isOffice: boolean;
+  isDriver: boolean;
+  isOfficeOrAdmin: boolean;
   login: (organisationKey: string, userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -30,6 +34,11 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isAdmin = userRole === 'admin';
+  const isOffice = userRole === 'office';
+  const isDriver = userRole === 'driver';
+  const isOfficeOrAdmin = isAdmin || isOffice;
 
   const currentUserIdRef = useRef<string | null>(initialUser?.id || null);
 
@@ -276,7 +285,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, login, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, isAdmin, isOffice, isDriver, isOfficeOrAdmin, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

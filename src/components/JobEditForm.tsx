@@ -73,9 +73,7 @@ interface JobEditFormProps {
 }
 
 const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, drivers, onSubmit, isSubmitting }) => {
-  const { userRole } = useAuth();
-  const isOfficeOrAdmin = userRole === 'admin' || userRole === 'office';
-  const isDriver = userRole === 'driver';
+  const { isOfficeOrAdmin, isDriver } = useAuth();
 
   const formMethods = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
