@@ -200,63 +200,83 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
             <CardHeader className="p-0 pb-4">
               <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
             </CardHeader>
-            <CardContent className="p-0 pt-4 space-y-4">
+            <CardContent className="p-0 pt-4 space-y-6">
               <div>
                 <p className="font-medium text-gray-900">Notes:</p>
                 <p className="text-gray-700">{job.notes || '-'}</p>
               </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
-
-              {nextAction ? (
-                <>
-                  {nextAction.stopId && (
-                    <p className="text-sm text-gray-600 mb-2">
-                      Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
-                    </p>
-                  )}
-                  {currentStopForAction && renderStopDetails(currentStopForAction)}
-                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <Button
-                      onClick={handleNextActionButtonClick}
-                      disabled={isUpdatingProgress || isUploadingImage}
-                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                      data-testid="driver-next-action-btn"
-                    >
-                      {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                      {nextAction.label}
-                    </Button>
-                    {(job.status === 'on_route_collection' || job.status === 'on_route_delivery') && (
-                      <Button
-                        onClick={() => setIsEtaUpdateDialogOpen(true)}
-                        disabled={isUpdatingProgress || isUploadingImage}
-                        variant="secondary"
-                        className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
-                      >
-                        {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Clock className="h-5 w-5 mr-2" />}
-                        Update ETA
-                      </Button>
-                    )}
-                    {nextAction.nextStatus !== 'pod_received' && (
-                      <Button
-                        onClick={() => setIsImageUploadDialogOpen(true)}
-                        disabled={isUpdatingProgress || isUploadingImage}
-                        variant="outline"
-                        className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
-                      >
-                        {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
-                        Upload Image
-                      </Button>
-                    )}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">All Stops</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-800 mb-2">Collections</h4>
+                    <div className="space-y-3">
+                      {safeStops.filter(s => s.type === 'collection').map(renderStopDetails)}
+                    </div>
                   </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
-                  <p className="text-gray-600">All stops have been processed.</p>
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-800 mt-4 mb-2">Deliveries</h4>
+                    <div className="space-y-3">
+                      {safeStops.filter(s => s.type === 'delivery').map(renderStopDetails)}
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Job Progress</h3>
+
+                {nextAction ? (
+                  <>
+                    {nextAction.stopId && (
+                      <p className="text-sm text-gray-600 mb-2">
+                        Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
+                      </p>
+                    )}
+                    {currentStopForAction && renderStopDetails(currentStopForAction)}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                      <Button
+                        onClick={handleNextActionButtonClick}
+                        disabled={isUpdatingProgress || isUploadingImage}
+                        className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                        data-testid="driver-next-action-btn"
+                      >
+                        {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                        {nextAction.label}
+                      </Button>
+                      {(job.status === 'on_route_collection' || job.status === 'on_route_delivery') && (
+                        <Button
+                          onClick={() => setIsEtaUpdateDialogOpen(true)}
+                          disabled={isUpdatingProgress || isUploadingImage}
+                          variant="secondary"
+                          className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                        >
+                          {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Clock className="h-5 w-5 mr-2" />}
+                          Update ETA
+                        </Button>
+                      )}
+                      {nextAction.nextStatus !== 'pod_received' && (
+                        <Button
+                          onClick={() => setIsImageUploadDialogOpen(true)}
+                          disabled={isUpdatingProgress || isUploadingImage}
+                          variant="outline"
+                          className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                        >
+                          {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
+                          Upload Image
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
+                    <p className="text-gray-600">All stops have been processed.</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
