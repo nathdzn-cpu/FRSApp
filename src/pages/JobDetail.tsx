@@ -83,7 +83,7 @@ const JobDetail: React.FC = () => {
     queryKey: ['profiles', currentOrgId, userRole],
     queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
-    enabled: !!user && !!currentProfile && !isLoadingAuth && !!userRole,
+    enabled: !!user && !!profile && !isLoadingAuth && !!userRole,
   });
 
   // Use useQuery for job details, stops, and documents
@@ -95,7 +95,7 @@ const JobDetail: React.FC = () => {
   }, Error>({
     queryKey: ['jobDetail', orderNumber, userRole],
     queryFn: async () => {
-      if (!orderNumber || !currentOrgId || !currentProfile || !userRole) {
+      if (!orderNumber || !currentOrgId || !profile || !userRole) {
         throw new Error("Missing job order number, organization ID, current profile, or user role.");
       }
 
@@ -115,7 +115,7 @@ const JobDetail: React.FC = () => {
         progressLogs: fetchedProgressLogs,
       };
     },
-    enabled: !!orderNumber && !!currentOrgId && !!currentProfile && !!userRole && !isLoadingAuth,
+    enabled: !!orderNumber && !!currentOrgId && !!profile && !!userRole && !isLoadingAuth,
     retry: false,
   });
 
@@ -124,12 +124,14 @@ const JobDetail: React.FC = () => {
   const documents = jobData?.documents || [];
   const progressLogs = jobData?.progressLogs || [];
 
+  const driver = allProfiles.find(p => p.id === job?.assigned_driver_id);
+
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
   const handleRequestPod = async () => {
-    if (!job || !currentProfile || !userRole) return;
-    const promise = requestPod(job.id, currentOrgId, currentProfile.id, userRole);
+    if (!job || !profile || !userRole) return;
+    const promise = requestPod(job.id, currentOrgId, profile.id, userRole);
     toast.promise(promise, {
       loading: 'Requesting POD...',
       success: 'POD request sent to driver!',
@@ -192,8 +194,8 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCancelJob = async () => {
-    if (!job || !currentProfile || !userRole) return;
-    const promise = cancelJob(job.id, currentOrgId, currentProfile.id, userRole);
+    if (!job || !profile || !userRole) return;
+    const promise = cancelJob(job.id, currentOrgId, profile.id, userRole);
     toast.promise(promise, {
       loading: 'Cancelling job...',
       success: 'Job cancelled successfully!',
@@ -204,7 +206,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleEditSubmit = async (values: any) => {
-    if (!job || !currentProfile || !userRole) {
+    if (!job || !profile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot update job.");
       return;
     }
@@ -232,7 +234,7 @@ const JobDetail: React.FC = () => {
       const payload = {
         job_id: job.id,
         org_id: currentOrgId,
-        actor_id: currentProfile.id,
+        actor_id: profile.id,
         actor_role: userRole,
         job_updates: jobUpdates,
         stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
@@ -258,7 +260,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleAssignDriver = async (driverId: string | null) => {
-    if (!job || !currentProfile || !userRole) {
+    if (!job || !profile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot assign driver.");
       return;
     }
@@ -271,7 +273,7 @@ const JobDetail: React.FC = () => {
       const payload = {
         job_id: job.id,
         org_id: currentOrgId,
-        actor_id: currentProfile.id,
+        actor_id: profile.id,
         actor_role: userRole,
         job_updates: jobUpdates,
       };
@@ -294,7 +296,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleUpdateProgress = async (entries: ProgressUpdateEntry[]) => {
-    if (!job || !currentProfile || !userRole || entries.length === 0) {
+    if (!job || !profile || !userRole || entries.length === 0) {
       toast.error("No status updates to log.");
       return;
     }
@@ -307,7 +309,7 @@ const JobDetail: React.FC = () => {
         const payload = {
           job_id: job.id,
           org_id: currentOrgId,
-          actor_id: currentProfile.id,
+          actor_id: profile.id,
           actor_role: userRole,
           new_status: entry.status,
           timestamp: entry.dateTime.toISOString(),
@@ -368,7 +370,7 @@ const JobDetail: React.FC = () => {
         stops={stops}
         progressLogs={progressLogs}
         documents={documents}
-        currentProfile={currentProfile!}
+        currentProfile={profile!}
         currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
