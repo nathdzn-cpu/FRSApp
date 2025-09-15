@@ -19,6 +19,7 @@ import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import CloneJobDialog from '@/components/CloneJobDialog';
 import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
 import CancelJobDialog from '@/components/CancelJobDialog';
+import DriverDetailDialog from '@/components/DriverDetailDialog';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -77,6 +78,8 @@ const JobDetail: React.FC = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentOrgId = profile?.org_id;
+  const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
+
   const { data: organisation } = useQuery<Organisation | null, Error>({
     queryKey: ['organisation', currentOrgId!],
     queryFn: () => getOrganisationDetails(currentOrgId!),
@@ -209,6 +212,48 @@ const JobDetail: React.FC = () => {
     await promise;
     setJobToCancel(null);
     refetchJobData();
+  };
+
+  const handleApproveRequest = async () => {
+    if (!job || !profile || !userRole) return;
+    setIsSubmittingEdit(true);
+    try {
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: profile.id,
+        actor_role: userRole,
+        job_updates: { status: 'planned' }, // Approve to 'planned' status
+      };
+      await updateJob(payload);
+      toast.success('Job request approved!');
+      refetchJobData();
+    } catch (err) {
+      toast.error('Failed to approve job request.');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!job || !profile || !userRole) return;
+    setIsSubmittingEdit(true);
+    try {
+      const payload = {
+        job_id: job.id,
+        org_id: currentOrgId,
+        actor_id: profile.id,
+        actor_role: userRole,
+        job_updates: { status: 'cancelled' }, // Reject to 'cancelled' status
+      };
+      await updateJob(payload);
+      toast.success('Job request rejected.');
+      refetchJobData();
+    } catch (err) {
+      toast.error('Failed to reject job request.');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
   };
 
   const handleEditSubmit = async (values: any) => {
@@ -397,6 +442,20 @@ const JobDetail: React.FC = () => {
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
+
+        {isOfficeOrAdmin && job?.status === 'requested' && (
+          <Card className="bg-orange-100 border-orange-300 p-4 mb-6 flex items-center justify-between">
+            <p className="text-orange-800 font-semibold">This job is a customer request and is awaiting approval.</p>
+            <div className="flex gap-2">
+              <Button onClick={handleApproveRequest} disabled={isSubmittingEdit} className="bg-green-600 hover:bg-green-700">
+                {isSubmittingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
+              </Button>
+              <Button onClick={handleRejectRequest} disabled={isSubmittingEdit} variant="destructive">
+                {isSubmittingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
+              </Button>
+            </div>
+          </Card>
+        )}
 
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <JobDetailHeader

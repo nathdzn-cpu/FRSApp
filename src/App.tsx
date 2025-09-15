@@ -17,6 +17,7 @@ import AdminUsersPage from './pages/admin/users/AdminUsersPage';
 import CreateUserChoice from './pages/admin/users/CreateUserChoice';
 import CreateDriver from './pages/admin/users/CreateDriver';
 import CreateOffice from './pages/admin/users/CreateOffice';
+import CreateCustomer from './pages/admin/users/CreateCustomer';
 import EditUser from './pages/admin/users/EditUser';
 import DriverDailyCheck from './pages/driver/DailyCheck';
 import Settings from './pages/Settings';
@@ -97,6 +98,7 @@ const App = () => (
             <Route path="/admin/users/new" element={<CreateUserChoice />} />
             <Route path="/admin/users/new/driver" element={<CreateDriver />} />
             <Route path="/admin/users/new/office" element={<CreateOffice />} />
+            <Route path="/admin/users/new/customer" element={<CreateCustomer />} />
             <Route path="/admin/users/:id/edit" element={<EditUser />} />
             <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
             <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />

@@ -32,7 +32,7 @@ import CancelJobDialog from '@/components/CancelJobDialog';
 import DriverDetailDialog from '@/components/DriverDetailDialog';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
-type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
+type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled' | 'requested';
 
 type DialogType = 'statusUpdate' | 'assignDriver' | 'viewAttachments' | 'uploadImage';
 
@@ -46,7 +46,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('all'); // Changed default to 'all'
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active'); // Default to active
   const [searchTerm, setSearchTerm] = useState('');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -109,8 +109,20 @@ const Index = () => {
     queryKey: ['profiles', selectedOrgId, userRole],
     queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
-    enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth && !!userRole,
+    enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
     onError: (err) => console.error("Profiles query failed", err),
+  });
+
+  // Fetch job requests count for notification badge
+  const { data: requestsCount = 0 } = useQuery<number, Error>({
+    queryKey: ['jobRequestsCount', selectedOrgId],
+    queryFn: async () => {
+      const { count, error } = await getJobs(selectedOrgId!, userRole!, undefined, undefined, 'requested');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: isOfficeOrAdmin && !!selectedOrgId && !isLoadingAuth,
+    refetchInterval: 30000, // Check for new requests every 30 seconds
   });
 
   // Fetch active jobs specifically for the current driver (used for banner and progression rules)
@@ -402,6 +414,24 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
               {/* Status Filter Buttons */}
               <div className="flex space-x-1 rounded-full bg-gray-100 p-1">
+                {isOfficeOrAdmin && (
+                  <Button
+                    variant={jobStatusFilter === 'requested' ? 'default' : 'ghost'}
+                    size="sm"
+                    className={cn(
+                      "rounded-full px-4 py-2 text-sm font-medium relative",
+                      jobStatusFilter === 'requested' ? "bg-orange-500 text-white hover:bg-orange-600" : "text-gray-700 hover:bg-gray-200"
+                    )}
+                    onClick={() => setJobStatusFilter('requested')}
+                  >
+                    Requests
+                    {requestsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                        {requestsCount}
+                      </span>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant={jobStatusFilter === 'all' ? 'default' : 'ghost'}
                   size="sm"

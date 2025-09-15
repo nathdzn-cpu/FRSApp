@@ -2,10 +2,10 @@ import { supabase } from '../supabaseClient';
 import { Job, Profile, Document } from '@/utils/mockData';
 
 // Fetch all jobs for the current organization
-export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'driver' | undefined, startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' = 'all'): Promise<Job[]> => {
+export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'driver' | 'customer' | undefined, startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' | 'requested' = 'all'): Promise<{ data: Job[], count: number | null }> => {
   let query = supabase
     .from('jobs_with_stop_details') // Use the view that includes stop details
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('org_id', orgId);
 
   if (userRole === 'driver') {
@@ -14,7 +14,7 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
       query = query.eq('assigned_driver_id', user.id);
     } else {
       console.warn("Driver role specified but no authenticated user found. Returning empty array.");
-      return [];
+      return { data: [], count: null };
     }
   }
 
@@ -24,6 +24,8 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
     query = query.in('status', ['delivered', 'pod_received']);
   } else if (statusFilter === 'cancelled') {
     query = query.eq('status', 'cancelled');
+  } else if (statusFilter === 'requested') {
+    query = query.eq('status', 'requested');
   }
 
   if (startDate) {
@@ -35,13 +37,13 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
 
   query = query.order('collection_date', { ascending: false });
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('Error fetching jobs:', error);
     throw new Error(error.message);
   }
-  return data as Job[];
+  return { data: data as Job[], count };
 };
 
 // Fetch a single job by its order number

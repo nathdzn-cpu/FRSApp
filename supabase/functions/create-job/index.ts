@@ -105,8 +105,8 @@ serve(async (req) => {
       console.error("Profile lookup error:", meErr);
       throw new Error("Profile lookup failed: " + meErr.message);
     }
-    if (!me || !me.org_id || !['admin', 'office'].includes(me.role)) {
-      throw new Error("Access denied (admin or office role required and org_id must be set).");
+    if (!me || !me.org_id || !['admin', 'office', 'customer'].includes(me.role)) {
+      throw new Error("Access denied (admin, office, or customer role required and org_id must be set).");
     }
 
     // 2) Parse body
@@ -133,19 +133,25 @@ serve(async (req) => {
       throw new Error("Actor role mismatch. Provided role does not match authenticated user's role.");
     }
 
+    // Determine initial status based on role
+    const isCustomerRequest = me.role === 'customer';
+    const initialStatus = isCustomerRequest ? 'requested' : (jobData.assigned_driver_id ? 'accepted' : 'planned');
+
     // 3) Prepare job data for insert
     const newJobId = uuidv4();
     const jobToInsert = {
       id: newJobId,
       org_id: org_id,
       order_number: jobData.order_number || null, // Use provided order_number or null for trigger
-      status: jobData.status || 'planned', // Use status from jobData, default to 'planned'
-      date_created: jobData.date_created,
+      status: initialStatus,
       price: jobData.price || null,
-      assigned_driver_id: jobData.assigned_driver_id || null,
+      assigned_driver_id: isCustomerRequest ? null : (jobData.assigned_driver_id || null), // Customers cannot assign drivers
       notes: jobData.notes || null,
       created_at: new Date().toISOString(),
       deleted_at: null,
+      created_by: actor_id, // Track who created the job
+      collection_date: jobData.collection_date,
+      delivery_date: jobData.delivery_date,
     };
 
     // 4) Insert job
@@ -196,9 +202,14 @@ serve(async (req) => {
     }
 
     // 6) Log job creation to job_progress_log
-    const logNotes = jobToInsert.status === 'planned'
-      ? `Job ${insertedJob.order_number} created with status 'Planned' (no driver assigned).`
-      : `Job ${insertedJob.order_number} created with status 'Accepted' (driver assigned).`;
+    let logNotes = `Job ${insertedJob.order_number} created by ${me.full_name}.`;
+    if (isCustomerRequest) {
+      logNotes = `New job request ${insertedJob.order_number} submitted by customer ${me.company_name || me.full_name}.`;
+    } else if (jobToInsert.status === 'planned') {
+      logNotes = `Job ${insertedJob.order_number} created with status 'Planned' (no driver assigned).`;
+    } else {
+      logNotes = `Job ${insertedJob.order_number} created with status 'Accepted' (driver assigned).`;
+    }
 
     const { error: progressLogError } = await admin
       .from('job_progress_log')
@@ -207,7 +218,7 @@ serve(async (req) => {
         job_id: insertedJob.id,
         actor_id: actor_id,
         actor_role: actor_role,
-        action_type: jobToInsert.status, // Use the actual initial status
+        action_type: initialStatus, // Use the actual initial status
         notes: logNotes,
         timestamp: new Date().toISOString(),
       });
@@ -215,7 +226,33 @@ serve(async (req) => {
       console.error("DEBUG: progress log insert failed for job creation", progressLogError.message);
     }
 
-    // 7) Audit log
+    // 7) If it's a customer request, notify office/admin users
+    if (isCustomerRequest) {
+      const { data: officeStaff, error: staffError } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('org_id', org_id)
+        .in('role', ['admin', 'office']);
+
+      if (staffError) {
+        console.error("Error fetching office staff for notification:", staffError.message);
+      } else if (officeStaff) {
+        const notifications = officeStaff.map(staff => ({
+          user_id: staff.id,
+          org_id: org_id,
+          title: 'New Job Request',
+          message: `Request ${insertedJob.order_number} from ${me.company_name || me.full_name} is awaiting approval.`,
+          link_to: `/jobs/${insertedJob.order_number}`,
+        }));
+        
+        const { error: notificationError } = await admin.from('notifications').insert(notifications);
+        if (notificationError) {
+          console.error("Error creating notifications for office staff:", notificationError.message);
+        }
+      }
+    }
+
+    // 8) Audit log
     const { error: auditError } = await admin.from("audit_logs").insert({
       org_id: org_id,
       actor_id: actor_id,

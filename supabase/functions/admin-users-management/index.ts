@@ -58,7 +58,7 @@ serve(async (req) => {
 
     // 2) Parse body and determine operation
     const body = await req.json().catch(() => ({}));
-    const { op, id, full_name, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role, email } = body; // Removed password
+    const { op, id, full_name, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role, email, company_name } = body; // Add company_name
 
     // Ensure org_id from body matches user's org_id
     if (body_org_id && body_org_id !== me.org_id) {
@@ -89,11 +89,10 @@ serve(async (req) => {
 
       case "create":
         if (!is_admin) throw new Error("Access denied: Only admins can create users.");
-        if (!full_name || !phone || !role || !email || !dob) throw new Error("Missing required fields for user creation (full_name, phone, role, email, dob).");
+        if (!full_name || !role || !email) throw new Error("Missing required fields for user creation (full_name, role, email).");
 
-        // Generate password from DOB (format: ddMMyyyy)
-        const [year, month, day] = dob.split('-');
-        const generatedPassword = `${day}${month}${year}`;
+        // Generate a random password
+        const generatedPassword = Math.random().toString(36).slice(-8);
 
         const { data: createdAuthUser, error: cErr } = await admin.auth.admin.createUser({
           email,
@@ -117,6 +116,7 @@ serve(async (req) => {
           is_demo: is_demo ?? false,
         };
         if (dob) profileUpdates.dob = dob;
+        if (company_name) profileUpdates.company_name = company_name; // Add company name
         if (role === "driver") {
           profileUpdates.truck_reg = truck_reg || null;
           profileUpdates.trailer_no = trailer_no || null;
