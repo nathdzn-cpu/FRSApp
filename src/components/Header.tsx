@@ -27,7 +27,7 @@ const Header: React.FC = () => {
 
   if (isMobile) {
     return (
-      <header className="flex items-center justify-between p-4 bg-background border-b sticky top-0 z-40">
+      <header className="flex items-center justify-between p-4 bg-[var(--saas-card-bg)] border-b sticky top-0 z-40">
         <Sidebar />
         <NotificationBell />
       </header>
@@ -35,7 +35,7 @@ const Header: React.FC = () => {
   }
 
   return (
-    <header className="flex items-center justify-end p-4 space-x-4 bg-background border-b sticky top-0 z-40">
+    <header className="flex items-center justify-end p-4 space-x-4 bg-[var(--saas-card-bg)] border-b sticky top-0 z-40">
       <NotificationBell />
       {user && profile && (
         <DropdownMenu>
