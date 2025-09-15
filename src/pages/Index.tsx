@@ -56,7 +56,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
-  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('active');
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('all'); // Changed default to 'all'
   const [searchTerm, setSearchTerm] = useState('');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -389,6 +389,17 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
               {/* Status Filter Buttons */}
               <div className="flex space-x-1 rounded-full bg-gray-100 p-1">
+                <Button
+                  variant={jobStatusFilter === 'all' ? 'default' : 'ghost'}
+                  size="sm"
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-medium",
+                    jobStatusFilter === 'all' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700 hover:bg-gray-200"
+                  )}
+                  onClick={() => setJobStatusFilter('all')}
+                >
+                  All
+                </Button>
                 <Button
                   variant={jobStatusFilter === 'active' ? 'default' : 'ghost'}
                   size="sm"

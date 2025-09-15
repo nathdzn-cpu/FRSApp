@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getQuotes, createQuote } from '@/lib/supabase';
+import { getQuotes, createQuote, updateQuote, deleteQuote } from '@/lib/supabase';
 import { Quote } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { format } from 'date-fns';
 import { formatGBPDisplay } from '@/lib/utils/formatUtils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const quoteFormSchema = z.object({
   from_location: z.string().min(1, { message: 'From location is required.' }),
@@ -46,6 +48,9 @@ const Quotes: React.FC = () => {
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const currentOrgId = profile?.org_id;
   const canAccess = userRole === 'admin' || userRole === 'office';
@@ -68,6 +73,22 @@ const Quotes: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    if (editingQuote) {
+      form.reset({
+        from_location: editingQuote.from_location,
+        to_location: editingQuote.to_location,
+        customer: editingQuote.customer,
+        price: editingQuote.price,
+        mileage: editingQuote.mileage,
+        drops: editingQuote.drops,
+      });
+      setIsFormOpen(true);
+    } else {
+      form.reset();
+    }
+  }, [editingQuote, form]);
+
   const createQuoteMutation = useMutation({
     mutationFn: (newQuote: QuoteFormValues) => createQuote(currentOrgId!, newQuote),
     onSuccess: () => {
@@ -81,8 +102,54 @@ const Quotes: React.FC = () => {
     },
   });
 
+  const updateQuoteMutation = useMutation({
+    mutationFn: (updatedQuote: QuoteFormValues) => updateQuote(editingQuote!.id, currentOrgId!, updatedQuote),
+    onSuccess: () => {
+      toast.success('Quote updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['quotes', currentOrgId] });
+      setIsFormOpen(false);
+      setEditingQuote(null);
+      form.reset();
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to update quote: ${err.message}`);
+    },
+  });
+
+  const deleteQuoteMutation = useMutation({
+    mutationFn: (quoteId: string) => deleteQuote(quoteId, currentOrgId!),
+    onSuccess: () => {
+      toast.success('Quote deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['quotes', currentOrgId] });
+      setIsDeleteConfirmOpen(false);
+      setDeletingQuote(null);
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to delete quote: ${err.message}`);
+    },
+  });
+
   const onSubmit = (values: QuoteFormValues) => {
-    createQuoteMutation.mutate(values);
+    if (editingQuote) {
+      updateQuoteMutation.mutate(values);
+    } else {
+      createQuoteMutation.mutate(values);
+    }
+  };
+
+  const handleEditClick = (quote: Quote) => {
+    setEditingQuote(quote);
+  };
+
+  const handleDeleteClick = (quote: Quote) => {
+    setDeletingQuote(quote);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingQuote) {
+      deleteQuoteMutation.mutate(deletingQuote.id);
+    }
   };
 
   useEffect(() => {
@@ -114,7 +181,13 @@ const Quotes: React.FC = () => {
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Quotes</CardTitle>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <Dialog open={isFormOpen} onOpenChange={(open) => {
+              setIsFormOpen(open);
+              if (!open) {
+                setEditingQuote(null); // Clear editing quote when dialog closes
+                form.reset();
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 text-white hover:bg-blue-700">
                   <PlusCircle className="h-4 w-4 mr-2" /> New Quote
@@ -122,8 +195,10 @@ const Quotes: React.FC = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Quote</DialogTitle>
-                  <DialogDescription>Fill in the details below to create a new quote.</DialogDescription>
+                  <DialogTitle>{editingQuote ? 'Edit Quote' : 'Create New Quote'}</DialogTitle>
+                  <DialogDescription>
+                    {editingQuote ? 'Modify the details of the quote.' : 'Fill in the details below to create a new quote.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -145,9 +220,9 @@ const Quotes: React.FC = () => {
                     <FormField control={form.control} name="drops" render={({ field }) => (
                       <FormItem><FormLabel>Number of Drops</FormLabel><FormControl><Input type="number" min="1" max="10" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <Button type="submit" disabled={createQuoteMutation.isPending}>
-                      {createQuoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Quote
+                    <Button type="submit" disabled={createQuoteMutation.isPending || updateQuoteMutation.isPending}>
+                      {(createQuoteMutation.isPending || updateQuoteMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingQuote ? 'Update Quote' : 'Save Quote'}
                     </Button>
                   </form>
                 </Form>
@@ -165,6 +240,7 @@ const Quotes: React.FC = () => {
                   <TableHead>Price</TableHead>
                   <TableHead>Mileage</TableHead>
                   <TableHead>Drops</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,6 +253,14 @@ const Quotes: React.FC = () => {
                     <TableCell>{formatGBPDisplay(quote.price)}</TableCell>
                     <TableCell>{quote.mileage}</TableCell>
                     <TableCell>{quote.drops}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(quote)} className="mr-2">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(quote)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -184,6 +268,25 @@ const Quotes: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this quote?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the quote for {deletingQuote?.customer}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteQuoteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={deleteQuoteMutation.isPending} className="bg-red-600 hover:bg-red-700">
+              {deleteQuoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
