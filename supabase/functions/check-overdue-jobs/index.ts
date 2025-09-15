@@ -66,11 +66,24 @@ serve(async (_req) => {
     for (const job of overdueJobs) {
       // 2. Send notifications
       const driverId = job.assigned_driver_id;
-      const siteType = job.status === 'at_collection' ? 'collection' : 'delivery';
-      const currentStop = (job.job_stops as any[])?.find(s => s.type === siteType);
+      const siteType = job.status === 'at_collection' ? 'Collection' : 'Delivery';
+      const currentStop = (job.job_stops as any[])?.find(s => s.type.toLowerCase() === siteType.toLowerCase());
       const siteName = currentStop?.name || 'the site';
 
-      // 2a. Office/Admin Notifications (In-app)
+      // Get driver name for office notifications
+      let driverName = 'A driver';
+      if (driverId) {
+        const { data: driverProfile, error: driverError } = await admin
+          .from('profiles')
+          .select('full_name')
+          .eq('id', driverId)
+          .single();
+        if (!driverError && driverProfile) {
+          driverName = driverProfile.full_name;
+        }
+      }
+
+      // 2a. Office/Admin Notifications (In-app & Push)
       const { data: officeAdminProfiles } = await admin
         .from("profiles")
         .select("id")
@@ -78,15 +91,35 @@ serve(async (_req) => {
         .in("role", ["admin", "office"]);
 
       if (officeAdminProfiles && officeAdminProfiles.length > 0) {
-        const officeMessage = `Driver has been at ${siteName} for over 1 hour on job ${job.order_number}.`;
+        const officeMessage = `${driverName} has been at ${siteType} on job ${job.order_number} for 1 hour.`;
+        const officeTitle = `Job Delayed: ${job.order_number}`;
+        
+        // In-app notifications
         const notificationsToInsert = officeAdminProfiles.map(p => ({
           user_id: p.id,
           org_id: job.org_id,
-          title: `Job Delayed: ${job.order_number}`,
+          title: officeTitle,
           message: officeMessage,
           link_to: `/jobs/${job.order_number}`,
         }));
         await admin.from("notifications").insert(notificationsToInsert);
+
+        // Push notifications
+        const { data: devices } = await admin
+          .from('profile_devices')
+          .select('expo_push_token')
+          .in('profile_id', officeAdminProfiles.map(p => p.id));
+        
+        if (devices && devices.length > 0) {
+          for (const device of devices) {
+            await invokeEdgeFunction('send-push-notification', {
+              to: device.expo_push_token,
+              title: officeTitle,
+              body: officeMessage,
+              data: { url: `/jobs/${job.order_number}` }
+            });
+          }
+        }
       }
 
       // 2b. Driver Notification (Push)
@@ -100,8 +133,8 @@ serve(async (_req) => {
           for (const device of devices) {
             await invokeEdgeFunction('send-push-notification', {
               to: device.expo_push_token,
-              title: 'On-site Delay',
-              body: 'You have been at this site for 1 hour. If there are any issues, please call the office.',
+              title: 'Job Status Update Required',
+              body: 'Your job status hasn’t updated within 1 hour. Can you please inform the office of your current progress?',
               data: { url: `/jobs/${job.order_number}` }
             });
           }
