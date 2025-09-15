@@ -359,40 +359,42 @@ const Index = () => {
         )}
 
         {/* Stat Cards Section */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          <StatCard
-            title="Total Jobs"
-            value={totalJobs}
-            icon={Truck}
-            iconColorClass="text-blue-600"
-            valueColorClass="text-blue-800"
-            description="All jobs in the system"
-          />
-          <StatCard
-            title="Active Jobs"
-            value={activeJobsCount}
-            icon={Truck}
-            iconColorClass="text-yellow-600"
-            valueColorClass="text-yellow-800"
-            description="Jobs currently in progress"
-          />
-          <StatCard
-            title="Completed Jobs"
-            value={completedJobsCount}
-            icon={CheckCircle2}
-            iconColorClass="text-green-600"
-            valueColorClass="text-green-800"
-            description="Jobs successfully delivered"
-          />
-          <StatCard
-            title="Cancelled Jobs"
-            value={cancelledJobsCount}
-            icon={XCircle}
-            iconColorClass="text-red-600"
-            valueColorClass="text-red-800"
-            description="Jobs that were cancelled"
-          />
-        </div>
+        {isOfficeOrAdmin && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <StatCard
+              title="Total Jobs"
+              value={totalJobs}
+              icon={Truck}
+              iconColorClass="text-blue-600"
+              valueColorClass="text-blue-800"
+              description="All jobs in the system"
+            />
+            <StatCard
+              title="Active Jobs"
+              value={activeJobsCount}
+              icon={Truck}
+              iconColorClass="text-yellow-600"
+              valueColorClass="text-yellow-800"
+              description="Jobs currently in progress"
+            />
+            <StatCard
+              title="Completed Jobs"
+              value={completedJobsCount}
+              icon={CheckCircle2}
+              iconColorClass="text-green-600"
+              valueColorClass="text-green-800"
+              description="Jobs successfully delivered"
+            />
+            <StatCard
+              title="Cancelled Jobs"
+              value={cancelledJobsCount}
+              icon={XCircle}
+              iconColorClass="text-red-600"
+              valueColorClass="text-red-800"
+              description="Jobs that were cancelled"
+            />
+          </div>
+        )}
 
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-center p-0 pb-4 sticky top-0 bg-[var(--saas-card-bg)] z-10 border-b border-[var(--saas-border)] -mx-6 px-6 pt-6 -mt-6">
