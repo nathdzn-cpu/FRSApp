@@ -17,7 +17,7 @@ function adminClient() {
 
 class AuthError extends Error {
   status: number;
-  constructor(message: string, status = 401) { // Default to 401 for authentication issues
+  constructor(message: string, status = 400) { // Default to 400 for client errors
     super(message);
     this.name = 'AuthError';
     this.status = status;
@@ -35,7 +35,7 @@ serve(async (req) => {
     const invalidCredsMessage = "Invalid username or password.";
 
     if (!orgKey || !username || !password) {
-      throw new AuthError("Organisation key, username, and password are required.", 400); // Bad request
+      throw new AuthError("Organisation key, username, and password are required.", 400);
     }
 
     // 1. Validate the Organisation Key first.
@@ -46,12 +46,12 @@ serve(async (req) => {
       .single();
 
     if (orgError || !org) {
-      throw new AuthError("Invalid organisation key", 400); // Bad request for invalid org key
+      throw new AuthError("Invalid organisation key", 400);
     }
 
     let emailToLogin: string | undefined;
 
-    // 2. Find the user's email, strictly within the context of the given organisation if possible.
+    // 2. Find the user's email.
     if (username.includes('@')) {
       emailToLogin = username;
     } else {
@@ -63,31 +63,31 @@ serve(async (req) => {
         .single();
 
       if (profileError || !profile) {
-        throw new AuthError(invalidCredsMessage); // 401 default
+        throw new AuthError(invalidCredsMessage, 400);
       }
       
       const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.user_id);
       if (authUserError || !authUser.user) {
-        throw new AuthError(invalidCredsMessage); // 401 default
+        throw new AuthError(invalidCredsMessage, 400);
       }
       emailToLogin = authUser.user.email;
     }
 
     if (!emailToLogin) {
-        throw new AuthError(invalidCredsMessage); // 401 default
+        throw new AuthError(invalidCredsMessage, 400);
     }
     
-    // 3. Attempt to sign in. This is the primary check for password validity.
+    // 3. Attempt to sign in.
     const { data: sessionData, error: sessionError } = await admin.auth.signInWithPassword({
       email: emailToLogin,
       password,
     });
 
     if (sessionError) {
-      throw new AuthError(invalidCredsMessage); // 401 default
+      throw new AuthError(sessionError.message, 400);
     }
 
-    // 4. CRITICAL FINAL VALIDATION: Ensure the successfully logged-in user belongs to the specified organisation.
+    // 4. Final validation: Ensure the logged-in user belongs to the specified organisation.
     const loggedInUserId = sessionData.user.id;
     const { error: finalCheckError } = await admin
         .from('profiles')
@@ -98,10 +98,10 @@ serve(async (req) => {
 
     if (finalCheckError) {
         await admin.auth.signOut(sessionData.session.access_token);
-        throw new AuthError(invalidCredsMessage); // 401 default
+        throw new AuthError(invalidCredsMessage, 400);
     }
 
-    // 5. Success: Update the active session token to enforce a single-session policy.
+    // 5. Success: Update active session token.
     if (sessionData.session) {
       await admin
         .from('profiles')
@@ -109,9 +109,9 @@ serve(async (req) => {
         .eq('id', sessionData.session.user.id);
     }
 
-    // 6. Return the Supabase data object directly as requested
+    // 6. Return the full Supabase auth data on success.
     return new Response(
-      JSON.stringify(sessionData), // Directly return sessionData
+      JSON.stringify(sessionData),
       { 
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders } 
@@ -122,7 +122,6 @@ serve(async (req) => {
     const error = e as AuthError | Error;
     const status = (error instanceof AuthError) ? error.status : 500;
     
-    // Return error in the requested format: { error: "message" }
     return new Response(
       JSON.stringify({ error: error.message }),
       {

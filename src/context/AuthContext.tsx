@@ -206,23 +206,29 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   }, [session, user]);
 
   const login = async (organisationKey: string, userIdOrEmail: string, password: string) => {
-    console.log("AuthContextProvider: login called for:", userIdOrEmail, "in org key:", organisationKey);
+    console.log("AuthContextProvider: login called with fetch for:", userIdOrEmail);
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke('login', {
-        body: { orgKey: organisationKey, username: userIdOrEmail, password },
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ orgKey: organisationKey, username: userIdOrEmail, password }),
       });
 
-      if (functionError) {
-        // The Edge Function now returns { error: "message" } for errors.
-        const errorMessage = data?.error || functionError.message; // Directly use data.error
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.error || 'An unknown error occurred during login.';
         console.error("AuthContextProvider: Login function failed:", errorMessage);
         toast.error(errorMessage);
         return { success: false, error: errorMessage };
       }
 
-      // The Edge Function now returns the sessionData directly on success.
-      const { session, user } = data; // data itself is the sessionData object
+      // On success, data is the sessionData object from Supabase
+      const { session, user } = data;
 
       if (session && user) {
         const { error: setSessionError } = await supabase.auth.setSession({
@@ -240,13 +246,13 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
         toast.success("Logged in successfully!");
         return { success: true };
       } else {
-        // This case should ideally not be hit if the Edge Function returns sessionData correctly.
         throw new Error("Login response was invalid or missing session/user data.");
       }
     } catch (error: any) {
-      console.error("AuthContextProvider: Login failed:", error.message);
-      toast.error(error.message);
-      return { success: false, error: error.message };
+      console.error("AuthContextProvider: Login failed with network or unexpected error:", error.message);
+      const errorMessage = error.message || "An unexpected network error occurred.";
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
