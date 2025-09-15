@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import CreateDriverForm from '@/components/admin/users/CreateDriverForm';
 import { Card, CardContent } from '@/components/ui/card';
+import CredentialsDisplayDialog from '@/components/admin/users/CredentialsDisplayDialog';
 
 const CreateDriver: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const CreateDriver: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined);
+  const [credentials, setCredentials] = useState<{ email: string; password?: string } | null>(null);
 
   const currentOrgId = profile?.org_id;
 
@@ -62,14 +64,16 @@ const CreateDriver: React.FC = () => {
         phone: values.phone,
         role: 'driver' as const,
         email: values.email,
-        password: values.password, // Include password for Edge Function
         is_demo: false,
       };
 
       const promise = createUser(currentOrgId, newDriverData, currentAdminProfile.id, userRole);
       toast.promise(promise, {
         loading: 'Creating driver...',
-        success: 'Driver created successfully!',
+        success: (data) => {
+          setCredentials({ email: data.email!, password: data.generatedPassword });
+          return 'Driver created successfully! Please save their credentials.';
+        },
         error: (err) => `Failed to create driver: ${err.message || String(err)}`,
       });
       await promise;
@@ -124,6 +128,17 @@ const CreateDriver: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+      {credentials && (
+        <CredentialsDisplayDialog
+          open={!!credentials}
+          onClose={() => {
+            setCredentials(null);
+            navigate('/admin/users');
+          }}
+          email={credentials.email}
+          password={credentials.password}
+        />
+      )}
     </div>
   );
 };

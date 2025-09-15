@@ -58,7 +58,7 @@ serve(async (req) => {
 
     // 2) Parse body and determine operation
     const body = await req.json().catch(() => ({}));
-    const { op, id, full_name, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role, email, password } = body; // Added email and password
+    const { op, id, full_name, phone, dob, role, truck_reg, trailer_no, is_demo, profile_id, user_id, updates, org_id: body_org_id, actor_role, email } = body; // Removed password
 
     // Ensure org_id from body matches user's org_id
     if (body_org_id && body_org_id !== me.org_id) {
@@ -86,12 +86,17 @@ serve(async (req) => {
         break;
 
       case "create":
-        if (!full_name || !phone || !role || !email || !password) throw new Error("Missing required fields for user creation (full_name, phone, role, email, password).");
+        if (!full_name || !phone || !role || !email || !dob) throw new Error("Missing required fields for user creation (full_name, phone, role, email, dob).");
+
+        // Generate password from DOB (format: ddMMyyyy)
+        const [year, month, day] = dob.split('-');
+        const generatedPassword = `${day}${month}${year}`;
 
         const { data: createdAuthUser, error: cErr } = await admin.auth.admin.createUser({
           email,
-          password: password,
+          password: generatedPassword,
           email_confirm: true, // Auto-confirm for simplicity
+          user_metadata: { dob: dob }, // Store dob in metadata
         });
 
         if (cErr) throw new Error("Auth user creation failed: " + cErr.message);
@@ -157,7 +162,7 @@ serve(async (req) => {
           console.log("DEBUG: audit insert failed", (e as Error).message);
         }
 
-        resultData = updatedProfile;
+        resultData = { ...updatedProfile, generatedPassword };
         break;
 
       case "update":

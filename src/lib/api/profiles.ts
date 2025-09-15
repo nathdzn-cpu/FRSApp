@@ -55,11 +55,12 @@ interface CreateUserData {
   phone?: string;
   role: 'driver' | 'office' | 'admin';
   email: string;
-  password?: string;
   is_demo?: boolean;
 }
 
-export const createUser = async (orgId: string, userData: CreateUserData, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<Profile> => { // Added actorRole
+export type CreatedUserResult = Profile & { generatedPassword?: string };
+
+export const createUser = async (orgId: string, userData: CreateUserData, actorId: string, actorRole: 'admin' | 'office' | 'driver'): Promise<CreatedUserResult> => { // Added actorRole
   const payload = {
     op: "create",
     org_id: orgId,
@@ -67,7 +68,7 @@ export const createUser = async (orgId: string, userData: CreateUserData, actorI
     actor_role: actorRole, // Pass actor_role
     ...userData,
   };
-  const result = await callFn<Profile>('admin-users-management', payload);
+  const result = await callFn<CreatedUserResult>('admin-users-management', payload);
   return result;
 };
 

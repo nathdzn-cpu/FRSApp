@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import CreateOfficeForm from '@/components/admin/users/CreateOfficeForm';
 import { Card, CardContent } from '@/components/ui/card';
+import CredentialsDisplayDialog from '@/components/admin/users/CredentialsDisplayDialog';
 
 const CreateOffice: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const CreateOffice: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | undefined>(undefined);
+  const [credentials, setCredentials] = useState<{ email: string; password?: string } | null>(null);
 
   const currentOrgId = profile?.org_id;
 
@@ -54,19 +56,23 @@ const CreateOffice: React.FC = () => {
     }
 
     try {
+      const dobString = `${values.dob_year}-${values.dob_month}-${values.dob_day}`;
       const newOfficeData = {
         full_name: values.full_name,
         phone: values.phone,
         role: 'office' as const,
         email: values.email,
-        password: values.password,
+        dob: dobString,
         is_demo: false,
       };
 
       const promise = createUser(currentOrgId, newOfficeData, currentAdminProfile.id, userRole);
       toast.promise(promise, {
         loading: 'Creating office user...',
-        success: 'Office user created successfully!',
+        success: (data) => {
+          setCredentials({ email: data.email!, password: data.generatedPassword });
+          return 'Office user created successfully! Please save their credentials.';
+        },
         error: (err) => `Failed to create office user: ${err.message || String(err)}`,
       });
       await promise;
@@ -121,6 +127,17 @@ const CreateOffice: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+      {credentials && (
+        <CredentialsDisplayDialog
+          open={!!credentials}
+          onClose={() => {
+            setCredentials(null);
+            navigate('/admin/users');
+          }}
+          email={credentials.email}
+          password={credentials.password}
+        />
+      )}
     </div>
   );
 };
