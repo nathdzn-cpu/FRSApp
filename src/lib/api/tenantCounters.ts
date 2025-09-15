@@ -10,6 +10,21 @@ interface TenantCounter {
 
 const mockTenantCounters: TenantCounter[] = [];
 
+// This is a mock function. In a real app, this would be a Supabase RPC.
+export const generateNextRef = async (orgId: string): Promise<string> => {
+  await delay(50);
+  // Find the highest existing FRS-xxxx number for the tenant
+  const existingRefs = mockJobs
+    .filter(job => job.org_id === orgId && job.order_number.startsWith('FRS-')) // Changed job.org_id to job.org_id
+    .map(job => parseInt(job.order_number.substring(4), 10))
+    .filter(num => !isNaN(num));
+
+  const maxRef = existingRefs.length > 0 ? Math.max(...existingRefs) : 0;
+  const nextRefNum = maxRef + 1;
+
+  return `FRS-${nextRefNum.toString().padStart(3, '0')}`;
+};
+
 export const allocateJobRef = async (orgId: string, actorId: string): Promise<string> => { // Changed tenantId to orgId
   await delay(300); // Simulate database transaction delay
 

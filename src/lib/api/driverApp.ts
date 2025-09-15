@@ -9,6 +9,7 @@ import {
   ProfileDevice,
   DailyCheck,
   JobProgressLog,
+  mockAuditLogs,
 } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
@@ -179,7 +180,7 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   // Update driver's last location
   const driverProfile = mockProfiles.find(p => p.id === driverId);
   if (driverProfile) {
-    driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
+    driverProfile.last_location = JSON.stringify({ lat, lon, timestamp: new Date().toISOString() });
   }
 
   return newLog;

@@ -66,7 +66,6 @@ const Index = () => {
     queryFn: getTenants,
     staleTime: 5 * 60 * 1000,
     enabled: !!user && !!currentProfile && !isLoadingAuth,
-    onError: (err) => console.error("Tenants query failed", err),
   });
 
   // Set selectedOrgId once tenants and profile are loaded
@@ -77,7 +76,7 @@ const Index = () => {
   }, [tenants, currentProfile, selectedOrgId]);
 
   // Determine date filters for jobs query (using created_at)
-  const getJobDateFilters = useMemo(() => {
+  const { startDate, endDate } = useMemo(() => {
     let startDate: string | undefined;
     let endDate: string | undefined;
     const now = dayjs();
@@ -87,13 +86,13 @@ const Index = () => {
       endDate = now.endOf('day').toISOString();
     } else if (filterRange === 'week') {
       startDate = now.startOf('week').toISOString();
-      endDate = now.endOf('week').toISOString();
+      endDate = now.endOf('day').toISOString();
     } else if (filterRange === 'month') {
       startDate = now.startOf('month').toISOString();
-      endDate = now.endOf('month').toISOString();
+      endDate = now.endOf('day').toISOString();
     } else if (filterRange === 'year') {
       startDate = now.startOf('year').toISOString();
-      endDate = now.endOf('year').toISOString();
+      endDate = now.endOf('day').toISOString();
     } else if (filterRange === 'custom' && customStartDate && customEndDate) {
       startDate = dayjs(customStartDate).startOf('day').toISOString();
       endDate = dayjs(customEndDate).endOf('day').toISOString();
@@ -102,7 +101,7 @@ const Index = () => {
   }, [filterRange, customStartDate, customEndDate]);
 
   // Fetch profiles for the selected organization
-  const { data: profiles = [], isLoading: isLoadingProfiles } = useQuery<Profile[], Error>({
+  const { data: profiles = [], isLoading: isLoadingProfiles, error: profilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', selectedOrgId, userRole],
     queryFn: () => getProfiles(selectedOrgId!, userRole),
     staleTime: 5 * 60 * 1000,
@@ -135,9 +134,9 @@ const Index = () => {
 
   // Fetch jobs
   const { data: jobsData, isLoading: isLoadingJobs, error: jobsError } = useQuery({
-    queryKey: ['jobs', selectedOrgId, userRole, getJobDateFilters().startDate, getJobDateFilters().endDate, jobStatusFilter],
+    queryKey: ['jobs', selectedOrgId, userRole, startDate, endDate, jobStatusFilter],
     queryFn: async () => {
-        const { data } = await getJobs(selectedOrgId!, userRole, getJobDateFilters().startDate, getJobDateFilters().endDate, jobStatusFilter);
+        const { data } = await getJobs(selectedOrgId!, userRole, startDate, endDate, jobStatusFilter);
         return data;
     },
     enabled: !!selectedOrgId && !!userRole && !isLoadingAuth,
@@ -202,7 +201,7 @@ const Index = () => {
       for (const entry of sortedEntries) {
         const payload = {
           job_id: dialogState.job.id,
-          org_id: currentOrgId,
+          org_id: currentOrgId!,
           actor_id: currentProfile.id,
           actor_role: userRole,
           new_status: entry.status,
@@ -238,7 +237,7 @@ const Index = () => {
 
       const payload = {
         job_id: dialogState.job.id,
-        org_id: currentOrgId,
+        org_id: currentOrgId!,
         actor_id: currentProfile.id,
         actor_role: userRole,
         job_updates: jobUpdates,
@@ -269,7 +268,11 @@ const Index = () => {
     setDialogState({ type: null, job: null });
   };
 
-  const handleCancelJob = async (jobId: string, cancellationPrice?: number) => {
+  const handleCancelJob = async (job: Job) => {
+    setJobToCancel(job);
+  };
+
+  const handleConfirmCancel = async (jobId: string, cancellationPrice?: number) => {
     if (!currentOrgId || !currentProfile || !userRole) return;
     try {
       await cancelJob(jobId, currentOrgId, currentProfile.id, userRole, cancellationPrice);
@@ -347,7 +350,7 @@ const Index = () => {
         </div>
 
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
-          <ActiveJobBanner activeJobs={driverActiveJobs} onDismiss={() => queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] })} />
+          <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
 
         {/* Stat Cards Section */}
@@ -549,9 +552,11 @@ const Index = () => {
                   jobs={filteredJobs}
                   profiles={profiles}
                   userRole={userRole}
+                  currentProfile={currentProfile}
+                  currentOrgId={currentOrgId!}
                   onAction={handleJobTableAction}
                   onCancelJob={handleCancelJob}
-                  onViewDriver={setViewingDriver}
+                  onViewDriverProfile={handleViewDriverProfile}
                 />
               </div>
             )}
@@ -562,8 +567,11 @@ const Index = () => {
                   job={job}
                   profiles={profiles}
                   userRole={userRole}
+                  currentProfile={currentProfile}
+                  currentOrgId={currentOrgId!}
                   onAction={handleJobTableAction}
-                  onViewDriver={setViewingDriver}
+                  onCancelJob={handleCancelJob}
+                  onViewDriverProfile={handleViewDriverProfile}
                 />
               ))}
             </div>
@@ -574,7 +582,7 @@ const Index = () => {
       {/* Dialogs */}
       {viewingDriver && (
         <DriverDetailDialog
-          isOpen={!!viewingDriver}
+          open={!!viewingDriver}
           onOpenChange={() => setViewingDriver(null)}
           driver={viewingDriver}
           allJobs={jobs.filter(j => j.assigned_driver_id === viewingDriver.id)}
@@ -630,7 +638,7 @@ const Index = () => {
           open={!!jobToCancel}
           onOpenChange={(open) => !open && setJobToCancel(null)}
           job={jobToCancel}
-          onConfirm={handleCancelJob}
+          onConfirm={handleConfirmCancel}
           isCancelling={isActionBusy}
         />
       )}

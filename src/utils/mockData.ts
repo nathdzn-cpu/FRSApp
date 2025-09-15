@@ -29,7 +29,7 @@ export interface Profile {
   avatar_url?: string | null;
   dob?: string;
   phone?: string;
-  role: 'driver' | 'office' | 'admin';
+  role: 'driver' | 'office' | 'admin' | 'customer';
   user_id: string; // Corresponds to auth.users.id
   truck_reg?: string;
   trailer_no?: string;
@@ -108,25 +108,25 @@ export type JobStatus =
 export interface Job {
   id: string;
   org_id: string;
-  order_number: string; // Changed from 'ref'
+  order_number: string;
   status: JobStatus;
-  collection_date: string; // New field
-  delivery_date: string; // New field
-  price: number | null; // New field
-  assigned_driver_id?: string | null; // New field
-  notes?: string | null; // New field
+  collection_date: string;
+  delivery_date: string;
+  price: number | null;
+  assigned_driver_id: string | null;
+  notes: string | null;
   created_at: string;
-  deleted_at?: string | null; // Added for soft deletion
-  last_status_update_at?: string | null; // New field for last status update timestamp
-  pod_signature_path?: string | null; // New field for signature path
-  pod_signature_name?: string | null; // New field for signature name
-  overdue_notification_sent?: boolean; // New field for overdue tracking
-  // New fields from jobs_with_stop_details view
+  deleted_at?: string | null;
+  last_status_update_at?: string | null;
+  pod_signature_path?: string | null;
+  pod_signature_name?: string | null;
+  overdue_notification_sent?: boolean;
   collection_name?: string | null;
   collection_city?: string | null;
+  collection_postcode?: string | null;
   delivery_name?: string | null;
   delivery_city?: string | null;
-  delivery_postcode?: string | null; // Added
+  delivery_postcode?: string | null;
   created_by?: string;
 }
 
@@ -171,7 +171,7 @@ export interface JobProgressLog {
   org_id: string;
   job_id: string;
   actor_id: string;
-  actor_role: 'admin' | 'office' | 'driver';
+  actor_role: 'admin' | 'office' | 'driver' | 'customer';
   action_type: string;
   timestamp: string; // ISO 8601
   created_at: string; // ISO 8601
@@ -267,7 +267,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
     truck_reg: 'DA66 VED',
     trailer_no: 'TRL-007',
     created_at: new Date().toISOString(),
-    last_location: { lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() },
+    last_location: JSON.stringify({ lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() }),
     last_job_status: 'delivered',
     is_demo: true,
     email: 'dave.driver@example.com', // Added email

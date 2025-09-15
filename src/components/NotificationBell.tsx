@@ -31,7 +31,7 @@ const NotificationBell: React.FC = () => {
   // Fetch all profiles to get avatar_urls for notification actors
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['allProfilesForNotifications', currentUserProfile?.org_id],
-    queryFn: () => getProfiles(currentUserProfile!.org_id!, userRole),
+    queryFn: () => getProfiles(currentUserProfile!.org_id!, userRole as 'admin' | 'office' | 'driver'),
     enabled: !!currentUserProfile?.org_id && !!userRole,
     staleTime: 5 * 60 * 1000,
   });

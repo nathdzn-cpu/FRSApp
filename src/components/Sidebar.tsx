@@ -17,11 +17,11 @@ interface NavLinkItem {
   to: string;
   icon: React.ElementType;
   label: string;
-  roles?: Array<'admin' | 'office' | 'driver'>;
+  roles?: Array<'admin' | 'office' | 'driver' | 'customer'>;
 }
 
 const navLinks: NavLinkItem[] = [
-  { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
+  { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver', 'customer'] },
   { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] },
   { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
   { to: '/map', icon: Map, label: 'Map', roles: ['admin', 'office', 'driver'] },
@@ -36,7 +36,7 @@ const navLinks: NavLinkItem[] = [
 const Sidebar: React.FC = () => {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, userRole, logout, isOfficeOrAdmin } = useAuth();
+  const { user, profile, userRole, signOut, isOfficeOrAdmin } = useAuth();
   const navigate = useNavigate();
 
   const filteredNavLinks = navLinks.filter(link =>
@@ -125,7 +125,7 @@ const Sidebar: React.FC = () => {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-                <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut}>Log Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

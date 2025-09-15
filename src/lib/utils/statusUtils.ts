@@ -58,6 +58,7 @@ export const driverActionLabels: Record<Job['status'], string> = {
   'accepted': 'Start Job',
   'delivered': 'Job Complete',
   'cancelled': 'Job Cancelled',
+  'requested': 'Awaiting Approval',
 };
 
 // Driver action dialog prompt labels
@@ -74,6 +75,7 @@ export const driverPromptLabels: Record<Job['status'], string> = {
   'accepted': 'Start Job Time',
   'delivered': 'Job Completion Time',
   'cancelled': 'Job Cancellation Time',
+  'requested': 'Awaiting Approval',
 };
 
 export const getStatusVariant = (status: Job['status']): "default" | "destructive" | "outline" | "secondary" => {
