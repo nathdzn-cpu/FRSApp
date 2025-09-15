@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, getOrganisation } from '@/lib/api/jobs';
+import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,9 @@ import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobPdfDocument from '@/components/job-detail/JobPdfDocument';
 import { Job, JobStop, Document as JobDocument, JobProgressLog, Profile, Organisation } from '@/utils/mockData';
+import { getOrganisation } from '@/lib/api/organisation';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface JobFormValues {
   order_number?: string | null;
