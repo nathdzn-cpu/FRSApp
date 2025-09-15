@@ -55,6 +55,7 @@ interface CreateUserData {
   phone?: string;
   role: 'driver' | 'office' | 'admin';
   email: string;
+  password?: string;
   is_demo?: boolean;
 }
 

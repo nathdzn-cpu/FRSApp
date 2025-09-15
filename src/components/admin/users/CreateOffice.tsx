@@ -61,6 +61,7 @@ const CreateOffice: React.FC = () => {
         phone: values.phone,
         role: 'office' as const,
         email: values.email,
+        password: values.password,
         is_demo: false,
       };
 

@@ -24,6 +24,7 @@ const officeFormSchema = z.object({
   dob_day: z.string().min(1, { message: 'Day is required.' }),
   phone: z.string().min(1, { message: 'Contact number is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 type OfficeFormValues = z.infer<typeof officeFormSchema>;
@@ -42,6 +43,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
       dob_day: '',
       phone: '',
       email: '',
+      password: '',
     },
   });
 
@@ -99,7 +101,7 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Month" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl">
                         {months.map((month) => (
@@ -155,6 +157,19 @@ const CreateOfficeForm: React.FC<CreateOfficeFormProps> = ({ onSubmit }) => {
                   <FormLabel className="text-gray-700">Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="jane.doe@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="********" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
