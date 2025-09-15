@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobPdfDocument from '@/components/job-detail/JobPdfDocument';
 import { Job, JobStop, Document as JobDocument, JobProgressLog, Profile, Organisation } from '@/utils/mockData';
-import { getOrganisation } from '@/lib/api/organisation';
+import { getOrganisationDetails } from '@/lib/api/organisation';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -72,9 +72,9 @@ const JobDetail: React.FC = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentOrgId = profile?.org_id;
-  const organisation = useQuery<Organisation, Error>({
+  const { data: organisation } = useQuery<Organisation | null, Error>({
     queryKey: ['organisation', currentOrgId!],
-    queryFn: () => getOrganisation(currentOrgId!),
+    queryFn: () => getOrganisationDetails(currentOrgId!),
     enabled: !!currentOrgId,
   });
 
