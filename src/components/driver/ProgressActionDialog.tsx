@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { getOrganisation } from '@/lib/api/organisation';
+import { getOrganisationDetails as getOrganisation } from '@/lib/api/organisation';
 import { Organisation } from '@/utils/mockData';
 import { Phone } from 'lucide-react';
 
