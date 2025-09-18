@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Job, Profile } from "@/utils/mockData"
 import { DataTableColumnHeader } from "../data-table/DataTableColumnHeader"
 import { Badge } from "@/components/ui/badge"
-import { getDisplayStatus, getStatusVariant } from "@/lib/utils/statusUtils"
+import { getDisplayStatus, getStatusColorClass } from "@/lib/utils/statusUtils"
 import { format, parseISO } from "date-fns"
 import { formatAddressPart, formatPostcode, formatGBPDisplay } from "@/lib/utils/formatUtils"
 import {
@@ -56,11 +56,12 @@ export const getColumns = ({
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => {
-        const status = row.original.status
-        if (!status) return null
-
+        const status = row.getValue("status") as string;
         return (
-          <Badge variant={getStatusVariant(status)} className="capitalize">
+          <Badge
+            className={cn("text-xs capitalize", getStatusColorClass(status))}
+            variant="secondary"
+          >
             {getDisplayStatus(status)}
           </Badge>
         );

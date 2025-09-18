@@ -2,10 +2,10 @@ import { supabase } from '../supabaseClient';
 import { Job, Profile, Document } from '@/utils/mockData';
 
 // Fetch all jobs for the current organization
-export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'driver' | 'customer' | undefined, startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' | 'requested' = 'all'): Promise<{ data: Job[], count: number | null }> => {
+export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'driver' | undefined, startDate?: string, endDate?: string, statusFilter: 'all' | 'active' | 'completed' | 'cancelled' = 'all'): Promise<Job[]> => {
   let query = supabase
     .from('jobs_with_stop_details') // Use the view that includes stop details
-    .select('*', { count: 'exact' })
+    .select('*')
     .eq('org_id', orgId);
 
   if (userRole === 'driver') {
@@ -14,26 +14,16 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
       query = query.eq('assigned_driver_id', user.id);
     } else {
       console.warn("Driver role specified but no authenticated user found. Returning empty array.");
-      return { data: [], count: 0 };
-    }
-  } else if (userRole === 'customer') {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      query = query.eq('created_by', user.id);
-    } else {
-      console.warn("Customer role specified but no authenticated user found. Returning empty array.");
-      return { data: [], count: 0 };
+      return [];
     }
   }
 
   if (statusFilter === 'active') {
-    query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled","requested")');
+    query = query.filter('status', 'not.in', '("delivered","pod_received","cancelled")');
   } else if (statusFilter === 'completed') {
     query = query.in('status', ['delivered', 'pod_received']);
   } else if (statusFilter === 'cancelled') {
     query = query.eq('status', 'cancelled');
-  } else if (statusFilter === 'requested') {
-    query = query.eq('status', 'requested');
   }
 
   if (startDate) {
@@ -45,13 +35,13 @@ export const getJobs = async (orgId: string, userRole: 'admin' | 'office' | 'dri
 
   query = query.order('collection_date', { ascending: false });
 
-  const { data, error, count } = await query;
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching jobs:', error);
     throw new Error(error.message);
   }
-  return { data: data as Job[], count };
+  return data as Job[];
 };
 
 // Fetch a single job by its order number
@@ -269,7 +259,7 @@ export const cloneJob = async (
 ): Promise<Job> => {
   // This function is essentially a wrapper around createJob with pre-filled data.
   // The actual logic is in the createJob Edge Function.
-  return createJob(orgId, { ...jobData, notes: jobData.notes || null }, stopsData, actorId, actorRole);
+  return createJob(orgId, jobData, stopsData, actorId, actorRole);
 };
 
 // Cancel a job

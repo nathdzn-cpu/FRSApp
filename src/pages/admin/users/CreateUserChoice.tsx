@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Truck, Briefcase, Building, Loader2 } from 'lucide-react';
+import { ArrowLeft, Truck, Briefcase, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CreateUserChoice: React.FC = () => {
@@ -63,14 +63,6 @@ const CreateUserChoice: React.FC = () => {
               >
                 <Briefcase className="h-8 w-8 mb-2" />
                 Create Office User
-              </Button>
-              <Button
-                variant="outline"
-                className="h-32 flex flex-col items-center justify-center text-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600 sm:col-span-2"
-                onClick={() => navigate('/admin/users/new/customer')}
-              >
-                <Building className="h-8 w-8 mb-2" />
-                Create Customer
               </Button>
             </div>
           </CardContent>

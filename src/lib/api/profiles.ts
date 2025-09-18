@@ -53,10 +53,9 @@ interface CreateUserData {
   full_name: string;
   dob?: string;
   phone?: string;
-  role: 'driver' | 'office' | 'admin' | 'customer';
+  role: 'driver' | 'office' | 'admin';
   email: string;
   is_demo?: boolean;
-  company_name?: string;
 }
 
 export type CreatedUserResult = Profile & { generatedPassword?: string };

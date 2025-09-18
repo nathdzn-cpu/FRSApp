@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress, updateJobProgressLogVisibility } from '@/lib/api/jobs';
-import { getOrganisationDetails } from '@/lib/api/organisation';
+import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,16 +10,15 @@ import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JobPdfDocument from '@/components/job-detail/JobPdfDocument';
 import { Job, JobStop, Document as JobDocument, JobProgressLog, Profile, Organisation } from '@/utils/mockData';
-import DriverJobDetailView from '@/components/driver/DriverJobDetailView';
-import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
-import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
-import JobEditForm from '@/components/JobEditForm';
-import CloneJobDialog from '@/components/CloneJobDialog';
-import CancelJobDialog from '@/components/CancelJobDialog';
-import DriverDetailDialog from '@/components/DriverDetailDialog';
-import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
-import html2canvas from 'html2canvas';
+import { getOrganisationDetails } from '@/lib/api/organisation';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import JobDetailHeader from '@/components/job-detail/JobDetailHeader';
+import JobOverviewCard from '@/components/job-detail/JobOverviewCard';
+import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
+import CloneJobDialog from '@/components/CloneJobDialog';
+import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
+import CancelJobDialog from '@/components/CancelJobDialog';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -68,7 +66,8 @@ const JobDetail: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
+
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
@@ -76,12 +75,9 @@ const JobDetail: React.FC = () => {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
 
   const currentOrgId = profile?.org_id;
-  const isOfficeOrAdmin = userRole === 'office' || userRole === 'admin';
-
-  const { data: organisation, isLoading: isLoadingOrganisation } = useQuery<Organisation | null, Error>({
+  const { data: organisation } = useQuery<Organisation | null, Error>({
     queryKey: ['organisation', currentOrgId!],
     queryFn: () => getOrganisationDetails(currentOrgId!),
     enabled: !!currentOrgId,
@@ -90,61 +86,56 @@ const JobDetail: React.FC = () => {
   // Fetch profiles separately as they are needed for multiple queries and UI elements
   const { data: allProfiles = [], isLoading: isLoadingAllProfiles, error: allProfilesError } = useQuery<Profile[], Error>({
     queryKey: ['profiles', currentOrgId, userRole],
-    queryFn: () => getProfiles(currentOrgId!, userRole!),
+    queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
     enabled: !!user && !!profile && !isLoadingAuth && !!userRole,
   });
 
   // Use useQuery for job details, stops, and documents
-  const { data: job, isLoading: isLoadingJob, error: jobError, refetch: refetchJob } = useQuery<Job | null, Error>({
+  const { data: jobData, isLoading: isLoadingJob, error: jobError, refetch: refetchJobData } = useQuery<{
+    job: Job | undefined;
+    stops: JobStop[];
+    documents: JobDocument[];
+    progressLogs: JobProgressLog[];
+  }, Error>({
     queryKey: ['jobDetail', orderNumber, userRole],
-    queryFn: () => getJobById(currentOrgId!, orderNumber!, userRole!),
-    enabled: !!currentOrgId && !!orderNumber && !!userRole,
-  });
-
-  const { data: stops = [], refetch: refetchStops } = useQuery<JobStop[], Error>({
-    queryKey: ['jobStops', job?.id],
-    queryFn: () => getJobStops(currentOrgId!, job!.id),
-    enabled: !!currentOrgId && !!job,
-  });
-
-  const { data: documents = [], refetch: refetchDocuments } = useQuery<JobDocument[], Error>({
-    queryKey: ['jobDocuments', job?.id],
-    queryFn: () => getJobDocuments(currentOrgId!, job!.id),
-    enabled: !!currentOrgId && !!job,
-  });
-
-  const { data: progressLogs = [], refetch: refetchProgressLogs } = useQuery<JobProgressLog[], Error>({
-    queryKey: ['jobProgressLogs', job?.id],
-    queryFn: () => getJobProgressLogs(currentOrgId!, job!.id),
-    enabled: !!currentOrgId && !!job,
-  });
-
-  const { data: driverActiveJobs = [] } = useQuery<Job[], Error>({
-    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
     queryFn: async () => {
-      if (!currentOrgId) return [];
-      const { data } = await getJobs(currentOrgId, 'driver', undefined, undefined, 'active');
-      return data;
+      if (!orderNumber || !currentOrgId || !profile || !userRole) {
+        throw new Error("Missing job order number, organization ID, current profile, or user role.");
+      }
+
+      const fetchedJob = await getJobById(currentOrgId, orderNumber, userRole);
+      if (!fetchedJob) {
+        throw new Error("Job not found or you don't have permission to view it.");
+      }
+
+      const fetchedStops = await getJobStops(currentOrgId, fetchedJob.id);
+      const fetchedDocuments = await getJobDocuments(currentOrgId, fetchedJob.id);
+      const fetchedProgressLogs = await getJobProgressLogs(currentOrgId, fetchedJob.id);
+
+      return {
+        job: fetchedJob,
+        stops: fetchedStops,
+        documents: fetchedDocuments,
+        progressLogs: fetchedProgressLogs,
+      };
     },
-    staleTime: 30 * 1000,
-    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id,
+    enabled: !!orderNumber && !!currentOrgId && !!profile && !!userRole && !isLoadingAuth,
+    retry: false,
   });
+
+  const job = jobData?.job;
+  const stops = jobData?.stops || [];
+  const documents = jobData?.documents || [];
+  const progressLogs = jobData?.progressLogs || [];
 
   const driver = allProfiles.find(p => p.id === job?.assigned_driver_id);
 
-  const refetchJobData = () => {
-    refetchJob();
-    refetchStops();
-    refetchDocuments();
-    refetchProgressLogs();
-  };
-
-  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob || isLoadingOrganisation;
+  const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
 
   const handleRequestPod = async () => {
-    if (!job || !profile || !userRole || !currentOrgId) return;
+    if (!job || !profile || !userRole) return;
     const promise = requestPod(job.id, currentOrgId, profile.id, userRole);
     toast.promise(promise, {
       loading: 'Requesting POD...',
@@ -208,7 +199,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleCancelJob = async (cancellationPrice: number) => {
-    if (!job || !profile || !userRole || !currentOrgId) return;
+    if (!job || !profile || !userRole) return;
     const promise = cancelJob(job.id, currentOrgId, profile.id, userRole, cancellationPrice);
     toast.promise(promise, {
       loading: 'Cancelling job...',
@@ -220,62 +211,21 @@ const JobDetail: React.FC = () => {
     refetchJobData();
   };
 
-  const handleApproveRequest = async () => {
-    if (!job || !profile || !userRole || !currentOrgId) return;
-    setIsSubmittingEdit(true);
-    try {
-      const payload = {
-        job_id: job.id,
-        org_id: currentOrgId,
-        actor_id: profile.id,
-        actor_role: userRole,
-        job_updates: { status: 'planned' as const }, // Approve to 'planned' status
-      };
-      await updateJob(payload);
-      toast.success('Job request approved!');
-      refetchJobData();
-    } catch (err) {
-      toast.error('Failed to approve job request.');
-    } finally {
-      setIsSubmittingEdit(false);
-    }
-  };
-
-  const handleRejectRequest = async () => {
-    if (!job || !profile || !userRole || !currentOrgId) return;
-    setIsSubmittingEdit(true);
-    try {
-      const payload = {
-        job_id: job.id,
-        org_id: currentOrgId,
-        actor_id: profile.id,
-        actor_role: userRole,
-        job_updates: { status: 'cancelled' as const }, // Reject to 'cancelled' status
-      };
-      await updateJob(payload);
-      toast.success('Job request rejected.');
-      refetchJobData();
-    } catch (err) {
-      toast.error('Failed to reject job request.');
-    } finally {
-      setIsSubmittingEdit(false);
-    }
-  };
-
   const handleEditSubmit = async (values: any) => {
-    if (!job || !profile || !userRole || !currentOrgId) {
+    if (!job || !profile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot update job.");
       return;
     }
 
     setIsSubmittingEdit(true);
     try {
-      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
-      const updatedStops = [...values.collections, ...values.deliveries];
+      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : []));
 
-      const stops_to_add = updatedStops.filter(s => !s.id);
-      const stops_to_update = updatedStops.filter(s => s.id && originalStopsMap.has(s.id));
-      const stops_to_delete = stops.filter(s => !updatedStops.some(ns => ns.id === s.id)).map(s => s.id);
+      const allNewStops = [...values.collections, ...values.deliveries];
+
+      const stops_to_add = allNewStops.filter(s => !s.id);
+      const stops_to_update = allNewStops.filter(s => s.id && originalStopsMap.has(s.id));
+      const stops_to_delete = stops.filter(s => !allNewStops.some(ns => ns.id === s.id)).map(s => s.id);
 
       const jobUpdates: Partial<Job> = {
         order_number: values.order_number || null,
@@ -316,7 +266,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleAssignDriver = async (driverId: string | null) => {
-    if (!job || !profile || !userRole || !currentOrgId) {
+    if (!job || !profile || !userRole) {
       toast.error("Job or user profile/role not found. Cannot assign driver.");
       return;
     }
@@ -352,7 +302,7 @@ const JobDetail: React.FC = () => {
   };
 
   const handleUpdateProgress = async (entries: ProgressUpdateEntry[]) => {
-    if (!job || !profile || !userRole || entries.length === 0 || !currentOrgId) {
+    if (!job || !profile || !userRole || entries.length === 0) {
       toast.error("No status updates to log.");
       return;
     }
@@ -388,23 +338,9 @@ const JobDetail: React.FC = () => {
   };
 
   const handleLogVisibilityChange = async (logId: string, isVisible: boolean) => {
-    if (!profile || !userRole || !currentOrgId) {
-      toast.error("User profile or organization ID not found. Cannot update log visibility.");
-      return;
-    }
-    try {
-      await updateJobProgressLogVisibility({
-        log_id: logId,
-        org_id: currentOrgId,
-        actor_id: profile.id,
-        actor_role: userRole,
-        visible_in_timeline: isVisible,
-      });
-      toast.success(`Log visibility updated.`);
-      refetchProgressLogs();
-    } catch (error: any) {
-      toast.error(`Failed to update log visibility: ${error.message}`);
-    }
+    // This functionality can be fully implemented later.
+    console.log(`Visibility change for log ${logId} to ${isVisible}`);
+    toast.info("Log visibility change is not yet implemented.");
   };
 
   if (isLoading) {
@@ -447,10 +383,9 @@ const JobDetail: React.FC = () => {
         progressLogs={progressLogs}
         documents={documents}
         currentProfile={profile!}
-        currentOrgId={currentOrgId!}
+        currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
-        driverActiveJobs={driverActiveJobs}
       />
     );
   }
@@ -462,20 +397,6 @@ const JobDetail: React.FC = () => {
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
-
-        {isOfficeOrAdmin && job?.status === 'requested' && (
-          <Card className="bg-orange-100 border-orange-300 p-4 mb-6 flex items-center justify-between">
-            <p className="text-orange-800 font-semibold">This job is a customer request and is awaiting approval.</p>
-            <div className="flex gap-2">
-              <Button onClick={handleApproveRequest} disabled={isSubmittingEdit} className="bg-green-600 hover:bg-green-700">
-                {isSubmittingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
-              </Button>
-              <Button onClick={handleRejectRequest} disabled={isSubmittingEdit} variant="destructive">
-                {isSubmittingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
-              </Button>
-            </div>
-          </Card>
-        )}
 
         <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
           <JobDetailHeader
@@ -496,7 +417,6 @@ const JobDetail: React.FC = () => {
             isAssigningDriver={isAssigningDriver}
             isUpdatingProgress={isUpdatingProgress}
             isExportingPdf={isExportingPdf}
-            driverActiveJobs={driverActiveJobs}
           />
           <JobOverviewCard
             job={job}
@@ -511,8 +431,8 @@ const JobDetail: React.FC = () => {
           allProfiles={allProfiles}
           stops={stops}
           documents={documents}
-          currentOrgId={currentOrgId!}
-          onLogVisibilityChange={refetchProgressLogs}
+          currentOrgId={currentOrgId}
+          onLogVisibilityChange={handleLogVisibilityChange}
         />
 
         {job && (

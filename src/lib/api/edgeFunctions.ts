@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { mockJobs, mockAuditLogs, mockJobStops, mockProfileDevices, Job, mockProfiles, ProfileDevice } from '@/utils/mockData'; // Added mockProfiles
+import { mockJobs, mockAuditLogs, mockJobStops, mockProfileDevices, Job, mockProfiles } from '@/utils/mockData'; // Added mockProfiles
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
 
@@ -35,7 +35,7 @@ export const recordLocationPing = async (jobId: string, orgId: string, driverId:
   // Update driver's last location
   const driverProfile = mockProfiles.find(p => p.id === driverId); // Corrected to use mockProfiles
   if (driverProfile) {
-    driverProfile.last_location = JSON.stringify({ lat, lon, timestamp: new Date().toISOString() });
+    driverProfile.last_location = { lat, lon, timestamp: new Date().toISOString() };
   }
 
   return newLog; // Return the inserted log entry

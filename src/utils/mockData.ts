@@ -18,8 +18,6 @@ export interface Organisation {
   postcode?: string | null;
   contact_number?: string | null;
   website?: string | null;
-  display_id: string;
-  organisation_key?: string;
 }
 
 export interface Profile {
@@ -29,16 +27,15 @@ export interface Profile {
   avatar_url?: string | null;
   dob?: string;
   phone?: string;
-  role: 'driver' | 'office' | 'admin' | 'customer';
+  role: 'driver' | 'office' | 'admin';
   user_id: string; // Corresponds to auth.users.id
   truck_reg?: string;
   trailer_no?: string;
   created_at: string;
-  last_location?: string | null;
-  last_job_status?: string | null;
-  is_demo?: boolean; // New field
+  last_location?: { lat: number; lon: number; timestamp: string };
+  last_job_status?: string;
+  is_demo: boolean; // New field
   email?: string; // Added email field
-  company_name?: string | null;
 }
 
 export interface DailyChecklist {
@@ -91,43 +88,28 @@ export interface DailyCheck {
   created_at: string;
 }
 
-export type JobStatus =
-  | 'planned'
-  | 'assigned'
-  | 'accepted'
-  | 'delivered'
-  | 'cancelled'
-  | 'on_route_collection'
-  | 'at_collection'
-  | 'loaded'
-  | 'on_route_delivery'
-  | 'at_delivery'
-  | 'pod_received'
-  | 'requested'; // Added requested status
-
 export interface Job {
   id: string;
   org_id: string;
-  order_number: string;
-  status: JobStatus;
-  collection_date: string;
-  delivery_date: string;
-  price: number | null;
-  assigned_driver_id: string | null;
-  notes: string | null;
+  order_number: string; // Changed from 'ref'
+  status: 'planned' | 'assigned' | 'accepted' | 'delivered' | 'cancelled' | 'on_route_collection' | 'at_collection' | 'loaded' | 'on_route_delivery' | 'at_delivery' | 'pod_received'; // Renamed 'in_progress' to 'accepted'
+  collection_date: string; // New field
+  delivery_date: string; // New field
+  price: number | null; // New field
+  assigned_driver_id?: string | null; // New field
+  notes?: string | null; // New field
   created_at: string;
-  deleted_at?: string | null;
-  last_status_update_at?: string | null;
-  pod_signature_path?: string | null;
-  pod_signature_name?: string | null;
-  overdue_notification_sent?: boolean;
+  deleted_at?: string | null; // Added for soft deletion
+  last_status_update_at?: string | null; // New field for last status update timestamp
+  pod_signature_path?: string | null; // New field for signature path
+  pod_signature_name?: string | null; // New field for signature name
+  overdue_notification_sent?: boolean; // New field for overdue tracking
+  // New fields from jobs_with_stop_details view
   collection_name?: string | null;
   collection_city?: string | null;
-  collection_postcode?: string | null;
   delivery_name?: string | null;
   delivery_city?: string | null;
-  delivery_postcode?: string | null;
-  created_by?: string;
+  delivery_postcode?: string | null; // Added
 }
 
 export interface JobStop {
@@ -159,8 +141,8 @@ export interface Document {
 
 export interface ProfileDevice {
   id: string;
-  profile_id: string;
   org_id: string;
+  profile_id: string;
   platform: 'ios' | 'android';
   expo_push_token: string;
   created_at: string;
@@ -171,7 +153,7 @@ export interface JobProgressLog {
   org_id: string;
   job_id: string;
   actor_id: string;
-  actor_role: 'admin' | 'office' | 'driver' | 'customer';
+  actor_role: 'admin' | 'office' | 'driver';
   action_type: string;
   timestamp: string; // ISO 8601
   created_at: string; // ISO 8601
@@ -267,7 +249,7 @@ export let mockProfiles: Profile[] = [ // Made mutable
     truck_reg: 'DA66 VED',
     trailer_no: 'TRL-007',
     created_at: new Date().toISOString(),
-    last_location: JSON.stringify({ lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() }),
+    last_location: { lat: 51.5, lon: -0.1, timestamp: new Date().toISOString() },
     last_job_status: 'delivered',
     is_demo: true,
     email: 'dave.driver@example.com', // Added email

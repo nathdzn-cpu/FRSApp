@@ -151,7 +151,7 @@ serve(async (req) => {
     // Fetch the existing job to compare and apply role-based restrictions
     const { data: existingJob, error: fetchJobError } = await admin
       .from("jobs")
-      .select("status, assigned_driver_id, notes, order_number, created_by") // Fetch created_by for notifications
+      .select("status, assigned_driver_id, notes, order_number") // Fetch order_number for notifications
       .eq("id", job_id)
       .eq("org_id", org_id)
       .single();
@@ -236,33 +236,6 @@ serve(async (req) => {
         if (progressLogError) {
           console.error("DEBUG: progress log insert failed for status change in update-job", progressLogError.message);
         }
-
-        // Notify customer if their request was approved or rejected
-        if (oldStatus === 'requested' && existingJob.created_by) {
-          let notificationTitle = '';
-          let notificationMessage = '';
-
-          if (finalJobUpdates.status === 'accepted' || finalJobUpdates.status === 'planned') {
-            notificationTitle = 'Job Request Approved';
-            notificationMessage = `Your job request ${existingJob.order_number} has been approved.`;
-          } else if (finalJobUpdates.status === 'cancelled') {
-            notificationTitle = 'Job Request Rejected';
-            notificationMessage = `Your job request ${existingJob.order_number} has been rejected.`;
-          }
-
-          if (notificationTitle) {
-            const { error: customerNotificationError } = await admin.from('notifications').insert({
-              user_id: existingJob.created_by,
-              org_id: org_id,
-              title: notificationTitle,
-              message: notificationMessage,
-              link_to: `/jobs/${existingJob.order_number}`,
-            });
-            if (customerNotificationError) {
-              console.error("Error creating notification for customer:", customerNotificationError.message);
-            }
-          }
-        }
       }
 
       // If driver reassigned, log to job_progress_log and send notifications
@@ -325,6 +298,7 @@ serve(async (req) => {
           // We still need to get the name of the person who performed the action.
           newDriverName = "Unassigned";
         }
+
 
         // Log reassignment to job_progress_log
         const { error: reassignmentLogError } = await admin

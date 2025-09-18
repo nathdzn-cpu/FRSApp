@@ -1,12 +1,14 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Truck, MapPin, Calendar, PoundSterling } from 'lucide-react';
+import { CardContent } from '@/components/ui/card';
 import { Job, JobStop, Profile } from '@/utils/mockData';
+import JobStopsList from '@/components/JobStopsList';
 import { format, parseISO } from 'date-fns';
-import { formatGBP } from '@/lib/money';
+import { Clock, MapPin } from 'lucide-react';
+import { getDisplayStatus } from '@/lib/utils/statusUtils';
+import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface JobOverviewCardProps {
   job: Job;
@@ -15,66 +17,72 @@ interface JobOverviewCardProps {
 }
 
 const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfiles }) => {
-  const driver = allProfiles.find(p => p.id === job.assigned_driver_id);
   const collectionStops = stops.filter(s => s.type === 'collection');
   const deliveryStops = stops.filter(s => s.type === 'delivery');
 
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const assignedDriver = job.assigned_driver_id
+    ? allProfiles.find(p => p.id === job.assigned_driver_id)
+    : undefined;
+
+  const driverInitials = assignedDriver?.full_name
+    ? assignedDriver.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    : 'UA';
 
   return (
-    <CardContent className="p-0 pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="flex items-start space-x-4">
-        <Truck className="h-6 w-6 text-gray-500 mt-1" />
+    <CardContent className="p-0 pt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700">
         <div>
-          <p className="text-sm font-medium text-gray-500">Driver</p>
-          {driver ? (
-            <div className="flex items-center gap-2 mt-1">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={driver.avatar_url || undefined} alt={driver.full_name} />
-                <AvatarFallback>{getInitials(driver.full_name)}</AvatarFallback>
+          <p className="font-medium text-gray-900">Collection Date:</p>
+          <p>{format(new Date(job.collection_date), 'PPP')}</p>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900">Delivery Date:</p>
+          <p>{format(new Date(job.delivery_date), 'PPP')}</p>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900">Assigned Driver:</p>
+          {assignedDriver ? (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-7 w-7">
+                {assignedDriver.avatar_url ? (
+                  <AvatarImage src={assignedDriver.avatar_url} alt={assignedDriver.full_name} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
+                    {driverInitials}
+                  </AvatarFallback>
+                )}
               </Avatar>
-              <div>
-                <p className="font-semibold text-gray-800">{driver.full_name}</p>
-                <p className="text-xs text-gray-500">{driver.truck_reg || 'No truck assigned'}</p>
-              </div>
+              <p>{assignedDriver.full_name}</p>
             </div>
           ) : (
-            <p className="font-semibold text-gray-800">Unassigned</p>
+            <p>Unassigned</p>
           )}
         </div>
-      </div>
-
-      <div className="flex items-start space-x-4">
-        <MapPin className="h-6 w-6 text-gray-500 mt-1" />
-        <div>
-          <p className="text-sm font-medium text-gray-500">Route</p>
-          <p className="font-semibold text-gray-800">
-            {collectionStops.length} Collection{collectionStops.length !== 1 ? 's' : ''}
-          </p>
-          <p className="font-semibold text-gray-800">
-            {deliveryStops.length} Delivery{deliveryStops.length !== 1 ? 's' : ''}
+        <div className="lg:col-span-1">
+          <p className="font-medium text-gray-900">Notes:</p>
+          <p>{job.notes || '-'}</p>
+        </div>
+        <div className="lg:col-span-1">
+          <p className="font-medium text-gray-900">Last Status Update:</p>
+          <p className="flex items-center gap-1">
+            <Clock className="h-4 w-4 text-gray-500" />
+            {job.last_status_update_at ? format(parseISO(job.last_status_update_at), 'PPP HH:mm') : 'N/A'}
           </p>
         </div>
       </div>
 
-      <div className="flex items-start space-x-4">
-        <Calendar className="h-6 w-6 text-gray-500 mt-1" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[var(--saas-border)]">
         <div>
-          <p className="text-sm font-medium text-gray-500">Dates</p>
-          <p className="font-semibold text-gray-800">
-            Collect: {format(parseISO(job.collection_date), 'PPP')}
+          <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
+            <MapPin className="h-4 w-4 text-blue-600" /> Collections:
           </p>
-          <p className="font-semibold text-gray-800">
-            Deliver: {format(parseISO(job.delivery_date), 'PPP')}
-          </p>
+          <JobStopsList stops={collectionStops} type="collection" />
         </div>
-      </div>
-
-      <div className="flex items-start space-x-4">
-        <PoundSterling className="h-6 w-6 text-gray-500 mt-1" />
         <div>
-          <p className="text-sm font-medium text-gray-500">Price</p>
-          <p className="font-semibold text-gray-800">{formatGBP(job.price || 0)}</p>
+          <p className="font-medium text-gray-900 flex items-center gap-1 mb-2">
+            <MapPin className="h-4 w-4 text-green-600" /> Deliveries:
+          </p>
+          <JobStopsList stops={deliveryStops} type="delivery" />
         </div>
       </div>
     </CardContent>

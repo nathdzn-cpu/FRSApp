@@ -6,19 +6,22 @@ import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { Profile } from '@/utils/mockData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getProfileByAuthId } from '@/lib/api/profiles';
 
-type UserRole = 'admin' | 'office' | 'driver' | 'customer' | undefined;
+type UserRole = 'admin' | 'office' | 'driver' | undefined;
 
 interface AuthContextType {
+  session: Session | null;
   user: User | null;
   profile: Profile | null;
-  userRole: UserRole | undefined;
+  userRole: UserRole;
   isLoadingAuth: boolean;
   isAdmin: boolean;
+  isOffice: boolean;
+  isDriver: boolean;
   isOfficeOrAdmin: boolean;
-  signOut: () => Promise<void>;
-  supabase: typeof supabase;
+  login: (organisationKey: string, userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +30,7 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
   const [session, setSession] = useState<Session | null>(initialSession);
   const [user, setUser] = useState<User | null>(initialUser);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | undefined>();
+  const [userRole, setUserRole] = useState<UserRole>(undefined);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -281,18 +284,11 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     }
   };
 
-  const value = {
-    user,
-    profile,
-    userRole,
-    isLoadingAuth,
-    isAdmin: userRole === 'admin',
-    isOfficeOrAdmin: userRole === 'admin' || userRole === 'office',
-    signOut: logout,
-    supabase,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, isAdmin, isOffice, isDriver, isOfficeOrAdmin, login, logout, refreshProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
