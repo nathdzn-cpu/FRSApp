@@ -245,7 +245,6 @@ const JobDetail: React.FC = () => {
         price: values.price,
         assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
         notes: values.notes,
-        status: values.status,
       };
 
       const payload = {

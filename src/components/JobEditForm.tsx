@@ -33,7 +33,6 @@ const JobEditForm: React.FC<JobEditFormProps> = ({ initialJob, initialStops, dri
       price: initialJob.price,
       assigned_driver_id: initialJob.assigned_driver_id || null,
       notes: initialJob.notes || '',
-      status: initialJob.status,
       collections: initialStops.filter(stop => stop.type === 'collection').map(stop => ({
         ...stop,
         window_from: stop.window_from || '',
