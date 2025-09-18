@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Version control
+.git/
+
+# Build outputs
+dist/
+build/
+.next/
+.vite/
+.vite-temp/
+coverage/
+.turbo/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Cache
+*.cache
+
+# Static assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+*.webm
+*.mp3
+*.wav
+
+# Platform specific
+ios/App/App/public/
+android/app/src/main/assets/public/
