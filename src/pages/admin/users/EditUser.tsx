@@ -19,7 +19,7 @@ const EditUser: React.FC = () => {
 
   const { data: userToEdit, isLoading, error } = useQuery<Profile | null, Error>({
     queryKey: ['profile', id, currentOrgId],
-    queryFn: () => getProfileById(id!, currentOrgId!),
+    queryFn: () => getProfileById(id!),
     enabled: !!id && !!currentOrgId,
   });
 
@@ -29,7 +29,7 @@ const EditUser: React.FC = () => {
       return;
     }
 
-    const promise = updateUser(id, currentOrgId, currentProfile.id, userRole, values);
+    const promise = updateUser(currentOrgId, id, values, currentProfile.id, userRole);
 
     toast.promise(promise, {
       loading: 'Updating user...',
@@ -79,7 +79,7 @@ const EditUser: React.FC = () => {
       </Button>
       <h1 className="text-2xl font-bold mb-6">Edit User: {userToEdit.full_name}</h1>
       <EditUserForm
-        user={userToEdit}
+        userToEdit={userToEdit}
         onSubmit={handleUpdateUser}
       />
     </div>

@@ -134,7 +134,7 @@ const Quotes: React.FC = () => {
     if (editingQuote) {
       updateQuoteMutation.mutate(values);
     } else {
-      createQuoteMutation.mutate(values);
+      createQuoteMutation.mutate(values as CreateQuotePayload);
     }
   };
 

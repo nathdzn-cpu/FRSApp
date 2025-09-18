@@ -13,15 +13,14 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
-  userRole: UserRole;
-  isLoadingAuth: boolean;
+  userRole: 'admin' | 'office' | 'driver' | undefined;
   isAdmin: boolean;
   isOffice: boolean;
-  isDriver: boolean;
   isOfficeOrAdmin: boolean;
-  login: (organisationKey: string, userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  isDriver: boolean;
+  isLoadingAuth: boolean;
   logout: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  currentOrgId: string | undefined;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,8 +36,8 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
 
   const isAdmin = userRole === 'admin';
   const isOffice = userRole === 'office';
+  const isOfficeOrAdmin = userRole === 'admin' || userRole === 'office';
   const isDriver = userRole === 'driver';
-  const isOfficeOrAdmin = isAdmin || isOffice;
 
   const currentUserIdRef = useRef<string | null>(initialUser?.id || null);
 
@@ -284,11 +283,21 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ session, user, profile, userRole, isLoadingAuth, isAdmin, isOffice, isDriver, isOfficeOrAdmin, login, logout, refreshProfile }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    session,
+    user,
+    profile,
+    userRole,
+    isAdmin,
+    isOffice,
+    isOfficeOrAdmin,
+    isDriver,
+    isLoadingAuth,
+    logout: logout,
+    currentOrgId: profile?.org_id,
+  };
+
+  return <AuthContext.Provider value={value} {...props} />;
 };
 
 export const useAuth = () => {

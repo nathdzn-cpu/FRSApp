@@ -125,15 +125,15 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
 
   const handleAddressSelect = (index: number, type: 'collections' | 'deliveries', address: SavedAddress) => {
     const fieldNamePrefix = `${type}.${index}`;
-    form.setValue(`${fieldNamePrefix}.name`, address.name || toTitleCase(address.line_1));
-    form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
-    form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2);
-    form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
-    form.setValue(`${fieldNamePrefix}.county`, address.county || null); // Added county
-    form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
-    form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
-    form.trigger(`${fieldNamePrefix}.city`);
-    form.trigger(`${fieldNamePrefix}.postcode`);
+    form.setValue(`${fieldNamePrefix}.name` as any, address.name || toTitleCase(address.line_1));
+    form.setValue(`${fieldNamePrefix}.address_line1` as any, address.line_1);
+    form.setValue(`${fieldNamePrefix}.address_line2` as any, address.line_2);
+    form.setValue(`${fieldNamePrefix}.city` as any, address.town_or_city);
+    form.setValue(`${fieldNamePrefix}.county` as any, address.county || null); // Added county
+    form.setValue(`${fieldNamePrefix}.postcode` as any, address.postcode);
+    form.trigger(`${fieldNamePrefix}.address_line1` as any); // Trigger validation
+    form.trigger(`${fieldNamePrefix}.city` as any);
+    form.trigger(`${fieldNamePrefix}.postcode` as any);
   };
 
   const JobStopsSubForm = ({ type, form, isSubmitting }: { type: 'collections' | 'deliveries', form: UseFormReturn<JobFormValues>, isSubmitting: boolean }) => {

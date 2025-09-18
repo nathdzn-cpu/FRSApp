@@ -44,6 +44,20 @@ export const getProfileByAuthId = async (authUserId: string): Promise<Profile | 
   return data as Profile | undefined;
 };
 
+export const getProfileById = async (profileId: string): Promise<Profile | null> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", profileId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+    console.error("Error fetching profile by ID:", error);
+    throw new Error(error.message);
+  }
+  return data as Profile | null;
+};
+
 export const getUsersForAdmin = async (orgId: string): Promise<Profile[]> => {
   const result = await callFn<Profile[]>('admin-users-management', { op: "read_all", org_id: orgId });
   return result;

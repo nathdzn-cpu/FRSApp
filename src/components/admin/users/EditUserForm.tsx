@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Profile } from '@/utils/mockData';
 
-const editUserFormSchema = z.object({
+const formSchema = z.object({
   full_name: z.string().min(1, { message: 'Full name is required.' }),
   dob: z.date().optional().nullable(),
   phone: z.string().min(1, { message: 'Contact number is required.' }).optional().or(z.literal('')),
@@ -26,24 +26,24 @@ const editUserFormSchema = z.object({
   trailer_no: z.string().optional().or(z.literal('')),
 });
 
-type EditUserFormValues = z.infer<typeof editUserFormSchema>;
+type EditUserFormValues = z.infer<typeof formSchema>;
 
 interface EditUserFormProps {
-  onSubmit: (values: EditUserFormValues) => void;
-  defaultValues: Profile;
+  userToEdit: Profile;
+  onSubmit: (values: any) => void;
 }
 
-const EditUserForm: React.FC<EditUserFormProps> = ({ onSubmit, defaultValues }) => {
+const EditUserForm: React.FC<EditUserFormProps> = ({ userToEdit, onSubmit }) => {
   const form = useForm<EditUserFormValues>({
-    resolver: zodResolver(editUserFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      full_name: defaultValues.full_name,
-      dob: defaultValues.dob ? parseISO(defaultValues.dob) : undefined,
-      phone: defaultValues.phone || '',
-      role: defaultValues.role,
+      full_name: userToEdit.full_name || '',
+      dob: userToEdit.dob ? parseISO(userToEdit.dob) : undefined,
+      phone: userToEdit.phone || '',
+      role: userToEdit.role || 'driver',
       // user_id removed from defaultValues
-      truck_reg: defaultValues.truck_reg || '',
-      trailer_no: defaultValues.trailer_no || '',
+      truck_reg: userToEdit.truck_reg || '',
+      trailer_no: userToEdit.trailer_no || '',
     },
   });
 

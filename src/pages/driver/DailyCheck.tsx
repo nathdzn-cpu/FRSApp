@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
 import { DailyCheckItem, Profile } from '@/utils/mockData';
-import { submitDailyCheck } from '@/lib/api/dailyCheckResponses';
+import { submitDailyCheck } from '@/lib/api/driverApp';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Camera, CheckCircle2, XCircle } from 'lucide-react';

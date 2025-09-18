@@ -47,7 +47,7 @@ export const computeNextDriverAction = (
   }
 
   // If job is not yet accepted by the assigned driver, the first action is to accept it
-  if (job.status === 'planned' || job.status === 'assigned') {
+  if ((job.status as string) === 'planned' || (job.status as string) === 'assigned') {
     return {
       label: driverActionLabels['accepted'], // "Accept Job"
       nextStatus: 'accepted',
@@ -62,7 +62,7 @@ export const computeNextDriverAction = (
   if (safeStops.length === 0) {
     console.error(`Job ${job.order_number} has no stops defined. Cannot compute next driver action.`);
     // Allow accepting the job even if stops are not loaded
-    if (job.status === 'assigned' || job.status === 'planned') {
+    if ((job.status as string) === 'assigned' || (job.status as string) === 'planned') {
       return {
         label: driverActionLabels['accepted'],
         nextStatus: 'accepted',
