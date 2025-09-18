@@ -1,9 +1,20 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(() => ({
   server: {
-    port: 5173,
+    host: "::",
+    port: 8080,
+    hmr: { // Disable HMR overlay to prevent potential full page reloads on tab switch
+      overlay: false,
+    },
   },
-});
+  plugins: [dyadComponentTagger(), react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+}));

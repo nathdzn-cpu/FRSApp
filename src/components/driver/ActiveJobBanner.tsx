@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Alert, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Job } from "@/utils/mockData";
+import React, { useState, useEffect } from 'react';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Job } from '@/utils/mockData';
+import { Link } from 'react-router-dom';
 
 interface ActiveJobBannerProps {
   activeJobs: Job[];
