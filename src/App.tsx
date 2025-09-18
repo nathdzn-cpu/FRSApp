@@ -86,17 +86,17 @@ const AppContent = () => {
               <Route path="/daily-check" element={<DriverDailyCheck />} />
               <Route path="/map" element={<Map />} />
               <Route path="/quotes" element={<Quotes />} />
-              <Route path="/admin/checklists" element={<AdminRoute children={<AdminChecklists />} />} />
-              <Route path="/admin/users" element={<AdminRoute children={<AdminUsersPage />} />} />
-              <Route path="/admin/users/new" element={<AdminRoute children={<CreateUserChoice />} />} />
-              <Route path="/admin/users/new/driver" element={<AdminRoute children={<CreateDriver />} />} />
-              <Route path="/admin/users/new/office" element={<AdminRoute children={<CreateOffice />} />} />
-              <Route path="/admin/users/:id/edit" element={<AdminRoute children={<EditUser />} />} />
-              <Route path="/admin/daily-checks" element={<AdminRoute children={<AdminDailyChecks />} />} />
-              <Route path="/admin/saved-addresses" element={<AdminRoute children={<AdminSavedAddresses />} />} />
+              <Route path="/admin/checklists" element={<AdminRoute><AdminChecklists /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+              <Route path="/admin/users/new" element={<AdminRoute><CreateUserChoice /></AdminRoute>} />
+              <Route path="/admin/users/new/driver" element={<AdminRoute><CreateDriver /></AdminRoute>} />
+              <Route path="/admin/users/new/office" element={<AdminRoute><CreateOffice /></AdminRoute>} />
+              <Route path="/admin/users/:id/edit" element={<AdminRoute><EditUser /></AdminRoute>} />
+              <Route path="/admin/daily-checks" element={<AdminRoute><AdminDailyChecks /></AdminRoute>} />
+              <Route path="/admin/saved-addresses" element={<AdminRoute><AdminSavedAddresses /></AdminRoute>} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/env-debug" element={<EnvDebug />} />
-              <Route path="/admin/billing" element={<AdminRoute children={<BillingPage />} />} />
+              <Route path="/admin/billing" element={<AdminRoute><BillingPage /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

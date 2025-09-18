@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,27 +10,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import SignUpDialog from '@/components/auth/SignUpDialog';
+import { supabase } from '@/lib/supabaseClient';
 
 const LoginPage: React.FC = () => {
-  const [organisationKey, setOrganisationKey] = useState('');
-  const [userIdOrEmail, setUserIdOrEmail] = useState('');
+  const { user, login, isLoadingAuth } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [organisationKey, setOrganisationKey] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const { login, isLoadingAuth } = useAuth();
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
+    setIsSubmitting(true);
 
-    if (!organisationKey || !userIdOrEmail || !password) {
-      setLocalError("Please enter Organisation Key, User ID/Email, and password.");
+    if (!organisationKey || !email || !password) {
+      setLocalError("Please enter Organisation Key, Email, and password.");
+      setIsSubmitting(false);
       return;
     }
 
-    const { success, error } = await login(organisationKey, userIdOrEmail, password);
+    const { success, error } = await login(organisationKey, email, password);
     if (!success && error) {
       setLocalError(error);
+      setIsSubmitting(false);
     }
   };
 
@@ -79,8 +91,8 @@ const LoginPage: React.FC = () => {
                   id="userIdOrEmail"
                   type="text"
                   placeholder="e.g., admin@example.com or 1234"
-                  value={userIdOrEmail}
-                  onChange={(e) => setUserIdOrEmail(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoadingAuth}
                 />
@@ -97,8 +109,8 @@ const LoginPage: React.FC = () => {
                   disabled={isLoadingAuth}
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white rounded-md hover:bg-blue-700" disabled={isLoadingAuth}>
-                {isLoadingAuth && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full bg-blue-600 text-white rounded-md hover:bg-blue-700" disabled={isLoadingAuth || isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Log In
               </Button>
               {localError && <p className="text-red-500 text-sm text-center mt-2">{localError}</p>}

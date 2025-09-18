@@ -184,7 +184,7 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
                           placeholder={type === 'collections' ? "e.g., Supplier Warehouse" : "e.g., Customer Site"}
                           value={stopField.value || ''}
                           onValueChange={stopField.onChange}
-                          onAddressSelect={(address) => handleAddressSelect(index, type, address)}
+                          onAddressSelect={(address) => handleAddressSelect(index, address)}
                           disabled={isSubmitting}
                         />
                       </FormControl>

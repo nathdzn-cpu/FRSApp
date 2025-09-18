@@ -21,6 +21,8 @@ interface AuthContextType {
   isLoadingAuth: boolean;
   logout: () => Promise<void>;
   currentOrgId: string | undefined;
+  refreshProfile: () => Promise<void>;
+  login: (organisationKey: string, userIdOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -295,9 +297,11 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
     isLoadingAuth,
     logout: logout,
     currentOrgId: profile?.org_id,
+    refreshProfile,
+    login,
   };
 
-  return <AuthContext.Provider value={value} {...props} />;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

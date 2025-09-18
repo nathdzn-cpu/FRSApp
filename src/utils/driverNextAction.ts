@@ -9,7 +9,7 @@ import {
 } from '@/lib/utils/statusUtils';
 import { formatAddressPart } from '@/lib/utils/formatUtils';
 
-interface NextDriverAction {
+export interface NextDriverAction {
   label: string;
   nextStatus: Job['status'];
   stopId: string;
