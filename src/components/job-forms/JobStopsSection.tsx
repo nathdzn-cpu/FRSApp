@@ -242,7 +242,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({
         {fields.length === 0 && (
           <p className="text-gray-600 text-center">No {type === 'collections' ? 'collection' : 'delivery'} points added yet.</p>
         )}
-        <FormMessage>{control._formState.errors[type]?.message}</FormMessage>
+        <FormMessage>{control.getFieldState(type).error?.message}</FormMessage>
       </div>
     </Card>
   );

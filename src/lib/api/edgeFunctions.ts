@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { mockJobs, mockAuditLogs, mockJobStops, mockProfileDevices, Job, mockProfiles } from '@/utils/mockData'; // Added mockProfiles
+import { mockJobs, mockAuditLogs, mockJobStops, mockProfileDevices, Job, mockProfiles, ProfileDevice } from '@/utils/mockData'; // Added mockProfiles
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
 

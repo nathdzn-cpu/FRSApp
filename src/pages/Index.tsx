@@ -30,6 +30,7 @@ import DriverJobsTable from '@/components/driver/DriverJobsTable';
 import ImageUploadDialog from '@/components/driver/ImageUploadDialog';
 import CancelJobDialog from '@/components/CancelJobDialog';
 import DriverDetailDialog from '@/components/DriverDetailDialog';
+import { supabase } from '@/lib/supabaseClient';
 
 type DateRangeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 type JobStatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
@@ -42,7 +43,7 @@ interface DialogState {
 }
 
 const Index = () => {
-  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin, supabase } = useAuth();
+  const { user, profile, userRole, isLoadingAuth, isAdmin, isOfficeOrAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | undefined>(undefined);
   const [filterRange, setFilterRange] = useState<DateRangeFilter>('all');
@@ -67,7 +68,6 @@ const Index = () => {
     queryFn: getTenants,
     staleTime: 5 * 60 * 1000,
     enabled: !!user && !!currentProfile && !isLoadingAuth,
-    onError: (err) => console.error("Tenants query failed", err),
   });
 
   // Set selectedOrgId once tenants and profile are loaded
@@ -110,7 +110,6 @@ const Index = () => {
     queryFn: () => getProfiles(currentOrgId, userRole),
     staleTime: 5 * 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !isLoadingAuth && !!userRole,
-    onError: (err) => console.error("Profiles query failed", err),
   });
 
   // Fetch active jobs specifically for the current driver (used for banner and progression rules)
@@ -127,11 +126,10 @@ const Index = () => {
     queryFn: () => getJobs(selectedOrgId!, userRole!, startDate, endDate, jobStatusFilter),
     staleTime: 60 * 1000,
     enabled: !!selectedOrgId && !!user && !!currentProfile && !!userRole && !isLoadingAuth,
-    onError: (err) => console.error("Jobs query failed", err),
   });
 
   // Periodically check for overdue jobs
-  useQuery({
+  const { data: overdueJobsData } = useQuery({
     queryKey: ['checkOverdueJobs'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('check-overdue-jobs');
@@ -142,17 +140,13 @@ const Index = () => {
     refetchInterval: 5 * 60 * 1000, // Every 5 minutes
     refetchOnWindowFocus: true,
     staleTime: 4 * 60 * 1000,
-    onSuccess: (data) => {
-      if (data?.notifiedJobs > 0) {
-        // Invalidate the main jobs query to show new highlighting
-        queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      }
-    },
-    onError: (err: any) => {
-      // Don't show a toast, as it would be annoying on a periodic check
-      console.warn("Periodic check for overdue jobs failed:", err.message);
-    },
   });
+
+  useEffect(() => {
+    if (overdueJobsData && (overdueJobsData as any).notifiedJobs > 0) {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    }
+  }, [overdueJobsData, queryClient]);
 
   const isLoading = isLoadingAuth || isLoadingTenants || isLoadingProfiles || isLoadingJobs || isLoadingDriverActiveJobs;
   const error = tenantsError || profilesError || jobsError || driverActiveJobsError;
@@ -355,7 +349,7 @@ const Index = () => {
         </div>
 
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
-          <ActiveJobBanner activeJobs={driverActiveJobs} onDismiss={() => queryClient.invalidateQueries({ queryKey: ['driverActiveJobs'] })} />
+          <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
 
         {/* Stat Cards Section */}

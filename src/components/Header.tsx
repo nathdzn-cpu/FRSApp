@@ -16,12 +16,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import Sidebar from './Sidebar';
 
 const Header: React.FC = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
-    await signOut();
+    await logout();
     navigate('/login');
   };
 

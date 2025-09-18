@@ -9,6 +9,7 @@ import {
   ProfileDevice,
   DailyCheck,
   JobProgressLog,
+  mockAuditLogs,
 } from '@/utils/mockData';
 import { delay } from '../utils/apiUtils';
 import { supabase } from '../supabaseClient'; // Import supabase client
@@ -153,7 +154,7 @@ export const addJobNote = async (jobId: string, orgId: string, driverId: string,
 export const recordLocationPing = async (jobId: string, orgId: string, driverId: string, lat: number, lon: number): Promise<JobProgressLog> => {
   await delay(100); // Very quick for frequent pings
   const job = mockJobs.find(j => j.id === jobId && j.org_id === orgId && j.assigned_driver_id === driverId);
-  if (!job || job.status !== 'accepted') throw new Error("Job not in progress or not assigned to this driver.");
+  if (!job || !['accepted', 'on_route_collection', 'at_collection', 'loaded', 'on_route_delivery', 'at_delivery'].includes(job.status)) throw new Error("Job not in progress or not assigned to this driver.");
 
   // Insert into job_progress_log
   const { data: newLog, error: insertError } = await supabase

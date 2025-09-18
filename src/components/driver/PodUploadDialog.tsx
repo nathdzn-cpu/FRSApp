@@ -228,7 +228,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
   const isSubmitDisabled = () => {
     if (isLoading) return true;
     if (activeTab === 'upload') return !selectedFile;
-    if (activeTab === 'signature') return signaturePadRef.current?.isEmpty() || !signatureName.trim() || signatureNameError;
+    if (activeTab === 'signature') return !signatureName.trim() || !!signatureNameError;
     return true;
   };
 
@@ -242,7 +242,7 @@ const PodUploadDialog: React.FC<PodUploadDialogProps> = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full py-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'signature')} className="w-full py-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload"><UploadCloud className="h-4 w-4 mr-2"/>Upload Paperwork</TabsTrigger>
             <TabsTrigger value="signature"><Edit className="h-4 w-4 mr-2"/>Capture Signature</TabsTrigger>

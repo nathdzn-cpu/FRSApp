@@ -80,6 +80,10 @@ export const computeNextDriverAction = (
   const collectionStops = sortedStops.filter(s => s.type === 'collection');
   const deliveryStops = sortedStops.filter(s => s.type === 'delivery');
 
+  const isLoaded = job.status === 'loaded';
+  const isOnRouteToDelivery = job.status === 'on_route_delivery';
+  const isAtDelivery = job.status === 'at_delivery';
+
   for (const stop of sortedStops) {
     const stopLogs = safeProgressLogs.filter(log => log.stop_id === stop.id);
     let currentStopStatus: Job['status'] | 'pending' = 'pending';

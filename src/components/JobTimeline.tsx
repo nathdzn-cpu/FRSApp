@@ -62,7 +62,7 @@ const actionTypeIconMap: Record<string, React.ElementType> = {
 };
 
 const JobTimeline: React.FC<JobTimelineProps> = ({ progressLogs, profiles, currentOrgId, onLogVisibilityChange, job }) => {
-  const { profile: currentProfile, isOfficeOrAdmin } = useAuth();
+  const { profile: currentProfile, isOfficeOrAdmin, userRole } = useAuth();
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState<string | null>(null);
   const [localProgressLogs, setLocalProgressLogs] = useState<JobProgressLog[]>(progressLogs);
   const [locations, setLocations] = useState<Record<string, string>>({});

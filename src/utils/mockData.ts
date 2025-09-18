@@ -107,6 +107,7 @@ export interface Job {
   // New fields from jobs_with_stop_details view
   collection_name?: string | null;
   collection_city?: string | null;
+  collection_postcode?: string | null;
   delivery_name?: string | null;
   delivery_city?: string | null;
   delivery_postcode?: string | null; // Added

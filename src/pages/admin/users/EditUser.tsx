@@ -149,7 +149,7 @@ const EditUser: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center bg-[var(--saas-background)] p-4">
-        <p className="text-red-500 text-lg mb-4">Error: {error.message}</p>
+        <p className="text-red-500 text-lg mb-4">Error: {error instanceof Error ? error.message : String(error)}</p>
         <Button onClick={() => navigate('/')} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>

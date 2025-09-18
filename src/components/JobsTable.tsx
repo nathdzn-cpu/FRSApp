@@ -108,7 +108,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
                     {getDisplayStatus(job.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>{job.date_created ? format(parseISO(job.date_created), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                <TableCell>{job.created_at ? format(parseISO(job.created_at), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                 <TableCell>
                   <div className="flex items-center text-sm text-gray-700">
                     <Avatar className="h-7 w-7 mr-2">

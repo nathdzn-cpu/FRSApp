@@ -367,14 +367,12 @@ const AdminDailyChecks: React.FC = () => {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the "{item.title}" check item.
-                                    </AlertDialogDescription>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will permanently delete the item "{item.title}."</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy} variant="destructive">Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>

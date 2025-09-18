@@ -22,7 +22,7 @@ import EditUser from './pages/admin/users/EditUser';
 import DriverDailyCheck from './pages/driver/DailyCheck';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
-import LoginPage from './pages/Login';
+import LoginPage from './pages/LoginPage';
 import EnvDebug from './pages/EnvDebug';
 import AdminDailyChecks from './pages/admin/DailyChecks';
 import AdminSavedAddresses from './pages/admin/SavedAddresses';
@@ -40,54 +40,8 @@ import { Job } from './utils/mockData';
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Router>
-      <AuthContextProvider initialSession={null} initialUser={null}>
-        <Toaster richColors position="top-right" />
-        <div className="flex h-screen bg-[var(--saas-background)]">
-          {user && <Sidebar />}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {user && <Header />}
-            {userRole === 'driver' && driverActiveJobs.length > 0 && (
-              <ActiveJobBanner activeJobs={driverActiveJobs} />
-            )}
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--saas-background)]">
-              <div className="p-6">
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/" element={<Index />} />
-                  <Route path="/jobs/:orderNumber" element={<JobDetail />} />
-                  <Route path="/jobs/new" element={<CreateJob />} />
-                  <Route path="/drivers" element={<Drivers />} />
-                  <Route path="/daily-check" element={<DriverDailyCheck />} />
-                  <Route path="/map" element={<Map />} />
-                  <Route path="/quotes" element={<Quotes />} />
-                  <Route path="/admin/checklists" element={<AdminChecklists />} />
-                  <Route path="/admin/users" element={<AdminUsersPage />} />
-                  <Route path="/admin/users/new" element={<CreateUserChoice />} />
-                  <Route path="/admin/users/new/driver" element={<CreateDriver />} />
-                  <Route path="/admin/users/new/office" element={<CreateOffice />} />
-                  <Route path="/admin/users/:id/edit" element={<EditUser />} />
-                  <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
-                  <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/env-debug" element={<EnvDebug />} />
-                  <Route path="/admin/billing" element={<AdminRoute><BillingPage /></AdminRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </main>
-          </div>
-        </div>
-      </AuthContextProvider>
-    </Router>
-  </QueryClientProvider>
-);
-
-const ProtectedRoutes = () => {
+const AppContent = () => {
   const { user, userRole, profile, isLoadingAuth } = useAuth();
-
   const currentOrgId = profile?.org_id;
 
   const { data: driverActiveJobs = [] } = useQuery<Job[], Error>({
@@ -97,11 +51,28 @@ const ProtectedRoutes = () => {
     enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
   });
 
+  if (isLoadingAuth) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[var(--saas-background)]">
-      {user && <Sidebar />}
+      <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        {user && <Header />}
+        <Header />
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
@@ -115,14 +86,14 @@ const ProtectedRoutes = () => {
               <Route path="/daily-check" element={<DriverDailyCheck />} />
               <Route path="/map" element={<Map />} />
               <Route path="/quotes" element={<Quotes />} />
-              <Route path="/admin/checklists" element={<AdminChecklists />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/users/new" element={<CreateUserChoice />} />
-              <Route path="/admin/users/new/driver" element={<CreateDriver />} />
-              <Route path="/admin/users/new/office" element={<CreateOffice />} />
-              <Route path="/admin/users/:id/edit" element={<EditUser />} />
-              <Route path="/admin/daily-checks" element={<AdminDailyChecks />} />
-              <Route path="/admin/saved-addresses" element={<AdminSavedAddresses />} />
+              <Route path="/admin/checklists" element={<AdminRoute><AdminChecklists /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+              <Route path="/admin/users/new" element={<AdminRoute><CreateUserChoice /></AdminRoute>} />
+              <Route path="/admin/users/new/driver" element={<AdminRoute><CreateDriver /></AdminRoute>} />
+              <Route path="/admin/users/new/office" element={<AdminRoute><CreateOffice /></AdminRoute>} />
+              <Route path="/admin/users/:id/edit" element={<AdminRoute><EditUser /></AdminRoute>} />
+              <Route path="/admin/daily-checks" element={<AdminRoute><AdminDailyChecks /></AdminRoute>} />
+              <Route path="/admin/saved-addresses" element={<AdminRoute><AdminSavedAddresses /></AdminRoute>} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/env-debug" element={<EnvDebug />} />
               <Route path="/admin/billing" element={<AdminRoute><BillingPage /></AdminRoute>} />
@@ -134,5 +105,16 @@ const ProtectedRoutes = () => {
     </div>
   );
 };
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <Router>
+      <AuthContextProvider initialSession={null} initialUser={null}>
+        <Toaster richColors position="top-right" />
+        <AppContent />
+      </AuthContextProvider>
+    </Router>
+  </QueryClientProvider>
+);
 
 export default App;

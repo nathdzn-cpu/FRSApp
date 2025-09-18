@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { formatGBPDisplay } from '@/lib/utils/formatUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Pencil, Trash2 } from 'lucide-react';
+import { CreateQuotePayload } from '@/lib/api/quotes';
 
 const quoteFormSchema = z.object({
   from_location: z.string().min(1, { message: 'From location is required.' }),
@@ -90,10 +91,10 @@ const Quotes: React.FC = () => {
   }, [editingQuote, form]);
 
   const createQuoteMutation = useMutation({
-    mutationFn: (newQuote: QuoteFormValues) => createQuote(currentOrgId!, newQuote),
+    mutationFn: (newQuote: CreateQuotePayload) => createQuote(currentOrgId!, newQuote),
     onSuccess: () => {
-      toast.success('Quote created successfully!');
       queryClient.invalidateQueries({ queryKey: ['quotes', currentOrgId] });
+      toast.success("Quote created successfully!");
       setIsFormOpen(false);
       form.reset();
     },

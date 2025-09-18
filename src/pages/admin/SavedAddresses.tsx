@@ -382,14 +382,12 @@ const AdminSavedAddresses: React.FC = () => {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the saved address: "{address.name || address.line_1}".
-                                    </AlertDialogDescription>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will permanently delete the address "{address.name}".</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} variant="destructive">Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>

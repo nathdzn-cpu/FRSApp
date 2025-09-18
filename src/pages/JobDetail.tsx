@@ -19,6 +19,7 @@ import JobDetailTabs from '@/components/job-detail/JobDetailTabs';
 import CloneJobDialog from '@/components/CloneJobDialog';
 import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
 import CancelJobDialog from '@/components/CancelJobDialog';
+import { RefetchOptions } from '@tanstack/react-query';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -124,6 +125,13 @@ const JobDetail: React.FC = () => {
     retry: false,
   });
 
+  const { data: driverActiveJobs = [] } = useQuery<Job[], Error>({
+    queryKey: ['driverActiveJobs', currentOrgId, user?.id],
+    queryFn: () => getJobs(currentOrgId!, 'driver', undefined, undefined, 'active'),
+    staleTime: 30 * 1000,
+    enabled: userRole === 'driver' && !!currentOrgId && !!user?.id && !isLoadingAuth,
+  });
+
   const job = jobData?.job;
   const stops = jobData?.stops || [];
   const documents = jobData?.documents || [];
@@ -219,7 +227,7 @@ const JobDetail: React.FC = () => {
 
     setIsSubmittingEdit(true);
     try {
-      const originalStopsMap = new Map(stops.map(s => s.id ? [s.id, s] : []));
+      const originalStopsMap = new Map(stops.map(s => [s.id, s]));
 
       const allNewStops = [...values.collections, ...values.deliveries];
 
@@ -386,6 +394,7 @@ const JobDetail: React.FC = () => {
         currentOrgId={currentOrgId}
         userRole={userRole}
         refetchJobData={refetchJobData}
+        driverActiveJobs={driverActiveJobs}
       />
     );
   }
@@ -432,7 +441,7 @@ const JobDetail: React.FC = () => {
           stops={stops}
           documents={documents}
           currentOrgId={currentOrgId}
-          onLogVisibilityChange={handleLogVisibilityChange}
+          onLogVisibilityChange={() => refetchJobData()}
         />
 
         {job && (

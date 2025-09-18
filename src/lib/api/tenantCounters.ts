@@ -23,8 +23,8 @@ export const allocateJobRef = async (orgId: string, actorId: string): Promise<st
 
   // Query existing jobs.ref for the tenant and extract all integers after the FRS- prefix.
   const existingRefs = mockJobs
-    .filter(job => job.org_id === orgId && job.ref.startsWith('FRS-')) // Changed job.org_id to job.org_id
-    .map(job => parseInt(job.ref.substring(4), 10))
+    .filter(job => job.org_id === orgId && job.order_number.startsWith('FRS-')) // Changed job.org_id to job.org_id
+    .map(job => parseInt(job.order_number.substring(4), 10))
     .filter(num => !isNaN(num));
 
   const refNumbers = new Set(existingRefs);

@@ -48,6 +48,7 @@ const DriverDailyCheck: React.FC = () => {
   const [signature, setSignature] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
+  const signaturePadRef = useRef<SignaturePad>(null);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -332,14 +333,14 @@ const DriverDailyCheck: React.FC = () => {
               accept="image/*"
             />
 
-            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Signature</h3>
-            <SignaturePad onSave={setSignature} initialSignature={signature} />
-            {fnError && <p className="text-red-500 text-sm mt-4">Function error: {fnError}</p>}
-
-            <Button onClick={handleSubmit} className="w-full mt-6 bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {isSubmitting ? 'Submitting...' : 'Submit Daily Check'}
-            </Button>
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Signature</h3>
+              <SignaturePad ref={signaturePadRef} signatureName={signature} setSignatureName={setSignature} nameError={null} />
+              {fnError && <p className="text-red-500 text-sm mt-4">Function error: {fnError}</p>}
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full mt-6">
+                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Submit Daily Check'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

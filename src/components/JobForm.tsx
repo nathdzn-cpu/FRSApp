@@ -125,11 +125,202 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
     form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
     form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2);
     form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
-    form.setValue(`${fieldNamePrefix}.county`, address.county); // Added county
+    form.setValue(`${fieldNamePrefix}.county`, address.county || null); // Added county
     form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
     form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
     form.trigger(`${fieldNamePrefix}.city`);
     form.trigger(`${fieldNamePrefix}.postcode`);
+  };
+
+  const JobStopsSubForm = ({ type, form, isSubmitting }: { type: 'collections' | 'deliveries', form: UseFormReturn<JobFormValues>, isSubmitting: boolean }) => {
+    const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: type,
+    });
+
+    const handleAddressSelect = (index: number, address: SavedAddress) => {
+      const fieldNamePrefix = `${type}.${index}` as const;
+      form.setValue(`${fieldNamePrefix}.name`, address.name || toTitleCase(address.line_1));
+      form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
+      form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2 || null);
+      form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
+      form.setValue(`collections.${index}.county`, address.county || null); // Added county
+      form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
+      form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
+      form.trigger(`${fieldNamePrefix}.city`);
+      form.trigger(`${fieldNamePrefix}.postcode`);
+    };
+
+    return (
+      <Card className="bg-gray-50 shadow-sm rounded-xl p-6">
+        <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+          <CardTitle className="text-xl font-semibold text-gray-900">{type === 'collections' ? 'Collection Points' : 'Delivery Points'}</CardTitle>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} disabled={isSubmitting}>
+            <PlusCircle className="h-4 w-4 mr-2" /> Add {type}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4 p-0 pt-4">
+          {fields.map((field, index) => (
+            <Card key={field.id} className="p-4 border-l-4 border-blue-500 shadow-sm rounded-md">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-semibold text-lg text-gray-900">{type === 'collections' ? `Collection ${index + 1}` : `Delivery ${index + 1}`}</h4>
+                <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)} disabled={isSubmitting}>
+                  <Trash2 className="h-4 w-4" /> Remove
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.name`}
+                  render={({ field: stopField }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
+                      <FormControl>
+                        <AddressSearchInput
+                          placeholder={type === 'collections' ? "e.g., Supplier Warehouse" : "e.g., Customer Site"}
+                          value={stopField.value || ''}
+                          onValueChange={stopField.onChange}
+                          onAddressSelect={(address) => handleAddressSelect(index, type, address)}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.address_line1`}
+                  render={({ field: stopField }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Address Line 1</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 123 High Street"
+                          {...stopField}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.address_line2`}
+                  render={({ field: stopField }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Unit 4" {...stopField} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.city`}
+                  render={({ field: stopField }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., London" {...stopField} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.postcode`}
+                  render={({ field: stopField }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Postcode</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., SW1A 0AA"
+                            {...stopField}
+                            value={formatPostcode(stopField.value)}
+                            onBlur={(e) => {
+                              stopField.onChange(formatPostcode(e.target.value));
+                              stopField.onBlur();
+                            }}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={`${type}.${index}.window_from`}
+                    render={({ field: stopField }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., 09:00"
+                            {...stopField}
+                            onBlur={(e) => {
+                              stopField.onChange(formatTimeInput(e.target.value));
+                              stopField.onBlur();
+                            }}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`${type}.${index}.window_to`}
+                    render={({ field: stopField }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., 12:00"
+                            {...stopField}
+                            onBlur={(e) => {
+                              stopField.onChange(formatTimeInput(e.target.value));
+                              stopField.onBlur();
+                            }}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name={`${type}.${index}.notes`}
+                  render={({ field: stopField }) => (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </Card>
+          ))}
+          {fields.length === 0 && (
+            <p className="text-gray-600 text-center">No {type} points added yet.</p>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -325,344 +516,9 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
-          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">Collection Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendCollection({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} disabled={isSubmitting}>
-              <PlusCircle className="h-4 w-4 mr-2" /> Add Collection
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4 p-0 pt-4">
-            {collectionFields.map((field, index) => (
-              <Card key={field.id} className="p-4 border-l-4 border-blue-500 bg-gray-50 shadow-sm rounded-md">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-lg text-gray-900">Collection #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeCollection(index)} disabled={isSubmitting}>
-                    <Trash2 className="h-4 w-4" /> Remove
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.name`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
-                        <FormControl>
-                          <AddressSearchInput
-                            placeholder="e.g., Supplier Warehouse"
-                            value={stopField.value || ''}
-                            onValueChange={stopField.onChange}
-                            onAddressSelect={(address) => handleAddressSelect(index, 'collections', address)}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.address_line1`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Address Line 1</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 123 High Street"
-                            {...stopField}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.address_line2`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Unit 4" {...stopField} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.city`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., London" {...stopField} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.postcode`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Postcode</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., SW1A 0AA"
-                              {...stopField}
-                              value={formatPostcode(stopField.value)}
-                              onBlur={(e) => {
-                                stopField.onChange(formatPostcode(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`collections.${index}.window_from`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 09:00"
-                              {...stopField}
-                              onBlur={(e) => {
-                                stopField.onChange(formatTimeInput(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`collections.${index}.window_to`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 12:00"
-                              {...stopField}
-                              onBlur={(e) => {
-                                stopField.onChange(formatTimeInput(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={`collections.${index}.notes`}
-                    render={({ field: stopField }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </Card>
-            ))}
-            {collectionFields.length === 0 && (
-              <p className="text-gray-600 text-center">No collection points added yet.</p>
-            )}
-          </CardContent>
-        </Card>
+        <JobStopsSubForm type="collections" form={form} isSubmitting={isSubmitting} />
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
-          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">Delivery Points</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendDelivery({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '' })} disabled={isSubmitting}>
-              <PlusCircle className="h-4 w-4 mr-2" /> Add Delivery
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4 p-0 pt-4">
-            {deliveryFields.map((field, index) => (
-              <Card key={field.id} className="p-4 border-l-4 border-green-500 bg-gray-50 shadow-sm rounded-md">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-lg text-gray-900">Delivery #{index + 1}</h4>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeDelivery(index)} disabled={isSubmitting}>
-                    <Trash2 className="h-4 w-4" /> Remove
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.name`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Name (Optional)</FormLabel>
-                        <FormControl>
-                          <AddressSearchInput
-                            placeholder="e.g., Customer Site"
-                            value={stopField.value || ''}
-                            onValueChange={stopField.onChange}
-                            onAddressSelect={(address) => handleAddressSelect(index, 'deliveries', address)}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.address_line1`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Address Line 1</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 123 High Street"
-                            {...stopField}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.address_line2`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Loading Bay" {...stopField} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.city`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Manchester" {...stopField} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.postcode`}
-                    render={({ field: stopField }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">Postcode</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., M1 1AA"
-                              {...stopField}
-                              value={formatPostcode(stopField.value)}
-                              onBlur={(e) => {
-                                stopField.onChange(formatPostcode(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`deliveries.${index}.window_from`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window From (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 14:00"
-                              {...stopField}
-                              onBlur={(e) => {
-                                stopField.onChange(formatTimeInput(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`deliveries.${index}.window_to`}
-                      render={({ field: stopField }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">Window To (HH:MM)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 17:00"
-                              {...stopField}
-                              onBlur={(e) => {
-                                stopField.onChange(formatTimeInput(e.target.value));
-                                stopField.onBlur();
-                              }}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={`deliveries.${index}.notes`}
-                    render={({ field: stopField }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel className="text-gray-700">Notes / Reference</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Any specific instructions for this stop..." {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </Card>
-            ))}
-            {deliveryFields.length === 0 && (
-              <p className="text-gray-600 text-center">No delivery points added yet.</p>
-            )}
-            <FormMessage>{form.formState.errors.deliveries?.message}</FormMessage>
-          </CardContent>
-        </Card>
+        <JobStopsSubForm type="deliveries" form={form} isSubmitting={isSubmitting} />
 
         <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
           {isSubmitting ? <span className="flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Job...</span> : 'Create Job'}

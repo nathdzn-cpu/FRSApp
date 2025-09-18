@@ -50,7 +50,8 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
 
     return {
       order_number: '', // Always reset for auto-generation
-      date_created: new Date(), // Default to today for cloned job
+      collection_date: originalJob.collection_date ? parseISO(originalJob.collection_date) : new Date(),
+      delivery_date: originalJob.delivery_date ? parseISO(originalJob.delivery_date) : new Date(),
       price: originalJob.price,
       assigned_driver_id: originalJob.assigned_driver_id || null,
       notes: originalJob.notes,
@@ -90,7 +91,8 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
       const newJobData = {
         order_number: values.order_number || null,
         status: initialStatus,
-        date_created: values.date_created.toISOString().split('T')[0],
+        collection_date: values.collection_date.toISOString().split('T')[0],
+        delivery_date: values.delivery_date.toISOString().split('T')[0],
         price: values.price,
         assigned_driver_id: values.assigned_driver_id === 'null' ? null : values.assigned_driver_id,
         notes: values.notes,
