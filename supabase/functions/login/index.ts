@@ -89,24 +89,27 @@ serve(async (req) => {
 
     // 4. Final validation: Ensure the logged-in user belongs to the specified organisation.
     const loggedInUserId = sessionData.user.id;
-    const { error: finalCheckError } = await admin
+    const { data: userProfile, error: finalCheckError } = await admin
         .from('profiles')
-        .select('id')
+        .select('id, org_id, role')
         .eq('id', loggedInUserId)
         .eq('org_id', org.id)
         .single();
 
-    if (finalCheckError) {
+    if (finalCheckError || !userProfile) {
         await admin.auth.signOut(sessionData.session.access_token);
         throw new AuthError(invalidCredsMessage, 400);
     }
 
-    // 5. Success: Update active session token.
+    // 5. Success: Update active session token (only for non-customers).
     if (sessionData.session) {
-      await admin
-        .from('profiles')
-        .update({ active_session_token: sessionData.session.access_token })
-        .eq('id', sessionData.session.user.id);
+      // Only enforce single session for non-customer accounts
+      if (userProfile.role !== 'customer') {
+        await admin
+          .from('profiles')
+          .update({ active_session_token: sessionData.session.access_token })
+          .eq('id', sessionData.session.user.id);
+      }
     }
 
     // 6. Return the full Supabase auth data on success.

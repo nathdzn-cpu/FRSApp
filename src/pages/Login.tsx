@@ -71,7 +71,7 @@ const LoginPage: React.FC = () => {
                 <Input
                   id="organisationKey"
                   type="text"
-                  placeholder="e.g., 1234"
+                  placeholder="Enter 4-digit organisation key"
                   value={organisationKey}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -80,9 +80,10 @@ const LoginPage: React.FC = () => {
                     }
                   }}
                   required
-                  disabled={isLoadingAuth}
+                  disabled={isLoadingAuth || isSubmitting}
                   maxLength={4}
                   pattern="\d{4}"
+                  className="text-center font-mono text-lg tracking-widest"
                 />
               </div>
               <div className="space-y-2">
