@@ -36,9 +36,10 @@ interface JobDetailHeaderProps {
   onAssignDriver: (driverId: string | null) => Promise<void>;
   onUpdateProgress: (entries: any[]) => Promise<void>;
   onRequestPod: () => Promise<void>;
-  onExportPdf: () => Promise<void>;
+  onExportPdf: () => void;
   onCloneJob: () => void;
   onCancelJob: () => void;
+  onEditJob: () => void;
   isSubmittingEdit: boolean;
   isAssigningDriver: boolean;
   isUpdatingProgress: boolean;
@@ -60,6 +61,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
   onExportPdf,
   onCloneJob,
   onCancelJob,
+  onEditJob,
   isSubmittingEdit,
   isAssigningDriver,
   isUpdatingProgress,

@@ -21,9 +21,10 @@ interface JobDetailsSectionProps {
   form: UseFormReturn<JobFormValues>;
   isSubmitting: boolean;
   drivers: Profile[];
+  disabled?: boolean;
 }
 
-const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmitting, drivers }) => {
+const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmitting, drivers, disabled }) => {
   const [priceInputString, setPriceInputString] = useState<string>('');
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
                   placeholder="Leave blank for auto-generate, or enter ORDER-XXX"
                   {...field}
                   value={field.value || ''}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || disabled}
                 />
               </FormControl>
               <FormMessage />
@@ -75,7 +76,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
                         "w-full pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || disabled}
                     >
                       {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -111,7 +112,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
                         "w-full pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || disabled}
                     >
                       {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -157,7 +158,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
                       field.onBlur();
                     }}
                     className="pl-7"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || disabled}
                   />
                 </div>
               </FormControl>
@@ -172,7 +173,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-gray-700">Assign Driver (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''} disabled={isSubmitting}>
+              <Select onValueChange={field.onChange} value={field.value || ''} disabled={isSubmitting || disabled}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a driver" />
@@ -199,7 +200,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({ form, isSubmittin
             <FormItem className="md:col-span-2">
               <FormLabel className="text-gray-700">Notes (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Any general notes for this job..." {...field} value={field.value || ''} disabled={isSubmitting} />
+                <Textarea placeholder="Any general notes for this job..." {...field} value={field.value || ''} disabled={isSubmitting || disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>

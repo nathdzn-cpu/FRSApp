@@ -20,6 +20,7 @@ import CloneJobDialog from '@/components/CloneJobDialog';
 import DriverJobDetailView from '@/pages/driver/DriverJobDetailView';
 import CancelJobDialog from '@/components/CancelJobDialog';
 import { RefetchOptions } from '@tanstack/react-query';
+import JobEditForm from '@/components/JobEditForm';
 
 interface JobFormValues {
   order_number?: string | null;
@@ -75,6 +76,7 @@ const JobDetail: React.FC = () => {
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [jobToCancel, setJobToCancel] = useState<Job | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentOrgId = profile?.org_id;
@@ -138,6 +140,7 @@ const JobDetail: React.FC = () => {
   const progressLogs = jobData?.progressLogs || [];
 
   const driver = allProfiles.find(p => p.id === job?.assigned_driver_id);
+  const drivers = allProfiles.filter(p => p.role === 'driver');
 
   const isLoading = isLoadingAuth || isLoadingAllProfiles || isLoadingJob;
   const error = allProfilesError || jobError;
@@ -251,8 +254,8 @@ const JobDetail: React.FC = () => {
         actor_id: profile.id,
         actor_role: userRole,
         job_updates: jobUpdates,
-        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1 })),
-        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1 })),
+        stops_to_add: stops_to_add.map((s, index) => ({ ...s, seq: index + 1, type: s.type || (index < values.collections.length ? 'collection' : 'delivery') })),
+        stops_to_update: stops_to_update.map((s, index) => ({ ...s, seq: index + 1, type: s.type || (index < values.collections.length ? 'collection' : 'delivery') })),
         stops_to_delete: stops_to_delete,
       };
 
@@ -265,6 +268,7 @@ const JobDetail: React.FC = () => {
       await promise;
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       refetchJobData();
+      setIsEditing(false);
     } catch (err: any) {
       console.error("Error updating job:", err);
       toast.error("An unexpected error occurred while updating the job.");
@@ -399,6 +403,25 @@ const JobDetail: React.FC = () => {
     );
   }
 
+  if (isEditing) {
+    return (
+      <div className="w-full">
+        <div className="max-w-7xl mx-auto">
+          <Button onClick={() => setIsEditing(false)} variant="outline" className="mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Job View
+          </Button>
+          <JobEditForm
+            initialJob={job}
+            initialStops={stops}
+            drivers={drivers}
+            onSubmit={handleEditSubmit}
+            isSubmitting={isSubmittingEdit}
+          />
+        </div>
+      </div>
+    )
+  }
+
   // Default view for admin/office roles
   return (
     <div className="w-full">
@@ -422,6 +445,7 @@ const JobDetail: React.FC = () => {
             onExportPdf={handleExportPdf}
             onCloneJob={handleCloneJob}
             onCancelJob={() => setJobToCancel(job)}
+            onEditJob={() => setIsEditing(true)}
             isSubmittingEdit={isSubmittingEdit}
             isAssigningDriver={isAssigningDriver}
             isUpdatingProgress={isUpdatingProgress}

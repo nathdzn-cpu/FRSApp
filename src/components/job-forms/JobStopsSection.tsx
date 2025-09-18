@@ -17,9 +17,10 @@ interface JobStopsSectionProps {
   type: 'collections' | 'deliveries';
   form: UseFormReturn<JobFormValues>;
   isSubmitting: boolean;
+  isDriver?: boolean;
 }
 
-const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitting }) => {
+const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitting, isDriver }) => {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: type,
@@ -37,22 +38,28 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
     form.trigger(`${fieldNamePrefix}.postcode` as any);
   };
 
+  const disableAddressFields = isSubmitting || isDriver;
+
   return (
     <Card className="bg-gray-50 shadow-sm rounded-xl p-6">
       <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
         <CardTitle className="text-xl font-semibold text-gray-900">{type === 'collections' ? 'Collection Points' : 'Delivery Points'}</CardTitle>
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', notes: '' })} disabled={isSubmitting}>
-          <PlusCircle className="h-4 w-4 mr-2" /> Add {type === 'collections' ? 'Collection' : 'Delivery'}
-        </Button>
+        {!isDriver && (
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', address_line1: '', city: '', postcode: '', window_from: '', window_to: '', notes: '' })} disabled={isSubmitting}>
+            <PlusCircle className="h-4 w-4 mr-2" /> Add {type === 'collections' ? 'Collection' : 'Delivery'}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-4 p-0 pt-4">
         {fields.map((field, index) => (
-          <Card key={field.id} className="p-4 border-l-4 border-blue-500 shadow-sm rounded-md">
+          <Card key={field.id} className={`p-4 border-l-4 ${type === 'collections' ? 'border-blue-500' : 'border-green-500'} shadow-sm rounded-md`}>
             <div className="flex justify-between items-center mb-3">
               <h4 className="font-semibold text-lg text-gray-900">{type === 'collections' ? `Collection ${index + 1}` : `Delivery ${index + 1}`}</h4>
-              <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)} disabled={isSubmitting}>
-                <Trash2 className="h-4 w-4" /> Remove
-              </Button>
+              {!isDriver && (
+                <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)} disabled={isSubmitting}>
+                  <Trash2 className="h-4 w-4" /> Remove
+                </Button>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
@@ -67,7 +74,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
                         value={stopField.value || ''}
                         onValueChange={stopField.onChange}
                         onAddressSelect={(address) => handleAddressSelect(index, address)}
-                        disabled={isSubmitting}
+                        disabled={disableAddressFields}
                       />
                     </FormControl>
                     <FormMessage />
@@ -81,7 +88,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
                   <FormItem>
                     <FormLabel className="text-gray-700">Address Line 1</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 123 High Street" {...stopField} disabled={isSubmitting} />
+                      <Input placeholder="e.g., 123 High Street" {...stopField} disabled={disableAddressFields} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -94,7 +101,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
                   <FormItem>
                     <FormLabel className="text-gray-700">Address Line 2 (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Unit 4" {...stopField} value={stopField.value || ''} disabled={isSubmitting} />
+                      <Input placeholder="e.g., Unit 4" {...stopField} value={stopField.value || ''} disabled={disableAddressFields} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -107,7 +114,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
                   <FormItem>
                     <FormLabel className="text-gray-700">City</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., London" {...stopField} disabled={isSubmitting} />
+                      <Input placeholder="e.g., London" {...stopField} disabled={disableAddressFields} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -128,7 +135,7 @@ const JobStopsSection: React.FC<JobStopsSectionProps> = ({ type, form, isSubmitt
                           stopField.onChange(formatPostcode(e.target.value));
                           stopField.onBlur();
                         }}
-                        disabled={isSubmitting}
+                        disabled={disableAddressFields}
                       />
                     </FormControl>
                     <FormMessage />
