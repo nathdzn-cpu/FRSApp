@@ -23,16 +23,13 @@ serve(async (req) => {
   try {
     const admin = adminClient();
     const body = await req.json();
-    const { organisationName, fullName, email, contactNumber, password } = body;
+    const { companyName, fullName, email, contactNumber, password, fleetSize } = body;
 
-    if (!organisationName || !fullName || !email || !password) {
+    if (!companyName || !fullName || !email || !password || !fleetSize) {
       throw new Error("Missing required sign-up fields.");
     }
 
-    // Placeholder for billing integration (e.g., Stripe)
-    // In a real application, you would check for a successful payment here before proceeding.
-
-    // 1. Generate a unique 5-digit org ID
+    // 1. Generate a unique 5-digit org ID for internal reference
     let display_id;
     let isUnique = false;
     let retries = 0;
@@ -55,14 +52,21 @@ serve(async (req) => {
       throw new Error("Could not generate a unique organisation ID. Please try again.");
     }
 
-    // 2. Create the organisation
+    // 2. Create the organisation, including the new fleet_size field
+    // The `organisation_key` is generated automatically by a postgres function
     const { data: newOrg, error: orgError } = await admin
       .from('orgs')
-      .insert({ name: organisationName, display_id })
-      .select()
+      .insert({ 
+        name: companyName, 
+        display_id,
+        fleet_size: fleetSize,
+        contact_number: contactNumber
+      })
+      .select('id, organisation_key')
       .single();
 
     if (orgError) throw new Error(`Failed to create organisation: ${orgError.message}`);
+    if (!newOrg || !newOrg.organisation_key) throw new Error("Failed to retrieve new organisation key.");
 
     // 3. Create the admin user
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -79,21 +83,19 @@ serve(async (req) => {
 
     const newUserId = authData.user.id;
 
-    // The `handle_new_user` trigger creates a profile with default 'driver' role and null org_id.
-    // We now need to update it with the correct details for the new admin.
+    // The `handle_new_user` trigger creates a profile. We update it with admin details.
     await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for trigger
 
-    const { data: updatedProfile, error: profileError } = await admin
+    const { error: profileError } = await admin
       .from('profiles')
       .update({
         org_id: newOrg.id,
         full_name: fullName,
         phone: contactNumber,
         role: 'admin',
+        company_name: companyName,
       })
-      .eq('id', newUserId)
-      .select()
-      .single();
+      .eq('id', newUserId);
 
     if (profileError) {
       // Rollback user and org
@@ -102,29 +104,9 @@ serve(async (req) => {
       throw new Error(`Failed to update profile: ${profileError.message}`);
     }
     
-    // Note: The user_orgs table is not used here, as profiles.org_id is the current source of truth for organisation membership.
-
-    // 4. Create a session for the new user to log them in automatically
-    const { data: sessionData, error: sessionError } = await admin.auth.signInWithPassword({
-        email,
-        password,
-    });
-
-    if (sessionError) {
-        // This shouldn't happen if user creation was successful, but handle it just in case.
-        throw new Error(`Failed to create session for new user: ${sessionError.message}`);
-    }
-
-    // Update profile with the new session token to enforce single session
-    if (sessionData.session) {
-      await admin
-        .from('profiles')
-        .update({ active_session_token: sessionData.session.access_token })
-        .eq('id', newUserId);
-    }
-
+    // 4. Return the organisation key to the user instead of logging them in
     return new Response(
-      JSON.stringify(sessionData),
+      JSON.stringify({ organisation_key: newOrg.organisation_key }),
       { headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
 
