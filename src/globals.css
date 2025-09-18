@@ -143,3 +143,63 @@ body {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important; /* shadow-md */
   border: 1px solid hsl(var(--border));
 }
+
+/* 5. Additional fixes for popper content wrappers and specific component classes */
+[data-radix-popper-content-wrapper],
+.dropdown-menu,
+.select-content,
+.popover-content,
+.dropdown-menu-content,
+.select-content,
+.popover-content {
+  background-color: var(--saas-card-bg, #ffffff) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.5rem !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 6. Ensure all modal and dialog content has solid backgrounds */
+.dialog-content,
+.alert-dialog-content,
+.sheet-content,
+.drawer-content {
+  background-color: var(--saas-card-bg, #ffffff) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  border-radius: 0.5rem !important;
+}
+
+/* 7. Override any existing transparency or blur effects */
+*[class*="content"],
+*[class*="menu"],
+*[class*="popover"],
+*[class*="dropdown"],
+*[class*="select"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 8. Command palette specific styling */
+[data-radix-command-list],
+[data-radix-command-input],
+[data-radix-command-item] {
+  background-color: var(--saas-card-bg, #ffffff) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 9. Context menu specific styling */
+[data-radix-context-menu-trigger] {
+  background-color: var(--saas-card-bg, #ffffff) !important;
+}
+
+/* 10. Ensure tooltip content has solid background */
+[data-radix-tooltip-content] {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
