@@ -99,6 +99,47 @@
   }
 
   body {
-    @apply bg-[var(--saas-background)] text-foreground;
+    @apply bg-background text-foreground;
   }
+}
+
+/* --- Global UI Fixes --- */
+
+/* 1. Responsive Layout: Prevent horizontal scrolling */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* 2. Dialog / Modal Sizing and Styling */
+[data-radix-dialog-content],
+[data-radix-alert-dialog-content] {
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  background-color: hsl(var(--card)) !important; /* Solid background */
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important; /* shadow-lg */
+}
+
+/* 3. Dialog Overlay: Remove blur, use a standard semi-transparent background */
+[data-radix-dialog-overlay],
+[data-radix-alert-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 4. Popovers, Dropdowns, etc: Ensure solid background and subtle shadow */
+[data-radix-popover-content],
+[data-radix-dropdown-menu-content],
+[data-radix-select-content],
+[data-radix-context-menu-content],
+[data-radix-hover-card-content],
+[data-radix-menubar-content],
+[data-radix-tooltip-content] {
+  background-color: hsl(var(--card)) !important; /* Solid background */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important; /* shadow-md */
+  border: 1px solid hsl(var(--border));
 }
