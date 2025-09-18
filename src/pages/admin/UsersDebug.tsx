@@ -55,38 +55,40 @@ export default function UsersDebug() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui" }}>
-      <h1>Admin → Users Debug</h1>
-      {err && <p style={{ color: "crimson" }}>Error: {err}</p>}
-      <section style={{ marginTop: 12 }}>
-        <h3>Me</h3>
-        <pre style={{ background: "#f7f7f7", padding: 12 }}>
+    <div className="w-full px-6">
+      <div className="space-y-6">
+        <h1>Admin → Users Debug</h1>
+        {err && <p style={{ color: "crimson" }}>Error: {err}</p>}
+        <section style={{ marginTop: 12 }}>
+          <h3>Me</h3>
+          <pre style={{ background: "#f7f7f7", padding: 12 }}>
 {JSON.stringify(me, null, 2)}
-        </pre>
-      </section>
+          </pre>
+        </section>
 
-      <section style={{ marginTop: 12 }}>
-        <h3>All Profiles</h3>
-        <pre style={{ background: "#f7f7f7", padding: 12, minHeight: 120 }}>
-          {profiles === null ? "Loading profiles..." : profiles.length === 0 ? "No profiles found" : JSON.stringify(profiles, null, 2)}
-        </pre>
-      </section>
+        <section style={{ marginTop: 12 }}>
+          <h3>All Profiles</h3>
+          <pre style={{ background: "#f7f7f7", padding: 12, minHeight: 120 }}>
+            {profiles === null ? "Loading profiles..." : profiles.length === 0 ? "No profiles found" : JSON.stringify(profiles, null, 2)}
+          </pre>
+        </section>
 
-      <section style={{ marginTop: 12, display: "flex", gap: 8 }}>
-        <button onClick={() => create("driver")}>Create TEST Driver</button>
-        <button onClick={() => create("office")}>Create TEST Office</button>
-      </section>
+        <section style={{ marginTop: 12, display: "flex", gap: 8 }}>
+          <button onClick={() => create("driver")}>Create TEST Driver</button>
+          <button onClick={() => create("office")}>Create TEST Office</button>
+        </section>
 
-      <section style={{ marginTop: 12 }}>
-        <h3>Last result</h3>
-        <pre style={{ background: "#f7f7f7", padding: 12, minHeight: 120 }}>
+        <section style={{ marginTop: 12 }}>
+          <h3>Last result</h3>
+          <pre style={{ background: "#f7f7f7", padding: 12, minHeight: 120 }}>
 {log || "—"}
-        </pre>
-      </section>
+          </pre>
+        </section>
 
-      <p style={{ opacity: 0.7, marginTop: 12 }}>
-        This page proves your JWT (admin), org_id, and the Edge Function wiring. Any failure shows the exact error.
-      </p>
-    </main>
+        <p style={{ opacity: 0.7, marginTop: 12 }}>
+          This page proves your JWT (admin), org_id, and the Edge Function wiring. Any failure shows the exact error.
+        </p>
+      </div>
+    </div>
   );
 }

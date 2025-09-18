@@ -77,7 +77,7 @@ const AppContent = () => {
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--saas-background)]">
-          <div className="p-6">
+          <div className="p-6 w-full max-w-full">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/jobs/:orderNumber" element={<JobDetail />} />

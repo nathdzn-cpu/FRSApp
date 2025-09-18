@@ -114,11 +114,16 @@ body {
 /* 2. Dialog / Modal Sizing and Styling */
 [data-radix-dialog-content],
 [data-radix-alert-dialog-content] {
-  max-width: 90vw !important;
-  max-height: 90vh !important;
-  overflow-y: auto !important;
-  background-color: hsl(var(--card)) !important; /* Solid background */
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important; /* shadow-lg */
+  width: auto !important;          /* fit to content when small */
+  height: auto !important;         /* fit to content when small */
+  max-width: 90vw !important;      /* but never exceed viewport width */
+  max-height: 90vh !important;     /* but never exceed viewport height */
+  overflow-y: auto !important;     /* scroll inside if too tall */
+  overflow-x: hidden !important;   /* prevent sideways scroll */
+  margin: 0 auto !important;       /* keep it centered horizontally */
+  border-radius: 0.75rem !important;
+  background-color: var(--saas-card-bg, #ffffff) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;
 }
 
 /* 3. Dialog Overlay: Remove blur, use a standard semi-transparent background */

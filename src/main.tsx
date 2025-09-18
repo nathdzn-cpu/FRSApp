@@ -5,6 +5,9 @@ import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from './lib/supabaseClient';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css'; // Import Tailwind CSS
+import './globals.css';
+import './App.css';
+
 
 // Create a client for TanStack Query
 const queryClient = new QueryClient({

@@ -176,110 +176,108 @@ const DriverJobDetailView: React.FC<DriverJobDetailViewProps> = ({
   const isJobCompleted = job.status === 'delivered' || job.status === 'pod_received';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="max-w-2xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/driver/jobs')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Jobs
+      </Button>
 
-        {isJobCompleted ? (
-          <DriverCompletedJobView
-            job={job}
-            progressLogs={progressLogs ?? []}
-            documents={documents}
-            currentProfile={currentProfile}
-            currentOrgId={currentOrgId}
-            refetchJobData={refetchJobData}
-          />
-        ) : (
-          <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
-            <CardHeader className="p-0 pb-4">
-              <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 pt-4 space-y-4">
-              <div>
-                <p className="font-medium text-gray-900">Notes:</p>
-                <p className="text-gray-700">{job.notes || '-'}</p>
-              </div>
+      {isJobCompleted ? (
+        <DriverCompletedJobView
+          job={job}
+          progressLogs={progressLogs ?? []}
+          documents={documents}
+          currentProfile={currentProfile}
+          currentOrgId={currentOrgId}
+          refetchJobData={refetchJobData}
+        />
+      ) : (
+        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-2xl font-bold text-gray-900">Job: {job.order_number}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 pt-4 space-y-4">
+            <div>
+              <p className="font-medium text-gray-900">Notes:</p>
+              <p className="text-gray-700">{job.notes || '-'}</p>
+            </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-4">Job Progress</h3>
 
-              {nextAction ? (
-                <>
-                  {nextAction.stopId && (
-                    <p className="text-sm text-gray-600 mb-2">
-                      Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
-                    </p>
-                  )}
-                  {currentStopForAction && renderStopDetails(currentStopForAction)}
-                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    {nextAction.nextStatus === 'pod_received' ? (
-                      <>
-                        <Button
-                          onClick={() => {
-                            setPodDialogInitialTab('upload');
-                            setIsPodUploadDialogOpen(true);
-                          }}
-                          disabled={isUpdatingProgress || isUploadingImage}
-                          className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                          data-testid="driver-upload-pod-btn"
-                        >
-                          {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                          Upload POD
-                        </Button>
-                        <p className="text-sm text-gray-600 text-center my-2">
-                          If no paperwork was issued by the customer, click here:
-                        </p>
-                        <Button
-                          onClick={() => {
-                            setPodDialogInitialTab('signature');
-                            setIsPodUploadDialogOpen(true);
-                          }}
-                          disabled={isUpdatingProgress || isUploadingImage}
-                          variant="outline"
-                          className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
-                          data-testid="driver-capture-signature-btn"
-                        >
-                          {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Edit className="h-5 w-5 mr-2" />}
-                          Capture Signature
-                        </Button>
-                      </>
-                    ) : (
+            {nextAction ? (
+              <>
+                {nextAction.stopId && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    Next action for: <span className="font-medium text-gray-800">{nextAction.stopContext}</span>
+                  </p>
+                )}
+                {currentStopForAction && renderStopDetails(currentStopForAction)}
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                  {nextAction.nextStatus === 'pod_received' ? (
+                    <>
                       <Button
-                        onClick={handleNextActionButtonClick}
+                        onClick={() => {
+                          setPodDialogInitialTab('upload');
+                          setIsPodUploadDialogOpen(true);
+                        }}
                         disabled={isUpdatingProgress || isUploadingImage}
                         className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
-                        data-testid="driver-next-action-btn"
+                        data-testid="driver-upload-pod-btn"
                       >
                         {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                        {nextAction.label}
+                        Upload POD
                       </Button>
-                    )}
-
-                    {nextAction.nextStatus !== 'pod_received' && (
+                      <p className="text-sm text-gray-600 text-center my-2">
+                        If no paperwork was issued by the customer, click here:
+                      </p>
                       <Button
-                        onClick={() => setIsImageUploadDialogOpen(true)}
+                        onClick={() => {
+                          setPodDialogInitialTab('signature');
+                          setIsPodUploadDialogOpen(true);
+                        }}
                         disabled={isUpdatingProgress || isUploadingImage}
                         variant="outline"
                         className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                        data-testid="driver-capture-signature-btn"
                       >
-                        {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
-                        Upload Image
+                        {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Edit className="h-5 w-5 mr-2" />}
+                        Capture Signature
                       </Button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
-                  <p className="text-gray-600">All stops have been processed.</p>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={handleNextActionButtonClick}
+                      disabled={isUpdatingProgress || isUploadingImage}
+                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 text-lg py-3 h-auto"
+                      data-testid="driver-next-action-btn"
+                    >
+                      {isUpdatingProgress ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                      {nextAction.label}
+                    </Button>
+                  )}
+
+                  {nextAction.nextStatus !== 'pod_received' && (
+                    <Button
+                      onClick={() => setIsImageUploadDialogOpen(true)}
+                      disabled={isUpdatingProgress || isUploadingImage}
+                      variant="outline"
+                      className="flex-1 text-gray-700 hover:bg-gray-100 text-lg py-3 h-auto"
+                    >
+                      {isUploadingImage ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />}
+                      Upload Image
+                    </Button>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <p className="text-lg font-semibold text-gray-800">Job Complete!</p>
+                <p className="text-gray-600">All stops have been processed.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {nextAction && nextAction.nextStatus !== 'pod_received' && (
         <ProgressActionDialog

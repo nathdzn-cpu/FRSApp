@@ -150,22 +150,20 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <Button onClick={() => { navigate('/'); }} variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-          </Button>
-        </div>
-
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
-
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
-          <CardContent className="p-0">
-            <JobForm onSubmit={handleSubmit} drivers={drivers} /> {/* Removed generatedRef prop */}
-          </CardContent>
-        </Card>
+    <div className="w-full px-6">
+      <div className="flex justify-between items-center mb-6">
+        <Button onClick={() => { navigate('/'); }} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+        </Button>
       </div>
+
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Job</h1>
+
+      <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
+        <CardContent className="p-0">
+          <JobForm onSubmit={handleSubmit} drivers={drivers} /> {/* Removed generatedRef prop */}
+        </CardContent>
+      </Card>
     </div>
   );
 };

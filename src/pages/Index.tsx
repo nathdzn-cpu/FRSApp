@@ -335,8 +335,8 @@ const Index = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full px-6">
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold text-gray-900">HOSS Dashboard</h1>
           <div className="flex items-center space-x-2">

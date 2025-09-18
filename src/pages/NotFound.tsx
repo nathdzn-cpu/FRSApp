@@ -14,7 +14,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex items-center justify-center bg-[var(--saas-background)] p-4">
+    <div className="w-full px-6 flex items-center justify-center bg-[var(--saas-background)] p-4">
       <Card className="text-center bg-white shadow-xl rounded-xl p-8">
         <CardHeader className="p-0 pb-4">
           <CardTitle className="text-4xl font-bold text-gray-900 mb-4">404</CardTitle>

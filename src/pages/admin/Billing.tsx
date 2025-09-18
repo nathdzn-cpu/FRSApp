@@ -35,7 +35,7 @@ const BillingPage = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="w-full px-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Billing</h1>
 
       <Card className="mb-6">

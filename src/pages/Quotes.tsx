@@ -174,120 +174,99 @@ const Quotes: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
-          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">Quotes</CardTitle>
-            <Dialog open={isFormOpen} onOpenChange={(open) => {
-              setIsFormOpen(open);
-              if (!open) {
-                setEditingQuote(null); // Clear editing quote when dialog closes
-                form.reset();
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700">
-                  <PlusCircle className="h-4 w-4 mr-2" /> New Quote
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingQuote ? 'Edit Quote' : 'Create New Quote'}</DialogTitle>
-                  <DialogDescription>
-                    {editingQuote ? 'Modify the details of the quote.' : 'Fill in the details below to create a new quote.'}
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField control={form.control} name="from_location" render={({ field }) => (
-                      <FormItem><FormLabel>From</FormLabel><FormControl><Input placeholder="City or Postcode" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="to_location" render={({ field }) => (
-                      <FormItem><FormLabel>To</FormLabel><FormControl><Input placeholder="City or Postcode" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="customer" render={({ field }) => (
-                      <FormItem><FormLabel>Customer</FormLabel><FormControl><Input placeholder="Customer Name" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="price" render={({ field }) => (
-                      <FormItem><FormLabel>Price (£)</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="mileage" render={({ field }) => (
-                      <FormItem><FormLabel>Mileage</FormLabel><FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="drops" render={({ field }) => (
-                      <FormItem><FormLabel>Number of Drops</FormLabel><FormControl><Input type="number" min="1" max="10" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <Button type="submit" disabled={createQuoteMutation.isPending || updateQuoteMutation.isPending}>
-                      {(createQuoteMutation.isPending || updateQuoteMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {editingQuote ? 'Update Quote' : 'Save Quote'}
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
+      <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
+        <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+          <CardTitle className="text-2xl font-bold text-gray-900">Quotes</CardTitle>
+          <Dialog open={isFormOpen} onOpenChange={(open) => {
+            setIsFormOpen(open);
+            if (!open) {
+              setEditingQuote(null); // Clear editing quote when dialog closes
+              form.reset();
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                <PlusCircle className="h-4 w-4 mr-2" /> New Quote
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingQuote ? 'Edit Quote' : 'Create New Quote'}</DialogTitle>
+                <DialogDescription>
+                  {editingQuote ? 'Modify the details of the quote.' : 'Fill in the details below to create a new quote.'}
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField control={form.control} name="from_location" render={({ field }) => (
+                    <FormItem><FormLabel>From</FormLabel><FormControl><Input placeholder="City or Postcode" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="to_location" render={({ field }) => (
+                    <FormItem><FormLabel>To</FormLabel><FormControl><Input placeholder="City or Postcode" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="customer" render={({ field }) => (
+                    <FormItem><FormLabel>Customer</FormLabel><FormControl><Input placeholder="Customer Name" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem><FormLabel>Price (£)</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="mileage" render={({ field }) => (
+                    <FormItem><FormLabel>Mileage</FormLabel><FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="drops" render={({ field }) => (
+                    <FormItem><FormLabel>Number of Drops</FormLabel><FormControl><Input type="number" min="1" max="10" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <Button type="submit" disabled={createQuoteMutation.isPending || updateQuoteMutation.isPending}>
+                    {(createQuoteMutation.isPending || updateQuoteMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingQuote ? 'Update Quote' : 'Save Quote'}
+                  </Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>From</TableHead>
+                <TableHead>To</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Mileage</TableHead>
+                <TableHead>Drops</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {quotes.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>{format(new Date(quote.created_at), 'PPP')}</TableCell>
+                  <TableCell>{quote.customer}</TableCell>
+                  <TableCell>{quote.from_location}</TableCell>
+                  <TableCell>{quote.to_location}</TableCell>
+                  <TableCell>{formatGBPDisplay(quote.price)}</TableCell>
+                  <TableCell>{quote.mileage}</TableCell>
+                  <TableCell>{quote.drops}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(quote)} className="mr-2">
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>From</TableHead>
-                  <TableHead>To</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Mileage</TableHead>
-                  <TableHead>Drops</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(quote)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotes.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell>{format(new Date(quote.created_at), 'PPP')}</TableCell>
-                    <TableCell>{quote.customer}</TableCell>
-                    <TableCell>{quote.from_location}</TableCell>
-                    <TableCell>{quote.to_location}</TableCell>
-                    <TableCell>{formatGBPDisplay(quote.price)}</TableCell>
-                    <TableCell>{quote.mileage}</TableCell>
-                    <TableCell>{quote.drops}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(quote)} className="mr-2">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(quote)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this quote?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the quote for {deletingQuote?.customer}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteQuoteMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} disabled={deleteQuoteMutation.isPending} className="bg-red-600 hover:bg-red-700">
-              {deleteQuoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };

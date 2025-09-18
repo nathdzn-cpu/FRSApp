@@ -423,81 +423,79 @@ const JobDetail: React.FC = () => {
 
   // Default view for admin/office roles
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
-          <JobDetailHeader
-            job={job}
-            stops={stops}
-            allProfiles={allProfiles}
-            userRole={userRole!}
-            currentProfile={profile!}
-            currentOrgId={currentOrgId!}
-            onEditSubmit={handleEditSubmit}
-            onAssignDriver={handleAssignDriver}
-            onUpdateProgress={handleUpdateProgress}
-            onRequestPod={handleRequestPod}
-            onExportPdf={handleExportPdf}
-            onCloneJob={handleCloneJob}
-            onCancelJob={() => setJobToCancel(job)}
-            onEditJob={() => setIsEditing(true)}
-            isSubmittingEdit={isSubmittingEdit}
-            isAssigningDriver={isAssigningDriver}
-            isUpdatingProgress={isUpdatingProgress}
-            isExportingPdf={isExportingPdf}
-          />
-          <JobOverviewCard
-            job={job}
-            stops={stops}
-            allProfiles={allProfiles}
-          />
-        </Card>
-
-        <JobDetailTabs
+      <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
+        <JobDetailHeader
           job={job}
-          progressLogs={progressLogs}
-          allProfiles={allProfiles}
           stops={stops}
-          documents={documents}
-          currentOrgId={currentOrgId}
-          onLogVisibilityChange={() => refetchJobData()}
+          allProfiles={allProfiles}
+          userRole={userRole!}
+          currentProfile={profile!}
+          currentOrgId={currentOrgId!}
+          onEditSubmit={handleEditSubmit}
+          onAssignDriver={handleAssignDriver}
+          onUpdateProgress={handleUpdateProgress}
+          onRequestPod={handleRequestPod}
+          onExportPdf={handleExportPdf}
+          onCloneJob={handleCloneJob}
+          onCancelJob={() => setJobToCancel(job)}
+          onEditJob={() => setIsEditing(true)}
+          isSubmittingEdit={isSubmittingEdit}
+          isAssigningDriver={isAssigningDriver}
+          isUpdatingProgress={isUpdatingProgress}
+          isExportingPdf={isExportingPdf}
         />
+        <JobOverviewCard
+          job={job}
+          stops={stops}
+          allProfiles={allProfiles}
+        />
+      </Card>
 
-        {job && (
-          <CloneJobDialog
-            open={isCloneDialogOpen}
-            onOpenChange={setIsCloneDialogOpen}
-            originalJob={job}
-            originalStops={stops}
-            onCloneSuccess={handleCloneSuccess}
+      <JobDetailTabs
+        job={job}
+        progressLogs={progressLogs}
+        allProfiles={allProfiles}
+        stops={stops}
+        documents={documents}
+        currentOrgId={currentOrgId}
+        onLogVisibilityChange={() => refetchJobData()}
+      />
+
+      {job && (
+        <CloneJobDialog
+          open={isCloneDialogOpen}
+          onOpenChange={setIsCloneDialogOpen}
+          originalJob={job}
+          originalStops={stops}
+          onCloneSuccess={handleCloneSuccess}
+        />
+      )}
+
+      <CancelJobDialog
+        open={!!jobToCancel}
+        onOpenChange={(open) => !open && setJobToCancel(null)}
+        job={jobToCancel}
+        onConfirm={handleCancelJob}
+        isCancelling={isSubmittingEdit}
+      />
+
+      {/* Hidden component for PDF generation */}
+      {job && stops && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+          <JobPdfDocument
+            ref={pdfRef}
+            job={job}
+            stops={stops}
+            driver={driver}
+            organisation={organisation}
           />
-        )}
-
-        <CancelJobDialog
-          open={!!jobToCancel}
-          onOpenChange={(open) => !open && setJobToCancel(null)}
-          job={jobToCancel}
-          onConfirm={handleCancelJob}
-          isCancelling={isSubmittingEdit}
-        />
-
-        {/* Hidden component for PDF generation */}
-        {job && stops && (
-          <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-            <JobPdfDocument
-              ref={pdfRef}
-              job={job}
-              stops={stops}
-              driver={driver}
-              organisation={organisation}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

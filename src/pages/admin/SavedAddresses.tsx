@@ -232,270 +232,268 @@ const AdminSavedAddresses: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-4xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] mb-6 shadow-xl rounded-xl p-6">
-          <CardHeader className="p-0 pb-4">
-            <CardTitle className="text-2xl font-bold">Saved Addresses</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Add New Address</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card className="bg-[var(--saas-card-bg)] mb-6 shadow-xl rounded-xl p-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle className="text-2xl font-bold">Saved Addresses</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Add New Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newAddressName">Name (Optional)</Label>
+                <Input
+                  id="newAddressName"
+                  value={newAddressName}
+                  onChange={(e) => setNewAddressName(e.target.value)}
+                  placeholder="e.g., Main Depot"
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newAddressLine1">Address Line 1</Label>
+                <Input
+                  id="newAddressLine1"
+                  value={newAddressLine1}
+                  onChange={(e) => setNewAddressLine1(e.target.value)}
+                  placeholder="e.g., 123 High Street"
+                  required
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newAddressLine2">Address Line 2 (Optional)</Label>
+                <Input
+                  id="newAddressLine2"
+                  value={newAddressLine2}
+                  onChange={(e) => setNewAddressLine2(e.target.value)}
+                  placeholder="e.g., Unit 5"
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newAddressCity">Town/City</Label>
+                <Input
+                  id="newAddressCity"
+                  value={newAddressCity}
+                  onChange={(e) => setNewAddressCity(e.target.value)}
+                  placeholder="e.g., London"
+                  required
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newAddressCounty">County (Optional)</Label>
+                <Input
+                  id="newAddressCounty"
+                  value={newAddressCounty}
+                  onChange={(e) => setNewAddressCounty(e.target.value)}
+                  placeholder="e.g., Greater London"
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newAddressPostcode">Postcode</Label>
+                <Input
+                  id="newAddressPostcode"
+                  value={formatPostcode(newAddressPostcode)}
+                  onChange={(e) => setNewAddressPostcode(e.target.value)}
+                  onBlur={(e) => setNewAddressPostcode(formatPostcode(e.target.value))}
+                  placeholder="e.g., SW1A 0AA"
+                  required
+                  disabled={busy}
+                />
+              </div>
+              <div className="flex items-center space-x-2 md:col-span-2">
+                <Checkbox
+                  id="newAddressFavourite"
+                  checked={newAddressFavourite}
+                  onCheckedChange={(checked: boolean) => setNewAddressFavourite(checked)}
+                  disabled={busy}
+                />
+                <Label htmlFor="newAddressFavourite">Favourite</Label>
+              </div>
+            </div>
+            <Button onClick={handleCreateAddress} className="w-full" disabled={busy}>
+              <PlusCircle className="h-4 w-4 mr-2" /> Add Address
+            </Button>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Existing Addresses</h3>
+            <div className="flex gap-4 mb-4">
+              <Input
+                placeholder="Search addresses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-grow"
+                disabled={busy}
+              />
+              <Button onClick={loadAddresses} disabled={busy} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              </Button>
+            </div>
+            {addresses.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">No saved addresses found.</p>
+            ) : (
+              <div className="rounded-md overflow-hidden shadow-sm">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Postcode</TableHead>
+                      <TableHead className="text-center">Favourite</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-gray-100">
+                    {addresses.map(address => (
+                      <TableRow key={address.id}>
+                        <TableCell className="font-medium">{address.name || '-'}</TableCell>
+                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatAddressPart(address.line_1)}
+                          {address.line_2 && `, ${formatAddressPart(address.line_2)}`}
+                          , {formatAddressPart(address.town_or_city)}
+                          {address.county && `, ${formatAddressPart(address.county)}`}
+                        </TableCell>
+                        <TableCell>{formatPostcode(address.postcode)}</TableCell>
+                        <TableCell className="text-center">
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleFavourite(address)} disabled={busy}>
+                            {address.favourite ? <Star className="h-4 w-4 text-yellow-500" /> : <Star className="h-4 w-4 text-gray-300" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditAddress(address)} disabled={busy}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" disabled={busy}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will permanently delete the address "{address.name}".</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Address Dialog */}
+      {editingAddress && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Edit Saved Address</DialogTitle>
+              <DialogDescription>
+                Make changes to the address here. Click save when you're done.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressName">Name (Optional)</Label>
+                  <Label htmlFor="editAddressName">Name (Optional)</Label>
                   <Input
-                    id="newAddressName"
-                    value={newAddressName}
-                    onChange={(e) => setNewAddressName(e.target.value)}
-                    placeholder="e.g., Main Depot"
+                    id="editAddressName"
+                    value={editingAddress.name || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, name: e.target.value })}
                     disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressLine1">Address Line 1</Label>
+                  <Label htmlFor="editAddressLine1">Address Line 1</Label>
                   <Input
-                    id="newAddressLine1"
-                    value={newAddressLine1}
-                    onChange={(e) => setNewAddressLine1(e.target.value)}
-                    placeholder="e.g., 123 High Street"
+                    id="editAddressLine1"
+                    value={editingAddress.line_1}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, line_1: e.target.value })}
                     required
                     disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressLine2">Address Line 2 (Optional)</Label>
+                  <Label htmlFor="editAddressLine2">Address Line 2 (Optional)</Label>
                   <Input
-                    id="newAddressLine2"
-                    value={newAddressLine2}
-                    onChange={(e) => setNewAddressLine2(e.target.value)}
-                    placeholder="e.g., Unit 5"
+                    id="editAddressLine2"
+                    value={editingAddress.line_2 || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, line_2: e.target.value })}
                     disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressCity">Town/City</Label>
+                  <Label htmlFor="editAddressCity">Town/City</Label>
                   <Input
-                    id="newAddressCity"
-                    value={newAddressCity}
-                    onChange={(e) => setNewAddressCity(e.target.value)}
-                    placeholder="e.g., London"
+                    id="editAddressCity"
+                    value={editingAddress.town_or_city}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, town_or_city: e.target.value })}
                     required
                     disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressCounty">County (Optional)</Label>
+                  <Label htmlFor="editAddressCounty">County (Optional)</Label>
                   <Input
-                    id="newAddressCounty"
-                    value={newAddressCounty}
-                    onChange={(e) => setNewAddressCounty(e.target.value)}
-                    placeholder="e.g., Greater London"
+                    id="editAddressCounty"
+                    value={editingAddress.county || ''}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, county: e.target.value })}
                     disabled={busy}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newAddressPostcode">Postcode</Label>
+                  <Label htmlFor="editAddressPostcode">Postcode</Label>
                   <Input
-                    id="newAddressPostcode"
-                    value={formatPostcode(newAddressPostcode)}
-                    onChange={(e) => setNewAddressPostcode(e.target.value)}
-                    onBlur={(e) => setNewAddressPostcode(formatPostcode(e.target.value))}
+                    id="editAddressPostcode"
+                    value={formatPostcode(editingAddress.postcode)}
+                    onChange={(e) => setEditingAddress({ ...editingAddress, postcode: e.target.value })}
+                    onBlur={(e) => setEditingAddress({ ...editingAddress, postcode: formatPostcode(e.target.value) })}
                     placeholder="e.g., SW1A 0AA"
                     required
                     disabled={busy}
                   />
                 </div>
-                <div className="flex items-center space-x-2 md:col-span-2">
+                <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="newAddressFavourite"
-                    checked={newAddressFavourite}
-                    onCheckedChange={(checked: boolean) => setNewAddressFavourite(checked)}
+                    id="editAddressFavourite"
+                    checked={editingAddress.favourite}
+                    onCheckedChange={(checked: boolean) => setEditingAddress({ ...editingAddress, favourite: checked })}
                     disabled={busy}
                   />
-                  <Label htmlFor="newAddressFavourite">Favourite</Label>
+                  <Label htmlFor="editAddressFavourite">Favourite</Label>
                 </div>
               </div>
-              <Button onClick={handleCreateAddress} className="w-full" disabled={busy}>
-                <PlusCircle className="h-4 w-4 mr-2" /> Add Address
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={busy}>Cancel</Button>
+              <Button onClick={handleUpdateAddress} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
               </Button>
-            </div>
-
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">Existing Addresses</h3>
-              <div className="flex gap-4 mb-4">
-                <Input
-                  placeholder="Search addresses..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-grow"
-                  disabled={busy}
-                />
-                <Button onClick={loadAddresses} disabled={busy} variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-                </Button>
-              </div>
-              {addresses.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400">No saved addresses found.</p>
-              ) : (
-                <div className="rounded-md overflow-hidden shadow-sm">
-                  <Table>
-                    <TableHeader className="bg-gray-50">
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Postcode</TableHead>
-                        <TableHead className="text-center">Favourite</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="divide-y divide-gray-100">
-                      {addresses.map(address => (
-                        <TableRow key={address.id}>
-                          <TableCell className="font-medium">{address.name || '-'}</TableCell>
-                          <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                            {formatAddressPart(address.line_1)}
-                            {address.line_2 && `, ${formatAddressPart(address.line_2)}`}
-                            , {formatAddressPart(address.town_or_city)}
-                            {address.county && `, ${formatAddressPart(address.county)}`}
-                          </TableCell>
-                          <TableCell>{formatPostcode(address.postcode)}</TableCell>
-                          <TableCell className="text-center">
-                            <Button variant="ghost" size="sm" onClick={() => handleToggleFavourite(address)} disabled={busy}>
-                              {address.favourite ? <Star className="h-4 w-4 text-yellow-500" /> : <Star className="h-4 w-4 text-gray-300" />}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center space-x-2">
-                              <Button variant="outline" size="sm" onClick={() => handleEditAddress(address)} disabled={busy}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" size="sm" disabled={busy}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>This will permanently delete the address "{address.name}".</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Edit Address Dialog */}
-        {editingAddress && (
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Edit Saved Address</DialogTitle>
-                <DialogDescription>
-                  Make changes to the address here. Click save when you're done.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressName">Name (Optional)</Label>
-                    <Input
-                      id="editAddressName"
-                      value={editingAddress.name || ''}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, name: e.target.value })}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressLine1">Address Line 1</Label>
-                    <Input
-                      id="editAddressLine1"
-                      value={editingAddress.line_1}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, line_1: e.target.value })}
-                      required
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressLine2">Address Line 2 (Optional)</Label>
-                    <Input
-                      id="editAddressLine2"
-                      value={editingAddress.line_2 || ''}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, line_2: e.target.value })}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressCity">Town/City</Label>
-                    <Input
-                      id="editAddressCity"
-                      value={editingAddress.town_or_city}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, town_or_city: e.target.value })}
-                      required
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressCounty">County (Optional)</Label>
-                    <Input
-                      id="editAddressCounty"
-                      value={editingAddress.county || ''}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, county: e.target.value })}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddressPostcode">Postcode</Label>
-                    <Input
-                      id="editAddressPostcode"
-                      value={formatPostcode(editingAddress.postcode)}
-                      onChange={(e) => setEditingAddress({ ...editingAddress, postcode: e.target.value })}
-                      onBlur={(e) => setEditingAddress({ ...editingAddress, postcode: formatPostcode(e.target.value) })}
-                      placeholder="e.g., SW1A 0AA"
-                      required
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="editAddressFavourite"
-                      checked={editingAddress.favourite}
-                      onCheckedChange={(checked: boolean) => setEditingAddress({ ...editingAddress, favourite: checked })}
-                      disabled={busy}
-                    />
-                    <Label htmlFor="editAddressFavourite">Favourite</Label>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={busy}>Cancel</Button>
-                <Button onClick={handleUpdateAddress} disabled={busy}>
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Save Changes
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

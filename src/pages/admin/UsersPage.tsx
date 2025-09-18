@@ -227,8 +227,8 @@ const AdminUsersPage: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full px-6">
+      <div className="space-y-6">
         <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>

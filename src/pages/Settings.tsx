@@ -27,7 +27,7 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8">
+    <div className="w-full px-6">
        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-2xl font-bold text-gray-900">Settings</CardTitle>

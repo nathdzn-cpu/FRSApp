@@ -143,49 +143,47 @@ const Drivers: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">Drivers List</CardTitle>
-            {canCreateUser && (
-              <Button onClick={() => navigate('/admin/users/new/driver')} className="bg-blue-600 text-white hover:bg-blue-700">
-                <UserPlus className="h-4 w-4 mr-2" /> New Driver
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search drivers by name, vehicle reg, or trailer no..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              />
+      <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
+        <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
+          <CardTitle className="text-2xl font-bold text-gray-900">Drivers List</CardTitle>
+          {canCreateUser && (
+            <Button onClick={() => navigate('/admin/users/new/driver')} className="bg-blue-600 text-white hover:bg-blue-700">
+              <UserPlus className="h-4 w-4 mr-2" /> New Driver
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search drivers by name, vehicle reg, or trailer no..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+          </div>
+
+          {filteredDrivers.length === 0 ? (
+            <p className="text-gray-600">No drivers found matching your criteria.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredDrivers.map((driver) => (
+                <DriverCard
+                  key={driver.id}
+                  driver={driver}
+                  stats={getDriverStats(driver.id)}
+                  onViewDetails={handleViewDetails}
+                />
+              ))}
             </div>
-
-            {filteredDrivers.length === 0 ? (
-              <p className="text-gray-600">No drivers found matching your criteria.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredDrivers.map((driver) => (
-                  <DriverCard
-                    key={driver.id}
-                    driver={driver}
-                    stats={getDriverStats(driver.id)}
-                    onViewDetails={handleViewDetails}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {selectedDriver && (
         <DriverDetailDialog

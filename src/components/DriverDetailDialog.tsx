@@ -104,7 +104,7 @@ const DriverDetailDialog: React.FC<DriverDetailDialogProps> = ({ open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white rounded-lg shadow-xl">
+		<DialogContent className="w-full max-w-[90vw] h-auto max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
         <DialogHeader className="pt-6">
           <div className="flex flex-col items-center space-y-2">
             <Avatar className="h-24 w-24 border-4 border-white shadow-md">

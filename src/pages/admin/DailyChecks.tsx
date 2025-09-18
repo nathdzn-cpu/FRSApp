@@ -266,180 +266,178 @@ const AdminDailyChecks: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-4xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] mb-6 shadow-xl rounded-xl p-6">
-          <CardHeader className="p-0 pb-4">
-            <CardTitle className="text-2xl font-bold">Admin: Daily HGV Check Items</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Create New Item</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newItemTitle">Title</Label>
-                  <Input
-                    id="newItemTitle"
-                    value={newItemTitle}
-                    onChange={(e) => setNewItemTitle(e.target.value)}
-                    placeholder="e.g., Brakes"
-                    disabled={busy}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newItemDescription">Description (Optional)</Label>
-                  <Textarea
-                    id="newItemDescription"
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value)}
-                    placeholder="e.g., Check brake fluid, pads, and general function."
-                    disabled={busy}
-                  />
-                </div>
-                <div className="flex items-center space-x-2 md:col-span-2">
-                  <Switch
-                    id="newItemIsActive"
-                    checked={newItemIsActive}
-                    onCheckedChange={setNewItemIsActive}
-                    disabled={busy}
-                  />
-                  <Label htmlFor="newItemIsActive">Is Active</Label>
-                </div>
-              </div>
-              <Button onClick={handleCreateItem} className="w-full" disabled={busy}>
-                <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-              </Button>
-            </div>
-
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">Existing Items</h3>
-              <div className="flex gap-4 mb-4">
+      <Card className="bg-[var(--saas-card-bg)] mb-6 shadow-xl rounded-xl p-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle className="text-2xl font-bold">Admin: Daily HGV Check Items</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Create New Item</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newItemTitle">Title</Label>
                 <Input
-                  placeholder="Search items..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-grow"
+                  id="newItemTitle"
+                  value={newItemTitle}
+                  onChange={(e) => setNewItemTitle(e.target.value)}
+                  placeholder="e.g., Brakes"
                   disabled={busy}
                 />
-                <Button onClick={loadItems} disabled={busy} variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-                </Button>
               </div>
-              {fnError && <p className="text-red-500 text-sm mb-2">Function error: {fnError}</p>}
-              {filteredItems.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400">No daily check items found.</p>
-              ) : (
-                <div className="rounded-md overflow-hidden shadow-sm">
-                  <Table>
-                    <TableHeader className="bg-gray-50">
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-center">Active</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="divide-y divide-gray-100">
-                      {filteredItems.map(item => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.title}</TableCell>
-                          <TableCell className="text-sm text-gray-600 dark:text-gray-400">{item.description || '-'}</TableCell>
-                          <TableCell className="text-center">
-                            {item.is_active ? <Check className="h-4 w-4 text-green-500 mx-auto" /> : <X className="h-4 w-4 text-red-500 mx-auto" />}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center space-x-2">
-                              <Button variant="outline" size="sm" onClick={() => handleToggleActive(item.id, item.is_active)} disabled={busy}>
-                                {item.is_active ? 'Deactivate' : 'Activate'}
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleEditItem(item)} disabled={busy}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" size="sm" disabled={busy}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>This will permanently delete the item "{item.title}."</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="newItemDescription">Description (Optional)</Label>
+                <Textarea
+                  id="newItemDescription"
+                  value={newItemDescription}
+                  onChange={(e) => setNewItemDescription(e.target.value)}
+                  placeholder="e.g., Check brake fluid, pads, and general function."
+                  disabled={busy}
+                />
+              </div>
+              <div className="flex items-center space-x-2 md:col-span-2">
+                <Switch
+                  id="newItemIsActive"
+                  checked={newItemIsActive}
+                  onCheckedChange={setNewItemIsActive}
+                  disabled={busy}
+                />
+                <Label htmlFor="newItemIsActive">Is Active</Label>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <Button onClick={handleCreateItem} className="w-full" disabled={busy}>
+              <PlusCircle className="h-4 w-4 mr-2" /> Add Item
+            </Button>
+          </div>
 
-        {/* Edit Item Dialog */}
-        {editingItem && (
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Edit Daily Check Item</DialogTitle>
-                <DialogDescription>
-                  Make changes to the item here. Click save when you're done.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editItemTitle">Title</Label>
-                    <Input
-                      id="editItemTitle"
-                      value={editingItem.title}
-                      onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editItemDescription">Description (Optional)</Label>
-                    <Textarea
-                      id="editItemDescription"
-                      value={editingItem.description || ''}
-                      onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="editItemIsActive"
-                      checked={editingItem.is_active}
-                      onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
-                      disabled={busy}
-                    />
-                    <Label htmlFor="editItemIsActive">Is Active</Label>
-                  </div>
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Existing Items</h3>
+            <div className="flex gap-4 mb-4">
+              <Input
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-grow"
+                disabled={busy}
+              />
+              <Button onClick={loadItems} disabled={busy} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              </Button>
+            </div>
+            {fnError && <p className="text-red-500 text-sm mb-2">Function error: {fnError}</p>}
+            {filteredItems.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">No daily check items found.</p>
+            ) : (
+              <div className="rounded-md overflow-hidden shadow-sm">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-center">Active</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-gray-100">
+                    {filteredItems.map(item => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.title}</TableCell>
+                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">{item.description || '-'}</TableCell>
+                        <TableCell className="text-center">
+                          {item.is_active ? <Check className="h-4 w-4 text-green-500 mx-auto" /> : <X className="h-4 w-4 text-red-500 mx-auto" />}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleToggleActive(item.id, item.is_active)} disabled={busy}>
+                              {item.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleEditItem(item)} disabled={busy}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" disabled={busy}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will permanently delete the item "{item.title}."</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteItem(item.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Item Dialog */}
+      {editingItem && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="flex flex-col bg-white shadow-xl rounded-xl p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Edit Daily Check Item</DialogTitle>
+              <DialogDescription>
+                Make changes to the item here. Click save when you're done.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editItemTitle">Title</Label>
+                  <Input
+                    id="editItemTitle"
+                    value={editingItem.title}
+                    onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editItemDescription">Description (Optional)</Label>
+                  <Textarea
+                    id="editItemDescription"
+                    value={editingItem.description || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="editItemIsActive"
+                    checked={editingItem.is_active}
+                    onCheckedChange={(checked) => setEditingItem({ ...editingItem, is_active: checked })}
+                    disabled={busy}
+                  />
+                  <Label htmlFor="editItemIsActive">Is Active</Label>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={busy}>Cancel</Button>
-                <Button onClick={handleUpdateItem} disabled={busy}>
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Save Changes
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={busy}>Cancel</Button>
+              <Button onClick={handleUpdateItem} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

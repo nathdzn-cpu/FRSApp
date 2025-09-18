@@ -130,74 +130,72 @@ const AdminChecklists: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-7xl mx-auto">
-        <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-        </Button>
+    <div className="w-full px-6">
+      <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
 
-        <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
-          <CardHeader className="p-0 pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">Admin: Daily Checklists</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pt-4">
-            <div className="mb-4">
-              <Label htmlFor="select-checklist" className="text-gray-700">Select Checklist</Label>
-              <Select onValueChange={handleChecklistSelect} value={selectedChecklist?.id || ''}>
-                <SelectTrigger id="select-checklist" className="w-full md:w-[300px]">
-                  <SelectValue placeholder="Select a checklist" />
-                </SelectTrigger>
-                <SelectContent>
-                  {checklists.map(cl => (
-                    <SelectItem key={cl.id} value={cl.id}>{cl.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <Card className="bg-[var(--saas-card-bg)] shadow-sm rounded-xl p-6 mb-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle className="text-2xl font-bold text-gray-900">Admin: Daily Checklists</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <div className="mb-4">
+            <Label htmlFor="select-checklist" className="text-gray-700">Select Checklist</Label>
+            <Select onValueChange={handleChecklistSelect} value={selectedChecklist?.id || ''}>
+              <SelectTrigger id="select-checklist" className="w-full md:w-[300px]">
+                <SelectValue placeholder="Select a checklist" />
+              </SelectTrigger>
+              <SelectContent>
+                {checklists.map(cl => (
+                  <SelectItem key={cl.id} value={cl.id}>{cl.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {selectedChecklist ? (
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">{selectedChecklist.name} Items</h3>
-                <div className="space-y-4">
-                  {editingItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center space-x-2 p-2 shadow-sm rounded-md"> {/* Removed border */}
-                      <Input
-                        value={item.text}
-                        onChange={(e) => handleItemChange(index, 'text', e.target.value)}
-                        placeholder="Checklist item text"
-                        className="flex-grow"
-                      />
-                      <Select
-                        value={item.type}
-                        onValueChange={(value) => handleItemChange(index, 'type', value as 'checkbox' | 'text')}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="checkbox">Checkbox</SelectItem>
-                          <SelectItem value="text">Text Input</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" onClick={handleAddItem}>
-                    <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-                  </Button>
-                </div>
-                <Button onClick={handleSave} className="mt-6 bg-blue-600 text-white hover:bg-blue-700">
-                  <Save className="h-4 w-4 mr-2" /> Save Checklist
+          {selectedChecklist ? (
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">{selectedChecklist.name} Items</h3>
+              <div className="space-y-4">
+                {editingItems.map((item, index) => (
+                  <div key={item.id} className="flex items-center space-x-2 p-2 shadow-sm rounded-md"> {/* Removed border */}
+                    <Input
+                      value={item.text}
+                      onChange={(e) => handleItemChange(index, 'text', e.target.value)}
+                      placeholder="Checklist item text"
+                      className="flex-grow"
+                    />
+                    <Select
+                      value={item.type}
+                      onValueChange={(value) => handleItemChange(index, 'type', value as 'checkbox' | 'text')}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checkbox">Checkbox</SelectItem>
+                        <SelectItem value="text">Text Input</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" onClick={handleAddItem}>
+                  <PlusCircle className="h-4 w-4 mr-2" /> Add Item
                 </Button>
               </div>
-            ) : (
-              <p className="text-gray-600">Please select a checklist to edit.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <Button onClick={handleSave} className="mt-6 bg-blue-600 text-white hover:bg-blue-700">
+                <Save className="h-4 w-4 mr-2" /> Save Checklist
+              </Button>
+            </div>
+          ) : (
+            <p className="text-gray-600">Please select a checklist to edit.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

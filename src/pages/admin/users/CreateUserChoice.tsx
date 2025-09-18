@@ -33,7 +33,7 @@ const CreateUserChoice: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full px-6">
       <div className="max-w-xl mx-auto">
         <Button onClick={() => navigate('/admin/users')} variant="outline" className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Management
