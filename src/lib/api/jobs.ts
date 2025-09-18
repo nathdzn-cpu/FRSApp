@@ -252,6 +252,7 @@ export const cloneJob = async (
     delivery_date: string;
     price: number | null;
     assigned_driver_id: string | null;
+    notes: string | null;
   },
   stopsData: Array<any>,
   actorId: string,

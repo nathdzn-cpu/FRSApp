@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,10 @@ const formatTimeInput = (value: string) => {
   const hour = parseInt(cleaned.substring(0, 2), 10);
   const minute = parseInt(cleaned.substring(2, 4), 10);
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
+
+const toZodLiteral = (arr: readonly string[]) => {
+  return z.union(arr.map(v => z.literal(v)) as [z.ZodLiteral<string>, z.ZodLiteral<string>, ...z.ZodLiteral<string>[]]);
 };
 
 const stopSchema = z.object({
@@ -139,16 +143,16 @@ const JobForm: React.FC<JobFormProps> = ({ onSubmit, drivers, defaultValues, isS
     });
 
     const handleAddressSelect = (index: number, address: SavedAddress) => {
-      const fieldNamePrefix = `${type}.${index}` as const;
-      form.setValue(`${fieldNamePrefix}.name`, address.name || toTitleCase(address.line_1));
-      form.setValue(`${fieldNamePrefix}.address_line1`, address.line_1);
-      form.setValue(`${fieldNamePrefix}.address_line2`, address.line_2 || null);
-      form.setValue(`${fieldNamePrefix}.city`, address.town_or_city);
-      form.setValue(`collections.${index}.county`, address.county || null); // Added county
-      form.setValue(`${fieldNamePrefix}.postcode`, address.postcode);
-      form.trigger(`${fieldNamePrefix}.address_line1`); // Trigger validation
-      form.trigger(`${fieldNamePrefix}.city`);
-      form.trigger(`${fieldNamePrefix}.postcode`);
+      const fieldNamePrefix = `${type}.${index}`;
+      form.setValue(`${fieldNamePrefix}.name` as any, address.name || toTitleCase(address.line_1));
+      form.setValue(`${fieldNamePrefix}.address_line1` as any, address.line_1);
+      form.setValue(`${fieldNamePrefix}.address_line2` as any, address.line_2 || null);
+      form.setValue(`${fieldNamePrefix}.city` as any, address.town_or_city);
+      form.setValue(`${fieldNamePrefix}.county` as any, address.county || null); // Added county
+      form.setValue(`${fieldNamePrefix}.postcode` as any, address.postcode);
+      form.trigger(`${fieldNamePrefix}.address_line1` as any); // Trigger validation
+      form.trigger(`${fieldNamePrefix}.city` as any);
+      form.trigger(`${fieldNamePrefix}.postcode` as any);
     };
 
     return (

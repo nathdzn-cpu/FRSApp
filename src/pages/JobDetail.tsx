@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress } from '@/lib/api/jobs';
+import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress, getJobs } from '@/lib/api/jobs';
 import { getProfiles } from '@/lib/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

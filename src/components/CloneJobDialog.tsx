@@ -86,7 +86,7 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
 
     setIsSubmitting(true);
     try {
-      const initialStatus = values.assigned_driver_id && values.assigned_driver_id !== 'null' ? 'accepted' : 'planned';
+      const initialStatus: Job['status'] = values.assigned_driver_id && values.assigned_driver_id !== 'null' ? 'accepted' : 'planned';
 
       const newJobData = {
         order_number: values.order_number || null,

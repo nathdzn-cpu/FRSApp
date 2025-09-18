@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/lib/supabaseClient";
 import { callFn } from "@/lib/callFunction";
-import { Profile } from '@/utils/mockData';
+import { DailyCheckItem, Profile } from '@/utils/mockData';
+import { submitDailyCheck } from '@/lib/api/dailyCheckResponses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Camera, CheckCircle2, XCircle } from 'lucide-react';
@@ -13,19 +14,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import SignaturePad from '@/components/SignaturePad';
+import SignaturePad, { SignaturePadRef } from '@/components/SignaturePad';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getDailyCheckItems } from '@/lib/api/dailyCheckItems';
 
-interface DailyCheckItem {
-  id: string;
-  title: string;
-  description?: string;
-  is_active: boolean;
-}
-
-interface CheckItemState {
+interface CheckItemResponse {
   item_id: string;
   title: string;
   description?: string;
@@ -39,7 +33,7 @@ const DriverDailyCheck: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, userRole, isLoadingAuth } = useAuth();
   const [activeItems, setActiveItems] = useState<DailyCheckItem[]>([]);
-  const [checkStates, setCheckStates] = useState<CheckItemState[]>([]);
+  const [checkStates, setCheckStates] = useState<CheckItemResponse[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -48,7 +42,7 @@ const DriverDailyCheck: React.FC = () => {
   const [signature, setSignature] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fnError, setFnError] = useState<string | null>(null);
-  const signaturePadRef = useRef<SignaturePad>(null);
+  const signaturePadRef = useRef<SignaturePadRef>(null);
 
   const currentOrgId = profile?.org_id || 'demo-tenant-id';
   const currentProfile = profile;
@@ -100,7 +94,7 @@ const DriverDailyCheck: React.FC = () => {
     fetchItemsAndProfile();
   }, [user, profile, userRole, currentOrgId, isLoadingAuth, navigate]);
 
-  const handleCheckChange = (itemId: string, field: keyof CheckItemState, value: any) => {
+  const handleCheckChange = (itemId: string, field: keyof CheckItemResponse, value: any) => {
     setCheckStates(prevStates =>
       prevStates.map(check =>
         check.item_id === itemId ? { ...check, [field]: value } : check

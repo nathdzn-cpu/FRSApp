@@ -15,14 +15,14 @@ export const getQuotes = async (orgId: string): Promise<Quote[]> => {
   return data as Quote[];
 };
 
-interface CreateQuotePayload {
+export type CreateQuotePayload = {
   from_location: string;
   to_location: string;
-  customer: string;
-  price: number | null;
-  mileage: number | null;
-  drops: number;
-}
+  customer?: string;
+  price?: number;
+  mileage?: number;
+  drops?: number;
+};
 
 export const createQuote = async (orgId: string, payload: CreateQuotePayload): Promise<Quote> => {
   const { data, error } = await supabase

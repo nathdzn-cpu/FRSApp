@@ -76,7 +76,7 @@ const CreateJob: React.FC = () => {
     }
 
     try {
-      const initialStatus = values.assigned_driver_id && values.assigned_driver_id !== 'null' ? 'accepted' : 'planned';
+      const initialStatus = values.assigned_driver_id && values.assigned_driver_id !== 'null' ? 'assigned' : 'planned';
 
       const newJobData = {
         order_number: values.order_number || null, // Pass null if empty for auto-generation
@@ -88,7 +88,18 @@ const CreateJob: React.FC = () => {
         notes: values.notes,
       };
 
-      const newStopsData = [...values.collections, ...values.deliveries].map((stop, index) => ({
+      const newStopsData: Array<{
+        name: string | null;
+        address_line1: string;
+        address_line2?: string | null;
+        city: string;
+        postcode: string;
+        window_from?: string | null;
+        window_to?: string | null;
+        notes?: string | null;
+        type: 'collection' | 'delivery';
+        seq: number;
+      }> = [...values.collections, ...values.deliveries].map((stop: any, index: number) => ({
         ...stop,
         type: index < values.collections.length ? 'collection' : 'delivery',
         seq: index + 1,
