@@ -174,7 +174,7 @@ const Quotes: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
       </Button>
@@ -230,41 +230,43 @@ const Quotes: React.FC = () => {
           </Dialog>
         </CardHeader>
         <CardContent className="p-0 pt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Mileage</TableHead>
-                <TableHead>Drops</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {quotes.map((quote) => (
-                <TableRow key={quote.id}>
-                  <TableCell>{format(new Date(quote.created_at), 'PPP')}</TableCell>
-                  <TableCell>{quote.customer}</TableCell>
-                  <TableCell>{quote.from_location}</TableCell>
-                  <TableCell>{quote.to_location}</TableCell>
-                  <TableCell>{formatGBPDisplay(quote.price)}</TableCell>
-                  <TableCell>{quote.mileage}</TableCell>
-                  <TableCell>{quote.drops}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(quote)} className="mr-2">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(quote)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Mileage</TableHead>
+                  <TableHead>Drops</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {quotes.map((quote) => (
+                  <TableRow key={quote.id}>
+                    <TableCell>{format(new Date(quote.created_at), 'PPP')}</TableCell>
+                    <TableCell>{quote.customer}</TableCell>
+                    <TableCell>{quote.from_location}</TableCell>
+                    <TableCell>{quote.to_location}</TableCell>
+                    <TableCell>{formatGBPDisplay(quote.price)}</TableCell>
+                    <TableCell>{quote.mileage}</TableCell>
+                    <TableCell>{quote.drops}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(quote)} className="mr-2">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(quote)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

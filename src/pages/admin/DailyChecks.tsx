@@ -266,7 +266,7 @@ const AdminDailyChecks: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
       </Button>
@@ -332,7 +332,7 @@ const AdminDailyChecks: React.FC = () => {
             {filteredItems.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">No daily check items found.</p>
             ) : (
-              <div className="rounded-md overflow-hidden shadow-sm">
+              <div className="rounded-md overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-gray-50">
                     <TableRow>
