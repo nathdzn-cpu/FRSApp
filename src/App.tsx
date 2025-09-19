@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthContextProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
@@ -43,6 +43,7 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { user, userRole, profile, isLoadingAuth } = useAuth();
   const currentOrgId = profile?.org_id;
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const { data: driverActiveJobs = [] } = useQuery<Job[], Error>({
     queryKey: ['driverActiveJobs', currentOrgId, user?.id],
@@ -69,14 +70,14 @@ const AppContent = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[var(--saas-background)]">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+    <div className="min-h-screen bg-[var(--saas-background)]">
+      <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <div className="flex-1 flex flex-col md:ml-[240px]">
+        <Header setSidebarOpen={setSidebarOpen} />
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--saas-background)]">
+        <main className="flex-1 bg-[var(--saas-background)]">
           <div className="p-6 w-full max-w-full">
             <Routes>
               <Route path="/" element={<Index />} />

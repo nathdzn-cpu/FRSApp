@@ -1,77 +1,42 @@
+"use client";
+
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { Bell, Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings, CreditCard } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Link, useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/context/AuthContext';
 import NotificationBell from './NotificationBell';
-import { useIsMobile } from '@/hooks/use-mobile';
-import Sidebar from './Sidebar';
 
-const Header: React.FC = () => {
-  const { user, profile, logout } = useAuth();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
+interface HeaderProps {
+  setSidebarOpen: (isOpen: boolean) => void;
+}
 
-  const handleSignOut = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  if (isMobile) {
-    return (
-      <header className="flex items-center justify-between p-4 bg-[var(--saas-card-bg)] border-b sticky top-0 z-40">
-        <Sidebar />
-        <NotificationBell />
-      </header>
-    );
-  }
+const Header = ({ setSidebarOpen }: HeaderProps) => {
+  const { user, profile } = useAuth();
 
   return (
-    <header className="flex items-center justify-end p-4 space-x-4 bg-[var(--saas-card-bg)] border-b sticky top-0 z-40">
-      <NotificationBell />
-      {user && profile && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{profile.full_name}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            {profile.role === 'admin' && (
-              <DropdownMenuItem onClick={() => navigate('/admin/billing')}>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Admin: Billing</span>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+    <header className="flex items-center justify-between h-16 px-6 bg-[var(--saas-header-bg)] border-b border-[var(--saas-border-color)] sticky top-0 z-30">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)}>
+          <Menu className="h-6 w-6" />
+        </Button>
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input placeholder="Search..." className="pl-9 w-64" />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <NotificationBell />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
+            {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+          </div>
+          <div className="hidden md:flex flex-col text-right">
+            <span className="font-semibold text-sm">{profile?.full_name}</span>
+            <span className="text-xs text-gray-500 capitalize">{profile?.role}</span>
+          </div>
+        </div>
+      </div>
     </header>
   );
 };

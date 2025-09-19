@@ -1,138 +1,128 @@
 "use client";
 
-import React, { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Settings, CalendarCheck, ChevronDown, PlusCircle, CreditCard } from 'lucide-react';
-import { Truck, User, Map, FileText, MapPin, Users, CheckSquare } from "lucide-react";
-import { useIsMobile } from '@/hooks/use-mobile';
+import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Home, Briefcase, Users, Map, BarChart2, Settings, LifeBuoy, LogOut, Building, CheckSquare, FileText, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Card, CardContent } from '@/components/ui/card';
 
-interface NavLinkItem {
+interface NavItemProps {
   to: string;
   icon: React.ElementType;
-  label: string;
-  roles?: Array<'admin' | 'office' | 'driver'>;
+  children: React.ReactNode;
+  currentPath: string;
+  onClick?: () => void;
 }
 
-const navLinks: NavLinkItem[] = [
-  { to: '/', icon: Truck, label: 'Jobs', roles: ['admin', 'office', 'driver'] },
-  { to: '/drivers', icon: User, label: 'Drivers', roles: ['admin', 'office'] },
-  { to: '/daily-check', icon: CalendarCheck, label: 'Daily Check', roles: ['driver'] },
-  { to: '/map', icon: Map, label: 'Map', roles: ['admin', 'office', 'driver'] },
-  { to: '/quotes', icon: FileText, label: 'Quotes', roles: ['admin', 'office'] },
-  { to: '/admin/checklists', icon: CheckSquare, label: 'Admin Checklists', roles: ['admin'] },
-  { to: '/admin/users', icon: Users, label: 'Admin Users', roles: ['admin'] },
-  { to: '/admin/billing', icon: CreditCard, label: 'Admin Billing', roles: ['admin'] },
-  { to: '/admin/saved-addresses', icon: MapPin, label: 'Saved Addresses', roles: ['admin', 'office'] },
-  { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'office', 'driver'] },
-];
-
-const Sidebar: React.FC = () => {
-  const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, userRole, logout, isOfficeOrAdmin } = useAuth();
-  const navigate = useNavigate();
-
-  const filteredNavLinks = navLinks.filter(link =>
-    !link.roles || (userRole && link.roles.includes(userRole))
-  );
-
-  const canCreateJob = isOfficeOrAdmin;
-
-  const renderNavLinks = () => (
-    <nav className="flex flex-col gap-1 p-2">
-      {canCreateJob && isMobile && ( // Show "New Job" button only on mobile
-        <Button onClick={() => { navigate('/jobs/new'); setIsOpen(false); }} className="bg-blue-600 text-white hover:bg-blue-700 rounded-md mb-2">
-          <PlusCircle className="h-4 w-4 mr-2" /> New Job
-        </Button>
+const NavItem = ({ to, icon: Icon, children, currentPath, onClick }: NavItemProps) => {
+  const isActive = currentPath === to || (to !== '/' && currentPath.startsWith(to));
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+        isActive
+          ? "bg-[var(--saas-sidebar-active-bg)] text-[var(--saas-sidebar-active-text)]"
+          : "hover:bg-[var(--saas-sidebar-hover-bg)]"
       )}
-      {filteredNavLinks.map((link) => (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          className={({ isActive }) =>
-            cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all text-sm font-medium",
-              isActive ? "bg-[var(--saas-sidebar-active-bg)] text-[var(--saas-sidebar-active-text)] shadow-sm" : "text-[var(--saas-sidebar-text)] hover:bg-[var(--saas-sidebar-hover-bg)] hover:text-blue-600"
-            )
-          }
-          onClick={() => setIsOpen(false)}
-        >
-          <link.icon className="h-4 w-4" size={18} />
-          {link.label}
-        </NavLink>
-      ))}
-    </nav>
+    >
+      <Icon className="mr-3 h-5 w-5" />
+      <span>{children}</span>
+    </NavLink>
   );
+};
 
-  const userInitials = profile?.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'JD';
-  const userName = profile?.full_name || 'John Doe';
-  const userRoleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+interface SidebarProps {
+  isSidebarOpen: boolean;
+  setSidebarOpen: (isOpen: boolean) => void;
+}
 
-  if (isMobile) {
-    return (
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50 bg-white shadow-md">
-            <Menu className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[250px] p-0 bg-card">
-          <div className="p-4 border-b">
-            <h2 className="text-lg font-semibold">Menu</h2>
-          </div>
-          {renderNavLinks()}
-        </SheetContent>
-      </Sheet>
-    );
-  }
+const Sidebar = ({ isSidebarOpen, setSidebarOpen }: SidebarProps) => {
+  const { userRole, logout } = useAuth();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const closeSidebar = () => setSidebarOpen(false);
+
+  const commonNavItems = [
+    { to: '/', icon: Home, label: 'Dashboard' },
+    { to: '/map', icon: Map, label: 'Map' },
+  ];
+
+  const officeNavItems = [
+    ...commonNavItems,
+    { to: '/drivers', icon: Users, label: 'Drivers' },
+    { to: '/quotes', icon: FileText, label: 'Quotes' },
+  ];
+
+  const driverNavItems = [
+    { to: '/', icon: Home, label: 'My Jobs' },
+    { to: '/daily-check', icon: CheckSquare, label: 'Daily Check' },
+  ];
+
+  const adminNavItems = [
+    { to: '/admin/users', icon: Users, label: 'Users' },
+    { to: '/admin/checklists', icon: CheckSquare, label: 'Checklists' },
+    { to: '/admin/daily-checks', icon: Briefcase, label: 'Daily Checks' },
+    { to: '/admin/saved-addresses', icon: Building, label: 'Saved Addresses' },
+    { to: '/admin/billing', icon: BarChart2, label: 'Billing' },
+  ];
+
+  let navItems = commonNavItems;
+  if (userRole === 'office') navItems = officeNavItems;
+  if (userRole === 'driver') navItems = driverNavItems;
+  if (userRole === 'admin') navItems = [...officeNavItems, ...adminNavItems];
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r bg-[var(--saas-sidebar-bg)]">
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">HOSS</h2>
-      </div>
-      <div className="flex-1 overflow-auto py-2">
-        {/* User Profile Section */}
-        {user && profile && (
-          <div className="p-4 border-b border-[var(--saas-border)] mb-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-10 w-10">
-                      {profile.avatar_url ? (
-                        <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                      ) : (
-                        <AvatarFallback className="bg-blue-100 text-blue-600 text-base font-medium">{userInitials}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium text-gray-900">{userName}</span>
-                      <span className="text-xs text-gray-500">{userRoleDisplay}</span>
-                    </div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-white shadow-lg rounded-md">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-                <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <>
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full w-[240px] bg-[var(--saas-sidebar-bg)] text-[var(--saas-sidebar-text)] flex flex-col border-r border-[var(--saas-border-color)] z-40 transform transition-transform duration-300 ease-in-out",
+          "md:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
-        {renderNavLinks()}
-      </div>
-    </aside>
+      >
+        <div className="flex items-center justify-between p-4 h-16 border-b border-[var(--saas-border-color)]">
+          <div className="flex items-center">
+            <img src="/FRS_Logo_NO_BG.png" alt="FRS Logo" className="h-8 mr-2" />
+            <h1 className="text-xl font-bold">HOSS</h1>
+          </div>
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={closeSidebar}>
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavItem key={item.to} to={item.to} icon={item.icon} currentPath={location.pathname} onClick={closeSidebar}>
+              {item.label}
+            </NavItem>
+          ))}
+        </nav>
+        <div className="p-4 mt-auto border-t border-[var(--saas-border-color)] space-y-2">
+          <NavItem to="/settings" icon={Settings} currentPath={location.pathname} onClick={closeSidebar}>
+            Settings
+          </NavItem>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-[var(--saas-sidebar-hover-bg)]"
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+    </>
   );
 };
 
