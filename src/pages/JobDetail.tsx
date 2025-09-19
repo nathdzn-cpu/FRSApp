@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getJobById, getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress, getJobs } from '@/lib/api/jobs';
-import { getProfiles } from '@/lib/api/profiles';
+import { getJobStops, getJobDocuments, getJobProgressLogs, requestPod, cancelJob, updateJob, updateJobProgress } from '@/lib/api/jobs';
+import { getUsersForAdmin } from '@/lib/api/profiles';
+import { getJobByOrderNumber } from "@/lib/jobs";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
