@@ -10,18 +10,18 @@ import { getDisplayStatus } from '@/lib/utils/statusUtils';
 import { formatAddressPart, formatPostcode } from '@/lib/utils/formatUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-interface JobOverviewCardProps {
+export interface JobOverviewCardProps {
   job: Job;
-  stops: JobStop[];
-  allProfiles: Profile[];
+  profiles?: Profile[];
+  stops?: JobStop[];
 }
 
-const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops, allProfiles }) => {
+const JobOverviewCard: React.FC<JobOverviewCardProps> = ({ job, stops = [], profiles = [] }) => {
   const collectionStops = stops.filter(s => s.type === 'collection');
   const deliveryStops = stops.filter(s => s.type === 'delivery');
 
   const assignedDriver = job.assigned_driver_id
-    ? allProfiles.find(p => p.id === job.assigned_driver_id)
+    ? profiles.find(p => p.id === job.assigned_driver_id)
     : undefined;
 
   const driverInitials = assignedDriver?.full_name

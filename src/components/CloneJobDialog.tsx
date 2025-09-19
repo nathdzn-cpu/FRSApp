@@ -12,12 +12,12 @@ import { Job, JobStop, Profile } from '@/utils/mockData';
 import JobForm from './JobForm';
 import { parseISO } from 'date-fns';
 
-interface CloneJobDialogProps {
+export interface CloneJobDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   originalJob: Job;
   originalStops: JobStop[];
-  onCloneSuccess: (newJobOrderNumber: string) => void;
+  onCloneSuccess: (newJob: Job) => void;
 }
 
 const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
@@ -98,7 +98,18 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
         notes: values.notes,
       };
 
-      const newStopsData = [...values.collections, ...values.deliveries].map((stop: any, index: number) => ({
+      const newStopsData: Array<{
+        name: string | null;
+        address_line1: string;
+        address_line2?: string | null;
+        city: string;
+        postcode: string;
+        window_from?: string | null;
+        window_to?: string | null;
+        notes?: string | null;
+        type: 'collection' | 'delivery';
+        seq: number;
+      }> = [...values.collections, ...values.deliveries].map((stop: any, index: number) => ({
         ...stop,
         type: index < values.collections.length ? 'collection' : 'delivery',
         seq: index + 1,
@@ -110,7 +121,7 @@ const CloneJobDialog: React.FC<CloneJobDialogProps> = ({
         loading: 'Cloning job...',
         success: (newJob) => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          onCloneSuccess(newJob.order_number);
+          onCloneSuccess(newJob);
           onOpenChange(false);
           return `Job ${newJob.order_number} cloned successfully!`;
         },

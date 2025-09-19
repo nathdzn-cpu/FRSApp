@@ -7,21 +7,45 @@ import JobTimeline from '@/components/JobTimeline';
 import JobAuditLog from '@/components/JobAuditLog';
 import JobStopsTable from '@/components/JobStopsTable';
 import JobPodsGrid from '@/components/JobPodsGrid';
-import { JobProgressLog, JobStop, Document, Profile, Job } from '@/utils/mockData'; // Import Job
+import { JobProgressLog, JobStop, Document, Profile, Job } from '@/utils/mockData';
 import { coreProgressActionTypes } from '@/lib/utils/statusUtils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getJobProgressLogs, getJobDocuments } from '@/lib/api/jobs';
+import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
-interface JobDetailTabsProps {
-  progressLogs: JobProgressLog[];
-  allProfiles: Profile[];
-  stops: JobStop[];
-  documents: Document[];
-  currentOrgId: string;
-  onLogVisibilityChange: () => void;
-  job: Job; // Added job prop
+export interface JobDetailTabsProps {
+  job: Job;
+  profiles?: Profile[];
+  stops?: JobStop[];
 }
 
-const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles, stops, documents, currentOrgId, onLogVisibilityChange, job }) => {
+const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ job, profiles = [], stops = [] }) => {
+  const { profile } = useAuth();
+  const currentOrgId = profile?.org_id;
+  const queryClient = useQueryClient();
+
+  const { data: progressLogs = [], isLoading: isLoadingLogs } = useQuery<JobProgressLog[], Error>({
+    queryKey: ['jobProgressLogs', job.id],
+    queryFn: () => getJobProgressLogs(currentOrgId!, job.id),
+    enabled: !!currentOrgId && !!job.id,
+  });
+
+  const { data: documents = [], isLoading: isLoadingDocs } = useQuery<Document[], Error>({
+    queryKey: ['jobDocuments', job.id],
+    queryFn: () => getJobDocuments(currentOrgId!, job.id),
+    enabled: !!currentOrgId && !!job.id,
+  });
+
   const timelineLogs = progressLogs.filter(log => coreProgressActionTypes.includes(log.action_type));
+
+  const handleLogVisibilityChange = () => {
+    queryClient.invalidateQueries({ queryKey: ['jobProgressLogs', job.id] });
+  };
+
+  if (isLoadingLogs || isLoadingDocs) {
+    return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <Tabs defaultValue="timeline" className="w-full">
@@ -39,10 +63,10 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
           <CardContent className="p-0 pt-4">
             <JobTimeline
               progressLogs={timelineLogs}
-              profiles={allProfiles}
-              currentOrgId={currentOrgId}
-              onLogVisibilityChange={onLogVisibilityChange}
-              job={job} // Pass job to JobTimeline
+              profiles={profiles}
+              currentOrgId={currentOrgId!}
+              onLogVisibilityChange={handleLogVisibilityChange}
+              job={job}
             />
           </CardContent>
         </Card>
@@ -53,7 +77,7 @@ const JobDetailTabs: React.FC<JobDetailTabsProps> = ({ progressLogs, allProfiles
             <CardTitle className="text-xl font-semibold text-gray-900">Job Audit Log</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-4">
-            <JobAuditLog progressLogs={progressLogs} profiles={allProfiles} />
+            <JobAuditLog progressLogs={progressLogs} profiles={profiles} />
           </CardContent>
         </Card>
       </TabsContent>

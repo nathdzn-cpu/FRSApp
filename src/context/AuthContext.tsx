@@ -62,6 +62,8 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
       if (profileError && profileError.code !== 'PGRST116') {
         console.error("AuthContextProvider: Error fetching profile from DB:", profileError);
         toast.error("Failed to load user profile.");
+        setProfile(null);
+        setUserRole(undefined);
       } else if (fetchedProfile) {
         console.log("AuthContextProvider: Profile fetched successfully:", fetchedProfile);
         // Fetch avatar URL
@@ -71,11 +73,14 @@ export const AuthContextProvider = ({ children, initialSession, initialUser }: {
 
         const avatarUrl = publicUrlData?.publicUrl || null;
 
-        setProfile({ ...fetchedProfile as Profile, avatar_url: avatarUrl });
-        setUserRole((fetchedProfile as Profile).role || undefined);
+        const fullProfile = { ...fetchedProfile as Profile, avatar_url: avatarUrl };
+        setProfile(fullProfile);
+        setUserRole(fullProfile.role);
       } else {
         console.log("AuthContextProvider: No profile row found for this user.");
         toast.error("No user profile found. Please contact an administrator.");
+        setProfile(null);
+        setUserRole(undefined);
       }
     } catch (error) {
       console.error("AuthContextProvider: Unexpected error fetching profile:", error);
