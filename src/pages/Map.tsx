@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 const Map: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <div className="w-full px-6">
+    <div className="w-full">
       <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
       </Button>

@@ -115,19 +115,17 @@ const CreateDriver: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-6">
-      <div className="max-w-2xl mx-auto">
-        <Button onClick={() => navigate('/admin/users/new')} variant="outline" className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Type Selection
-        </Button>
+    <div className="w-full">
+      <Button onClick={() => navigate('/admin/users/new')} variant="outline" className="mb-6">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to User Type Selection
+      </Button>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Driver</h1>
-        <Card className="bg-white shadow-xl rounded-xl p-6">
-          <CardContent className="p-0">
-            <CreateDriverForm onSubmit={handleSubmit} />
-          </CardContent>
-        </Card>
-      </div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Driver</h1>
+      <Card className="bg-white shadow-xl rounded-xl p-6 max-w-2xl">
+        <CardContent className="p-0">
+          <CreateDriverForm onSubmit={handleSubmit} />
+        </CardContent>
+      </Card>
       {credentials && (
         <CredentialsDisplayDialog
           open={!!credentials}

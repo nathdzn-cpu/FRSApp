@@ -150,7 +150,7 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-6">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <Button onClick={() => { navigate('/'); }} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard

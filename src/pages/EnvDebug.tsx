@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function EnvDebug() {
   return (
-    <div className="w-full px-6">
+    <div className="w-full">
       <main style={{padding:24,fontFamily:'system-ui'}}>
         <h1>Env Debug</h1>
         <p><b>VITE_SUPABASE_URL:</b> {import.meta.env.VITE_SUPABASE_URL || '⛔ undefined'}</p>
