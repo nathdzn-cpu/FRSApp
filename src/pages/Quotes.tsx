@@ -233,14 +233,14 @@ const Quotes: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Mileage</TableHead>
-                <TableHead>Drops</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[15%]">Date</TableHead>
+                <TableHead className="w-[20%]">Customer</TableHead>
+                <TableHead className="w-[15%]">From</TableHead>
+                <TableHead className="w-[15%]">To</TableHead>
+                <TableHead className="w-[10%]">Price</TableHead>
+                <TableHead className="w-[10%]">Mileage</TableHead>
+                <TableHead className="w-[5%]">Drops</TableHead>
+                <TableHead className="text-right w-[10%]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

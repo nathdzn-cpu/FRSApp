@@ -18,12 +18,12 @@ const JobStopsTable: React.FC<JobStopsTableProps> = ({ stops }) => {
       <Table>
         <TableHeader className="bg-gray-50"> {/* Kept header background */}
           <TableRow>
-            <TableHead>Seq</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Window</TableHead>
-            <TableHead>Notes</TableHead>
+            <TableHead className="w-[5%]">Seq</TableHead>
+            <TableHead className="w-[10%]">Type</TableHead>
+            <TableHead className="w-[20%]">Name</TableHead>
+            <TableHead className="w-[35%]">Address</TableHead>
+            <TableHead className="w-[15%]">Window</TableHead>
+            <TableHead className="w-[15%]">Notes</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y divide-gray-100"> {/* Added row dividers */}

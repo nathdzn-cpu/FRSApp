@@ -33,13 +33,13 @@ const DriverJobsTable: React.FC<DriverJobsTableProps> = ({
       <Table>
         <TableHeader className="bg-gray-50">
           <TableRow>
-            <TableHead className="text-gray-700 font-medium">Order Number</TableHead>
-            <TableHead className="text-gray-700 font-medium">Status</TableHead>
-            <TableHead className="text-gray-700 font-medium">Collection Date</TableHead>
-            <TableHead className="text-gray-700 font-medium">Delivery Date</TableHead>
-            <TableHead className="text-gray-700 font-medium">Collection</TableHead>
-            <TableHead className="text-gray-700 font-medium">Delivery</TableHead>
-            <TableHead className="text-center text-gray-700 font-medium">Actions</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Order Number</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Status</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Collection Date</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Delivery Date</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[20%]">Collection</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[20%]">Delivery</TableHead>
+            <TableHead className="text-center text-gray-700 font-medium w-[10%]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y divide-gray-200">

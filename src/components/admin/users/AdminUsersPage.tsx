@@ -300,14 +300,14 @@ const AdminUsersPage: React.FC = () => {
                 <Table>
                   <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>User ID (Auth)</TableHead>
-                      <TableHead>Truck Reg</TableHead>
-                      <TableHead>Trailer No</TableHead>
-                      <TableHead>Flags</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="w-[20%]">Name</TableHead>
+                      <TableHead className="w-[10%]">Role</TableHead>
+                      <TableHead className="w-[15%]">Phone</TableHead>
+                      <TableHead className="w-[20%]">User ID (Auth)</TableHead>
+                      <TableHead className="w-[10%]">Truck Reg</TableHead>
+                      <TableHead className="w-[10%]">Trailer No</TableHead>
+                      <TableHead className="w-[5%]">Flags</TableHead>
+                      <TableHead className="text-center w-[10%]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-gray-100">

@@ -61,13 +61,13 @@ const JobsTable: React.FC<JobsTableProps> = ({
       <Table>
         <TableHeader className="bg-gray-50">
           <TableRow>
-            <TableHead className="text-gray-700 font-medium">Order Number</TableHead>
-            <TableHead className="text-gray-700 font-medium">Status</TableHead>
-            <TableHead className="text-gray-700 font-medium">Date</TableHead>
-            <TableHead className="text-gray-700 font-medium">Driver</TableHead>
-            <TableHead className="text-gray-700 font-medium">Collection</TableHead>
-            <TableHead className="text-gray-700 font-medium">Delivery</TableHead>
-            <TableHead className="text-center text-gray-700 font-medium">Actions</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Order Number</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[15%]">Status</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[12%]">Date</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[20%]">Driver</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[18%]">Collection</TableHead>
+            <TableHead className="text-gray-700 font-medium w-[18%]">Delivery</TableHead>
+            <TableHead className="text-center text-gray-700 font-medium w-[10%]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y divide-gray-200">
