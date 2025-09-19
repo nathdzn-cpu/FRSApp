@@ -78,7 +78,7 @@ const EditUser: React.FC = () => {
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Users
       </Button>
       <h1 className="text-2xl font-bold mb-6">Edit User: {userToEdit.full_name}</h1>
-      <div className="max-w-2xl">
+      <div>
         <EditUserForm
           userToEdit={userToEdit}
           onSubmit={handleUpdateUser}

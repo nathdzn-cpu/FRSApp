@@ -120,7 +120,7 @@ const CreateOffice: React.FC = () => {
       </Button>
 
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Office User</h1>
-      <Card className="bg-white shadow-xl rounded-xl p-6 max-w-2xl">
+      <Card className="bg-white shadow-xl rounded-xl p-6">
         <CardContent className="p-0">
           <CreateOfficeForm onSubmit={handleSubmit} />
         </CardContent>
