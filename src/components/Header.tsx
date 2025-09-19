@@ -15,7 +15,7 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
   const { user, profile } = useAuth();
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-[var(--saas-header-bg)] border-b border-[var(--saas-border-color)] sticky top-0 z-30">
+    <header className="flex items-center justify-between h-16 px-6 bg-[var(--saas-header-bg)] sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)}>
           <Menu className="h-6 w-6" />

@@ -82,12 +82,12 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }: SidebarProps) => {
     <>
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-[240px] bg-[var(--saas-sidebar-bg)] text-[var(--saas-sidebar-text)] flex flex-col border-r border-[var(--saas-border-color)] z-40 transform transition-transform duration-300 ease-in-out",
+          "fixed top-0 left-0 h-full w-[240px] bg-[var(--saas-sidebar-bg)] text-[var(--saas-sidebar-text)] flex flex-col z-40 transform transition-transform duration-300 ease-in-out shadow-lg",
           "md:translate-x-0",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between p-4 h-16 border-b border-[var(--saas-border-color)]">
+        <div className="flex items-center justify-between p-4 h-16">
           <div className="flex items-center">
             <img src="/FRS_Logo_NO_BG.png" alt="FRS Logo" className="h-8 mr-2" />
             <h1 className="text-xl font-bold">HOSS</h1>
@@ -103,7 +103,7 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }: SidebarProps) => {
             </NavItem>
           ))}
         </nav>
-        <div className="p-4 mt-auto border-t border-[var(--saas-border-color)] space-y-2">
+        <div className="p-4 mt-auto space-y-2">
           <NavItem to="/settings" icon={Settings} currentPath={location.pathname} onClick={closeSidebar}>
             Settings
           </NavItem>

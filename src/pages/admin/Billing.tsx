@@ -97,9 +97,7 @@ const BillingPage = () => {
                 </div>
               </div>
 
-              <div className="border-t my-4"></div>
-
-              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg mt-4">
                 <div className="flex items-center">
                   <PoundSterling className="h-6 w-6 mr-3 text-blue-600" />
                   <span className="font-semibold text-blue-800">Total Estimated Monthly Bill</span>
