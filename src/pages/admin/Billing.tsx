@@ -10,7 +10,11 @@ import { formatGBP } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
-const PRICE_PER_USER_MONTH = 10; // Placeholder price
+const PRICE_PER_ROLE = {
+  office: 30,
+  driver: 10,
+  customer: 10,
+};
 
 const BillingPage = () => {
   const { profile, userRole, isLoadingAuth } = useAuth();
@@ -23,8 +27,15 @@ const BillingPage = () => {
     enabled: !!currentOrgId && userRole === 'admin',
   });
 
-  const activeUserCount = profiles.length;
-  const monthlyBill = activeUserCount * PRICE_PER_USER_MONTH;
+  const officeCount = profiles.filter(p => p.role === 'office' || p.role === 'admin').length;
+  const driverCount = profiles.filter(p => p.role === 'driver').length;
+  const customerCount = profiles.filter(p => p.role === 'customer').length;
+
+  const officeBill = officeCount * PRICE_PER_ROLE.office;
+  const driverBill = driverCount * PRICE_PER_ROLE.driver;
+  const customerBill = customerCount * PRICE_PER_ROLE.customer;
+
+  const totalMonthlyBill = officeBill + driverBill + customerBill;
 
   if (isLoadingAuth) {
     return (
@@ -56,24 +67,44 @@ const BillingPage = () => {
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
                   <Users className="h-5 w-5 mr-3 text-gray-500" />
-                  <span className="font-medium">Number of Active Users</span>
+                  <span className="font-medium">Office Accounts</span>
                 </div>
-                <span className="font-bold text-lg">{activeUserCount}</span>
+                <div className="text-right">
+                  <span className="font-bold text-lg">{officeCount} &times; {formatGBP(PRICE_PER_ROLE.office)}</span>
+                  <span className="block text-sm text-gray-600 font-semibold">{formatGBP(officeBill)}</span>
+                </div>
               </div>
+
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
-                  <PoundSterling className="h-5 w-5 mr-3 text-gray-500" />
-                  <span className="font-medium">Price Per User / Month</span>
+                  <Users className="h-5 w-5 mr-3 text-gray-500" />
+                  <span className="font-medium">Drivers</span>
                 </div>
-                <span className="font-bold text-lg">{formatGBP(PRICE_PER_USER_MONTH)}</span>
+                <div className="text-right">
+                  <span className="font-bold text-lg">{driverCount} &times; {formatGBP(PRICE_PER_ROLE.driver)}</span>
+                  <span className="block text-sm text-gray-600 font-semibold">{formatGBP(driverBill)}</span>
+                </div>
               </div>
+
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center">
+                  <Users className="h-5 w-5 mr-3 text-gray-500" />
+                  <span className="font-medium">Customers</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-lg">{customerCount} &times; {formatGBP(PRICE_PER_ROLE.customer)}</span>
+                  <span className="block text-sm text-gray-600 font-semibold">{formatGBP(customerBill)}</span>
+                </div>
+              </div>
+
               <div className="border-t my-4"></div>
+
               <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center">
                   <PoundSterling className="h-6 w-6 mr-3 text-blue-600" />
                   <span className="font-semibold text-blue-800">Total Estimated Monthly Bill</span>
                 </div>
-                <span className="font-bold text-2xl text-blue-800">{formatGBP(monthlyBill)}</span>
+                <span className="font-bold text-2xl text-blue-800">{formatGBP(totalMonthlyBill)}</span>
               </div>
             </div>
           )}
