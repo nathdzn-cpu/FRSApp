@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthContextProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
 import Header from './components/Header';
@@ -76,9 +76,30 @@ const AppContent = () => {
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
-        <main className="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-gray-900/50">
-          <Header />
-          <Outlet />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--saas-background)]">
+          <div className="p-6 w-full max-w-full">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/jobs/:orderNumber" element={<JobDetail />} />
+              <Route path="/jobs/new" element={<CreateJob />} />
+              <Route path="/drivers" element={<Drivers />} />
+              <Route path="/daily-check" element={<DriverDailyCheck />} />
+              <Route path="/map" element={<Map />} />
+              <Route path="/quotes" element={<Quotes />} />
+              <Route path="/admin/checklists" element={<AdminRoute><AdminChecklists /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+              <Route path="/admin/users/new" element={<AdminRoute><CreateUserChoice /></AdminRoute>} />
+              <Route path="/admin/users/new/driver" element={<AdminRoute><CreateDriver /></AdminRoute>} />
+              <Route path="/admin/users/new/office" element={<AdminRoute><CreateOffice /></AdminRoute>} />
+              <Route path="/admin/users/:id/edit" element={<AdminRoute><EditUser /></AdminRoute>} />
+              <Route path="/admin/daily-checks" element={<AdminRoute><AdminDailyChecks /></AdminRoute>} />
+              <Route path="/admin/saved-addresses" element={<AdminRoute><AdminSavedAddresses /></AdminRoute>} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/env-debug" element={<EnvDebug />} />
+              <Route path="/admin/billing" element={<AdminRoute><BillingPage /></AdminRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
         </main>
       </div>
     </div>

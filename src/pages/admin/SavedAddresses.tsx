@@ -232,7 +232,7 @@ const AdminSavedAddresses: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full px-6">
       <Button onClick={() => navigate('/')} variant="outline" className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
       </Button>
@@ -326,78 +326,76 @@ const AdminSavedAddresses: React.FC = () => {
 
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Existing Addresses</h3>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Postcode</TableHead>
-                    <TableHead className="text-center">Favourite</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100">
-                  {addresses.map(address => (
-                    <TableRow key={address.id}>
-                      <TableCell className="font-medium">{address.name || '-'}</TableCell>
-                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatAddressPart(address.line_1)}
-                        {address.line_2 && `, ${formatAddressPart(address.line_2)}`}
-                        , {formatAddressPart(address.town_or_city)}
-                        {address.county && `, ${formatAddressPart(address.county)}`}
-                      </TableCell>
-                      <TableCell>{formatPostcode(address.postcode)}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="ghost" size="sm" onClick={() => handleToggleFavourite(address)} disabled={busy}>
-                          {address.favourite ? <Star className="h-4 w-4 text-yellow-500" /> : <Star className="h-4 w-4 text-gray-300" />}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditAddress(address)} disabled={busy}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" disabled={busy}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>This will permanently delete the address "{address.name}".</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="flex gap-4 mb-4">
+              <Input
+                placeholder="Search addresses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-grow"
+                disabled={busy}
+              />
+              <Button onClick={loadAddresses} disabled={busy} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              </Button>
             </div>
             {addresses.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">No saved addresses found.</p>
             ) : (
-              <div className="mt-4">
-                <div className="flex gap-4 mb-4">
-                  <Input
-                    placeholder="Search addresses..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-grow"
-                    disabled={busy}
-                  />
-                  <Button onClick={loadAddresses} disabled={busy} variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-                  </Button>
-                </div>
+              <div className="rounded-md overflow-hidden shadow-sm">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Postcode</TableHead>
+                      <TableHead className="text-center">Favourite</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-gray-100">
+                    {addresses.map(address => (
+                      <TableRow key={address.id}>
+                        <TableCell className="font-medium">{address.name || '-'}</TableCell>
+                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatAddressPart(address.line_1)}
+                          {address.line_2 && `, ${formatAddressPart(address.line_2)}`}
+                          , {formatAddressPart(address.town_or_city)}
+                          {address.county && `, ${formatAddressPart(address.county)}`}
+                        </TableCell>
+                        <TableCell>{formatPostcode(address.postcode)}</TableCell>
+                        <TableCell className="text-center">
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleFavourite(address)} disabled={busy}>
+                            {address.favourite ? <Star className="h-4 w-4 text-yellow-500" /> : <Star className="h-4 w-4 text-gray-300" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditAddress(address)} disabled={busy}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" disabled={busy}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-white shadow-xl rounded-xl p-6">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will permanently delete the address "{address.name}".</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAddress(address.id)} disabled={busy} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
