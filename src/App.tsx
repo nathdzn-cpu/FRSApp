@@ -72,13 +72,13 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-[var(--saas-background)]">
       <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div className="flex-1 flex flex-col md:ml-[240px]">
-        <Header setSidebarOpen={setSidebarOpen} />
+      <div className="flex-1 flex flex-col ml-[240px]">   
+       <Header setSidebarOpen={setSidebarOpen} />
         {userRole === 'driver' && driverActiveJobs.length > 0 && (
           <ActiveJobBanner activeJobs={driverActiveJobs} />
         )}
         <main className="flex-1 bg-[var(--saas-background)]">
-          <div className="w-full p-6">
+          <div className="w-full px-6">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/jobs/:orderNumber" element={<JobDetail />} />
